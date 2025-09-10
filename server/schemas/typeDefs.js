@@ -8,7 +8,7 @@ const typeDefs = gql`
     phone: String
     degree: Boolean
     about: String
-    school: String
+    meeting: String
     admin: Boolean
     profileURL: String
     jobCount: Int
@@ -18,11 +18,9 @@ const typeDefs = gql`
   type Job {
     _id: ID
     active: Boolean
-    subject: String
     dates: String
-    grade: String
     description: String
-    school: String
+    meeting: String
     createdAt: String
     username: String
     applicationCount: Int
@@ -44,8 +42,8 @@ const typeDefs = gql`
 
   type Mutation {
     login(email: String!, password: String!): Auth
-    addUser(username: String!, email: String!, password: String!, school: String, admin: Boolean): Auth
-    addJob(active: Boolean!, subject: String!, grade: String!, dates: String! school: String!  description: String!): Job
+    addUser(username: String!, email: String!, password: String!, meeting: String, admin: Boolean): Auth
+    addJob(active: Boolean!, dates: String! meeting: String!  description: String!): Job
     addApplication(jobId: ID!): Job
     updateMe(email: String, phone: String degree: Boolean, about: String): User
     deactivateJob(jobId: ID!, active: Boolean!): Job

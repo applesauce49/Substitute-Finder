@@ -8,9 +8,7 @@ export const QUERY_JOBS = gql`
       description
       createdAt
       username
-      grade
-      school
-      subject
+      meeting
       dates
       applicationCount
     }
@@ -22,13 +20,11 @@ export const QUERY_JOB = gql`
     job(_id: $id) {
       _id
       active
-      grade
-      subject
       dates
       description
       createdAt
       username
-      school
+      meeting
       applicationCount
       applications {
         _id
@@ -50,13 +46,11 @@ export const QUERY_USER = gql`
       phone
       about
       degree
-      school
+      meeting
       jobs {
         _id
         description
         dates
-        grade
-        subject
         createdAt
       }
     }
@@ -73,15 +67,13 @@ export const QUERY_ME = gql`
       admin
       about
       degree
-      school
+      meeting
       jobs {
         _id
         active
         description
         dates
-        grade
-        subject
-        school
+        meeting
         createdAt
       }
     }

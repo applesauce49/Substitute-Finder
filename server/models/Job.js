@@ -12,19 +12,11 @@ const jobSchema = new Schema(
       required: 'You need to leave a job!',
       maxlength: 280
     },
-    subject: {
-      type: String,
-      required: true
-    },
     dates: {
       type: String,
       required: true
     },
-    grade: {
-      type: String,
-      required: true
-    },
-    school: {
+    meeting: {
       type: String,
       required: true
     },

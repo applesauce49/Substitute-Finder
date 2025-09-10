@@ -30,7 +30,7 @@ const userSchema = new Schema(
     about: {
       type: String
     },
-    school: {
+    meeting: {
       type: String
     },
     admin: {

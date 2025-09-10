@@ -18,16 +18,8 @@ export const ProfileForm = ({ onSubmit }) => {
           type="about"
           className="form-control"
           id="about"
-          placeholder="Please input what subjects you enjoy teaching."
+          placeholder="Please input what meetings you enjoy subbing for."
         />
-      </div>
-      <div className="form-group">
-        <label htmlFor="email">Check box if you have an associates or bachelor degree.</label>
-        <input
-                type={`checkbox`}
-                name="CollegeDegree"
-                id="collegedegree"
-              ></input>
       </div>
       <div className="form-group">
         <button className="form-control btn btn-primary" type="submit">

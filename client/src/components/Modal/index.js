@@ -122,7 +122,7 @@ const ProfileModal = () => {
           <textarea
             placeholder={
               userData?.about ||
-              "Tell us a little about yourself! (ex. your preferred subject, grade level to work with, etc.)"
+              "Tell us a little about yourself!"
             }
             name="about"
             id="about"

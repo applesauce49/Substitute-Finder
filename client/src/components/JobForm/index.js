@@ -1,21 +1,33 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@apollo/client";
 import { useMutation } from "@apollo/client";
 import { ADD_JOB } from "../../utils/mutations";
 import { QUERY_JOBS, QUERY_ME } from "../../utils/queries";
+import { Calendar } from "react-multi-date-picker";
 
 const JobForm = () => {
   const { data: userData } = useQuery(QUERY_ME);
-  const school = userData.me.school;
+  const meeting = userData.me.meeting;
   const [jobText, setText] = useState({
     active: true,
-    subject: "",
-    grade: "",
-    dates: "",
+    dates: [],
     description: "",
-    school: school,
+    meeting: meeting,
   });
   const [characterCount, setCharacterCount] = useState(0);
+
+  const [minDate, setMinDate] = useState(null);
+  const [maxDate, setMaxDate] = useState(null);
+
+  useEffect(() => {
+    const today = new Date();
+    const sixMonthsLater = new Date(today);
+    sixMonthsLater.setMonth(today.getMonth() + 6);
+
+    setMinDate(today);
+    setMaxDate(sixMonthsLater);
+  }, []);
+
   const [addJob, { error }] = useMutation(ADD_JOB, {
     update(cache, { data: { addJob } }) {
       // could potentially not exist yet, so wrap in a try/catch
@@ -53,17 +65,35 @@ const JobForm = () => {
     }
   };
 
+  const handleDatesChange = (values) => {
+    // values is an array of DateObjects from the picker
+    const formatted = values.map((d) =>
+      d.toDate().toISOString().split("T")[0]
+    );
+    setText((prev) => ({ ...prev, dates: formatted }));
+  };
+
   // submit form
   const handleFormSubmit = async (event) => {
     event.preventDefault();
 
     try {
-      await addJob({
-        variables: { ...jobText },
-      });
+      for (const date of jobText.dates) {
+        await addJob({
+          variables: {
+            ...jobText,
+            dates: date,
+          },
+        });
+      }
 
       // clear form value
-      setText("");
+      setText({
+        active: true,
+        dates: [],
+        description: "",
+        meeting: meeting,
+      });
       setCharacterCount(0);
     } catch (e) {
       console.error(e);
@@ -84,30 +114,25 @@ const JobForm = () => {
             className="flex-row justify-center justify-space-between-md align-stretch"
             onSubmit={handleFormSubmit}
           >
-            <label className="text-dark">Subject:</label>
+            <label className="text-dark">Meeting:</label>
             <input
-              placeholder="Mathematics, Social Studies, etc..."
               type="text"
-              name="subject"
+              id="meeting"
+              name="meeting"
+              placeholder="Enter meeting name"
               className="form-input col-12 col-md-12"
+              value={jobText.meeting}
               onChange={handleChange}
-            ></input>
-            <label className="text-dark">Grade:</label>
-            <input
-              placeholder="4th, 9th, 11th, etc..."
-              type="text"
-              name="grade"
-              className="form-input col-12 col-md-12"
-              onChange={handleChange}
-            ></input>
+            />
             <label className="text-dark">Dates:</label>
-            <input
-              placeholder="(ex. November 12th-16th)"
-              type="text"
-              name="dates"
-              className="form-input col-12 col-md-12"
-              onChange={handleChange}
-            ></input>
+            <Calendar
+              multiple
+              value={jobText.dates}
+              onChange={handleDatesChange}
+              minDate={minDate}
+              maxDate={maxDate}
+            />
+
             <label className="text-dark">Description:</label>
             <textarea
               placeholder="Your responsibilities will be..."

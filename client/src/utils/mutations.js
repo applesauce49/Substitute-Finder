@@ -17,14 +17,14 @@ export const ADD_USER = gql`
     $username: String!
     $password: String!
     $email: String!
-    $school: String
+    $meeting: String
     $admin: Boolean
   ) {
     addUser(
       username: $username
       password: $password
       email: $email
-      school: $school
+      meeting: $meeting
       admin: $admin
     ) {
       token
@@ -32,7 +32,7 @@ export const ADD_USER = gql`
         _id
         email
         username
-        school
+        meeting
         admin
       }
     }
@@ -42,27 +42,21 @@ export const ADD_USER = gql`
 export const ADD_JOB = gql`
   mutation addJob(
     $active: Boolean!
-    $subject: String!
-    $grade: String!
     $dates: String!
-    $school: String!
+    $meeting: String!
     $description: String!
   ) {
     addJob(
       active: $active
-      subject: $subject
-      grade: $grade
       dates: $dates
-      school: $school
+      meeting: $meeting
       description: $description
     ) {
       _id
       active
       description
-      subject
-      grade
       dates
-      school
+      meeting
       createdAt
       username
     }
@@ -114,8 +108,6 @@ export const UPDATE_ME = gql`
         active
         description
         dates
-        grade
-        subject
         createdAt
       }
     }

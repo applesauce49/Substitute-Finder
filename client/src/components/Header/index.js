@@ -33,7 +33,7 @@ const Header = () => {
               </span>
               mic
             </h1>
-            <p className="sub-title">An app for finding Substitute Teachers</p>
+            <p className="sub-title">An app for finding Substitute Peer Parents</p>
           </Animated>
         </Link>
 

@@ -84,10 +84,8 @@ const SingleJob = () => {
             <b>Date(s): </b>
             {job.dates}
             <br />
-            <b>School: </b>
-            {job.school}
-            <br />
-            {job.grade} grade | {job.subject}
+            <b>Meeting: </b>
+            {job.meeting}
           </p>
           
         </div>

@@ -10,20 +10,20 @@ const Signup = () => {
     email: "",
     password: "",
     admin: false,
-    school: "",
+    meeting: "",
   });
   const [addUser, { error }] = useMutation(ADD_USER);
 
   // update state based on form input changes
   const handleChange = (event) => {
     const admin = document.getElementById("admin").checked;
-    const school = document.getElementById("school")?.value || "";
+    const meeting = document.getElementById("meeting")?.value || "";
     const { name, value } = event.target;
     setFormState({
       ...formState,
       [name]: value,
       admin: admin,
-      school: school,
+      meeting: meeting,
     });
   };
 
@@ -87,15 +87,15 @@ const Signup = () => {
               {formState.admin && (
                 <>
                   <div className="mb-3 text-center">
-                    <label className="mr-2" htmlFor="school">Select your school </label>
-                    <select name="school" id="school" onChange={handleChange}>
+                    <label className="mr-2" htmlFor="meeting">Select your meeting </label>
+                    <select name="meeting" id="meeting" onChange={handleChange}>
                       <option value="HTM Elementary">HTM Elementary</option>
                       <option value="Code Academy">Code Academy</option>
-                      <option value="Express Middle School">
-                        Express Middle School
+                      <option value="Express Middle Meeting">
+                        Express Middle Meeting
                       </option>
                       <option value="Performant High">
-                        Performant High School
+                        Performant High Meeting
                       </option>
                     </select>
                   </div>
