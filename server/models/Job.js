@@ -25,9 +25,10 @@ const jobSchema = new Schema(
       default: Date.now,
       get: timestamp => dateFormat(timestamp)
     },
-    username: {
-      type: String,
-      required: true
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     applications: [
       {
@@ -45,7 +46,7 @@ const jobSchema = new Schema(
 );
 
 jobSchema.virtual('applicationCount').get(function() {
-  return this.applications.length;
+  return this.applications?.length || 0;
 });
 
 const Job = model('Job', jobSchema);

@@ -1,33 +1,27 @@
-import React, { useState } from "react";
+import React from "react";
+import { useQuery } from "@apollo/client";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import { QUERY_MY_EVENTS } from "../../utils/queries";
 
-// Demo meetings data
-const initialMeetings = [
-  {
-    id: "1",
-    title: "Team Standup",
-    start: "2025-09-12T09:00:00",
-    end: "2025-09-12T09:30:00",
-  },
-  {
-    id: "2",
-    title: "Client Call",
-    start: "2025-09-13T13:00:00",
-    end: "2025-09-13T14:00:00",
-  },
-  {
-    id: "3",
-    title: "Architecture Review",
-    start: "2025-09-15T15:00:00",
-    end: "2025-09-15T16:30:00",
-  },
-];
+// import "@fullcalendar/daygrid/index.css";
+// import "@fullcalendar/timegrid/index.css";
 
-const Calendar = ({}) => {
-  const [meetings, setMeetings] = useState(initialMeetings);
+const Calendar = ({ }) => {
+  const { data, loading, error } = useQuery(QUERY_MY_EVENTS);
+
+  if (loading) return <p>Loading your meetings...</p>
+  if (error) return <p>Error: {error.message}</p>
+
+    // GraphQL returns start/end as objects (dateTime, timeZone), so pass them through
+    const meetings = (data?.myEvents || []).map(ev => ({
+        id: ev.id,
+        title: ev.summary,
+        start: ev.start?.dateTime || ev.start?.date,
+        end: ev.end?.dateTime || ev.end?.date,
+    }));
 
   const handleDateClick = (info) => {
     alert(`Clicked on date: ${info.dateStr}`);
@@ -50,8 +44,9 @@ const Calendar = ({}) => {
         events={meetings}
         dateClick={handleDateClick}
         eventClick={handleEventClick}
-        editable={true}
+        editable={false}
         selectable={true}
+        height="auto"
       />
     </div>
   );

@@ -6,8 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "watch": "nodemon",
-    "seed": "node seeders/seeds.js"
+    "watch": "nodemon server.js",
+    "seed": "node seeders/seeds.js",
+    "dev":  "nodemon server.js"
   },
   "keywords": [],
   "author": "",
@@ -19,7 +20,9 @@
     "express": "^4.17.2",
     "express-session": "^1.18.2",
     "faker": "^4.1.0",
+    "googleapis": "^159.0.0",
     "graphql": "^16.2.0",
+    "graphql-type-json": "^0.3.2",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.1.6",
     "passport": "^0.7.0",

@@ -23,10 +23,6 @@ const userSchema = new Schema(
       required: true,
       minlength: 5
     },
-    degree: {
-      type: Boolean,
-      default: false
-    },
     about: {
       type: String
     },
@@ -54,7 +50,12 @@ const userSchema = new Schema(
         type: Schema.Types.ObjectId,
         ref: 'User'
       }
-    ]
+    ],
+    google: {
+      refreshToken: String,
+      accessToken: String,
+      expiryDate: Date
+    }
   },
   {
     toJSON: {

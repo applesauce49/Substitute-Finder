@@ -57,7 +57,7 @@ const SingleJob = () => {
 
   return (
     <div className="text-center single-job-close">
-      {Auth.loggedIn() && admin && (
+      {Auth.loggedIn()  && (
           <form
             className="flex-row justify-center align-stretch"
             onSubmit={handleDeactivate}
@@ -74,7 +74,7 @@ const SingleJob = () => {
       )}
       <div className="card mb-3">
         <p className="card-header single-job-header">
-          <span style={{ fontWeight: 700 }}>{job.username}</span>
+          <span style={{ fontWeight: 700 }}>{job?.createdBy?.username ?? "N/A"}</span>
           &nbsp;{job.createdAt}
         </p>
         <div className="card-body">
@@ -91,7 +91,7 @@ const SingleJob = () => {
         </div>
       </div>
 
-      {job.applicationCount > 0 && admin && (
+      {job.applicationCount > 0  && (
         <div>
           <ApplicantList applications={job.applications} />
         </div>

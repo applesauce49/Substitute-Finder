@@ -7,7 +7,11 @@ export const QUERY_JOBS = gql`
       active
       description
       createdAt
-      username
+      createdBy {
+        _id
+        username
+        email
+      }
       meeting
       dates
       applicationCount
@@ -23,7 +27,11 @@ export const QUERY_JOB = gql`
       dates
       description
       createdAt
-      username
+      createdBy {
+        _id
+        username
+        email
+      }
       meeting
       applicationCount
       applications {
@@ -97,6 +105,18 @@ export const QUERY_MEETINGS = gql`
       _id
       title
       startDateTime
+    }
+  }
+`;
+
+export const QUERY_MY_EVENTS = gql`
+  query MyEvents {
+    myEvents {
+      id
+      summary
+      description
+      start
+      end
     }
   }
 `;

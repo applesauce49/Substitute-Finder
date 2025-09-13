@@ -29,7 +29,7 @@ app.use(express.json());
 // CORS so CRA dev can talk to backend
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: "http://127.0.01:3000",
     credentials: true,
   })
 );
@@ -57,17 +57,37 @@ app.use(authMiddleware);
 // Auth routes
 app.get(
   "/auth/google",
-  passport.authenticate("google", { scope: ["email", "profile"] })
+  passport.authenticate("google", {
+    scope: [
+      "openid",
+      "email",
+      "profile",
+      "https://www.googleapis.com/auth/calendar.readonly",
+    ],
+    accessType: "offline",
+    prompt: "consent"
+  })
 );
 
 app.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/login" }),
-  (req, res) => {
+  async (req, res) => {
+
+    const refreshToken = req.authInfo?.refreshToken;
+
+    if (refreshToken) {
+      await OAuthToken.findOneAndUpdate(
+        { provider: "google-calendar", userId: user._id },
+        { refreshToken },
+        { upsert: true, new: true }
+      );
+    }
+    
     const token = signToken(req.user);   // 👈 cleaner
     // Use a real route so BrowserRouter mounts Login; carry token in hash
-    res.redirect(`http://localhost:3000/login#token=${token}`);
-    
+    res.redirect(`http://127.0.01:3000/login#token=${token}`);
+
   }
 );
 
@@ -78,15 +98,30 @@ app.post("/logout", (req, res) => {
   });
 });
 
-// Apollo server with context from passport session
-const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-  context: ({ req }) => {
-    // req.user comes from passport after login
-    return { user: req.user || null };
-  },
-});
+let server;
+
+try {
+
+  // Apollo server with context from passport session
+    server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    context: ({ req }) => {
+      // case 1: Passport session has a user
+      if (req.user) {
+        return { user: req.user };
+      }
+  
+      const user = authMiddleware( { req } );
+      return { user };
+    }
+  } 
+);
+} catch (err) {
+  console.error("Error while building GraphQL Schema:", err.message);
+  console.error(err.stack);
+  process.exit(1);
+}
 
 // Production: serve React build
 if (process.env.NODE_ENV === "production") {
@@ -105,7 +140,7 @@ const startApolloServer = async () => {
     app.listen(PORT, () => {
       console.log(`API server running on port ${PORT}!`);
       console.log(
-        `GraphQL at http://localhost:${PORT}${server.graphqlPath}`
+        `GraphQL at http://127.0.01:${PORT}${server.graphqlPath}`
       );
     });
   });

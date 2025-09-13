@@ -1,8 +1,11 @@
 import { AuthenticationError }  from 'apollo-server-express';
 import { User, Job, Meeting } from "../models/index.js";
 import { signToken } from "../utils/auth.js";
+import { GraphQLJSON } from 'graphql-type-json';
+import { getCalendarClient, getUserCalendarClient } from '../services/googleClient.js';
 
 const resolvers = {
+  JSON: GraphQLJSON,
   Query: {
     me: async (parent, args, context) => {
       if (context.user) {
@@ -28,11 +31,13 @@ const resolvers = {
     jobs: async (parent, { username }) => {
       const params = username ? { username } : {};
       return Job.find(params)
+      .populate("createdBy")
       .populate('applications')
       .sort({ createdAt: -1 });
     },
     job: async (parent, { _id }) => {
       return Job.findOne({ _id })
+      .populate('createdBy')
       .populate('applications');
     },
     meetings: async () => {
@@ -46,7 +51,36 @@ const resolvers = {
         .populate("host")
         .populate("coHost")
         .populate("firstAlternate");
-    },  
+    },
+    myEvents: async (_, __, context) => {
+      if (!context.user) {
+        throw new AuthenticationError('Not logged in');
+      }
+
+      const calendar = await getUserCalendarClient(context.user._id);
+      const { data } = await calendar.events.list({
+        calendarId: "primary",
+        timeMin: (new Date()).toISOString(),
+        maxResults: 20,
+        singleEvents: true,
+        orderBy: 'startTime',
+      });
+
+      return data.items.map((ev) => ({
+        id: ev.id,
+        summary: ev.summary,
+        description: ev.description,
+        start: ev.start,
+        end: ev.end,
+        attendees: ev.attendees || []
+      }));
+    }
+  },
+
+  Attendee: {
+    user: async (attendee) => {
+      return User.findOne({ email: attendee.email });
+    },
   },
 
   Mutation: {
@@ -72,9 +106,29 @@ const resolvers = {
       const token = signToken(user);
       return { token, user };
     },
-    addJob: async (parent, args, context) => {
+    addJob: async (parent, { dates, description, meeting }, context) => {
+
+      const existing = await Job.findOne({
+        createdBy: context.user._id,
+        dates: dates,
+        active: true
+      }).populate("createdBy");
+
+      if (existing) {
+        return {
+          conflict: true,
+          job: existing,
+        };
+      }
+
       if (context.user) {
-        const job = await Job.create({ ...args, username: context.user.username });
+        const job = await Job.create({
+          dates,
+          description,
+          meeting,
+          active: true,
+          createdBy: context.user._id,
+        });
 
         await User.findByIdAndUpdate(
           { _id: context.user._id },
@@ -82,7 +136,12 @@ const resolvers = {
           { new: true }
         );
 
-        return job;
+        const populated = await Job.findById(job._id).populate("createdBy");
+
+        return {
+          conflict: false,
+          job: populated
+        }
       }
 
       throw new AuthenticationError('You need to be logged in!');

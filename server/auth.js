@@ -1,6 +1,7 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import User from "./models/User.js";
+import OAuthToken from "./models/OAuthToken.js";
 
 // Helpers to create or fetch users based on Google profile
 async function upsertUserFromGoogle(profile) {
@@ -45,17 +46,31 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3001/auth/google/callback",
+      callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://127.0.01:3001/auth/google/callback",
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
         const user = await upsertUserFromGoogle(profile);
+
+        if (refreshToken) {
+          await OAuthToken.findOneAndUpdate(
+            { userId: user._id, provider: "google-calendar" },
+            {
+              $set: {
+                refreshToken,
+                accessToken,
+                expiryDate: new Date(Date.now() + 3500 * 1000), // ~1h lifetime
+              },
+            },
+            { upsert: true, new: true }
+          );
+        }
+
         return done(null, user);
       } catch (err) {
         return done(err);
       }
-    }
-  )
+    })
 );
 
 // Basic sanity check to help diagnose env problems early

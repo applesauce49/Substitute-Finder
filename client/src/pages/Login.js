@@ -63,7 +63,7 @@ const Login = () => {
           <h2>Welcome to Substitute Finder</h2>
           <p>Please sign in:</p>
           <a
-            href="http://localhost:3001/auth/google"
+            href="http://127.0.0.1:3001/auth/google"
             style={{
               display: "inline-block",
               background: "#fff",

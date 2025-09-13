@@ -49,15 +49,17 @@ const Header = () => {
         <nav className="text-center">
           {Auth.loggedIn() ? (
             <>
-              <Link className="nav-bar-links" to="/profile">
-                Me
+              <Link className="nav-bar-links" to="/">
+                Jobs
               </Link>
 
-              {isAdmin && (
-                <Link className="nav-bar-links" to="/admin/meetings">
-                  Meetings
-                </Link>
-              )}
+              <Link className="nav-bar-links" to="/my-calendar">
+                Calendar
+              </Link>
+
+              <Link className="nav-bar-links" to="/profile">
+                Profile
+              </Link>
 
               <a className="nav-bar-links" href="/" onClick={logout}>
                 Logout
@@ -65,12 +67,11 @@ const Header = () => {
             </>
           ) : (
             <>
-              <Link className="nav-bar-links" to="/login">
+              <a
+                className="nav-bar-links" href="http://127.0.0.1:3001/auth/google"
+              >
                 Login
-              </Link>
-              <Link className="nav-bar-links" to="/signup">
-                Signup
-              </Link>
+              </a>
             </>
           )}
         </nav>

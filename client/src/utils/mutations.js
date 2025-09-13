@@ -40,28 +40,25 @@ export const ADD_USER = gql`
 `;
 
 export const ADD_JOB = gql`
-  mutation addJob(
-    $active: Boolean!
-    $dates: String!
-    $meeting: String!
-    $description: String!
-  ) {
-    addJob(
-      active: $active
-      dates: $dates
-      meeting: $meeting
-      description: $description
-    ) {
+mutation AddJob($dates: String!, $description: String, $meeting: String) {
+  addJob(dates: $dates, description: $description, meeting: $meeting) {
+    conflict
+    job {
       _id
       active
       description
       dates
       meeting
       createdAt
-      username
+      createdBy {
+        _id
+        username
+        email
+      }
     }
   }
-`;
+}
+  `;
 
 export const ADD_APPLICATION = gql`
   mutation addApplication($jobId: ID!) {

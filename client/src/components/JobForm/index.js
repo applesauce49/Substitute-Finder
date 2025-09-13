@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@apollo/client";
 import { useMutation } from "@apollo/client";
-import { ADD_JOB } from "../../utils/mutations";
+import { ADD_JOB, DEACTIVATE_JOB } from "../../utils/mutations";
 import { QUERY_JOBS, QUERY_ME } from "../../utils/queries";
 import { CalendarView } from "../CalendarView";
 
 const JobForm = () => {
   const { data: userData } = useQuery(QUERY_ME);
-  const meeting = userData.me.meeting;
+
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [pendingJob, setPendingJob] = useState(null);
+
+  const meeting = userData?.me?.meeting;
   const [jobText, setText] = useState({
     active: true,
     dates: [],
@@ -52,6 +56,8 @@ const JobForm = () => {
     },
   });
 
+  const [deactivateJob] = useMutation(DEACTIVATE_JOB);
+
   // update state based on form input changes
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -79,12 +85,21 @@ const JobForm = () => {
 
     try {
       for (const date of jobText.dates) {
-        await addJob({
+        const { data } = await addJob({
           variables: {
             ...jobText,
             dates: date,
           },
         });
+
+        if (data.addJob.conflict) {
+          setPendingJob({
+            newJob: { ...jobText, dates: date },
+            existing: data.addJob.job,
+          });
+          setShowConflictModal(true);
+          return;
+        }
       }
 
       // clear form value
@@ -154,6 +169,57 @@ const JobForm = () => {
               </button>
             </div>
           </form>
+          {showConflictModal && (
+            <div className="modal show d-block" tabIndex="-1" role="dialog">
+              <div className="modal-dialog" role="document">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h5 className="modal-title">Job Conflict</h5>
+                    <button
+                      type="button"
+                      className="close"
+                      onClick={() => setShowConflictModal(false)}
+                    >
+                      <span>&times;</span>
+                    </button>
+                  </div>
+                  <div className="modal-body">
+                    <p>
+                      You already have a job on <strong>{pendingJob?.newJob.dates}</strong>.
+                    </p>
+                    <p>
+                      Do you want to replace it with this new one?
+                    </p>
+                  </div>
+                  <div className="modal-footer">
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setShowConflictModal(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      onClick={async () => {
+                        // deactivate existing
+                        await deactivateJob({
+                          variables: { jobId: pendingJob.existing._id, active: false },
+                        });
+                        // create new
+                        await addJob({ variables: pendingJob.newJob });
+                        setShowConflictModal(false);
+                        setPendingJob(null);
+                      }}
+                    >
+                      Replace Job
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

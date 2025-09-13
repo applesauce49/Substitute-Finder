@@ -18,25 +18,27 @@ const Home = () => {
   return (
     <main>
       <div className="flex-row justify-space-between">
-        {loggedIn && admin && (
+        {loggedIn && (
           <div className={`col-12 col-lg-3 mb-3`}>
             <JobForm />
           </div>
         )}
-        {loggedIn && !admin && (
-          <div className={`col-12 mb-3`}>
+        {loggedIn && (
+          <div className={`col-12 col-lg-3 mb-3`}>
             {loading ? (
               <div>Loading...</div>
             ) : (
               <JobList
-                jobs={jobs}
+                jobs={jobs.filter(
+                  job => job.createdBy && job.createdBy._id !== userData?.me?._id
+                )}
                 title="Available Jobs"
               />
             )}
           </div>
         )}
-        {loggedIn && admin && (
-          <div id="job-list" className={`col-12 mb-3 col-lg-8`}>
+        {loggedIn && (
+          <div id="job-list" className={`col-12 col-lg-3 mb-3`}>
             {loading ? (
               <div>Loading...</div>
             ) : (

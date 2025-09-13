@@ -18,8 +18,8 @@ import SingleJob from "./pages/SingleJob";
 import Profile from "./pages/profile";
 import Signup from "./pages/Signup";
 
-import Meetings from "./pages/meetings";
-import RequireAdmin from "./components/RequireAdmin";
+import Calendar from "./components/Calendar";
+// import RequireAdmin from "./components/RequireAdmin";
 
 const httpLink = createHttpLink({
   uri: "/graphql",
@@ -56,12 +56,8 @@ function App() {
                 <Route path="" element={<Profile />} />
               </Route>
               <Route path="/job/:id" element={<SingleJob />} />
+              <Route path="/my-calendar" element={<Calendar />} />
               <Route path="*" element={<NoMatch />} />
-              <Route path="/admin/meetings" element={
-                <RequireAdmin>
-                  <Meetings />
-                </RequireAdmin>
-              } />
             </Routes>
           </div>
           <Footer />
