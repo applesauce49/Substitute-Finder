@@ -1,0 +1,11 @@
+.big-calendar {
+  width: 100% !important;   /* full width */
+  height: auto;             /* let height grow naturally */
+  font-size: 1.25rem;       /* scale up text and cells */
+}
+
+.big-calendar .rmdp-day,
+.big-calendar .rmdp-week-day {
+  width: 3rem;              /* bigger day cells */
+  height: 3rem;
+}

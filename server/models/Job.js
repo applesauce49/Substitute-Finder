@@ -1,5 +1,5 @@
-const { Schema, model } = require('mongoose');
-const dateFormat = require('../utils/dateFormat');
+import { Schema, model } from 'mongoose';
+import dateFormat from '../utils/dateFormat.js';
 
 const jobSchema = new Schema(
   {
@@ -50,4 +50,4 @@ jobSchema.virtual('applicationCount').get(function() {
 
 const Job = model('Job', jobSchema);
 
-module.exports = Job;
+export default Job;

@@ -1,4 +1,5 @@
-const { gql } = require('apollo-server-express');
+// const { gql } = require('apollo-server-express');
+import { gql } from 'apollo-server-express';
 
 const typeDefs = gql`
   type User {
@@ -48,6 +49,48 @@ const typeDefs = gql`
     updateMe(email: String, phone: String degree: Boolean, about: String): User
     deactivateJob(jobId: ID!, active: Boolean!): Job
   }
+
+  scalar DateTime
+
+  type Meeting {
+    _id: ID
+    title: String!
+    description: String
+    startDateTime: DateTime!
+    repeat: RepeatRule!
+    host: User!
+    coHost: User!
+    firstAlternative: User
+    createdAt: String!
+  }
+
+  enum RepeatRule {
+    None
+    Daily
+    Weekly
+    Monthly
+  }
+
+  input MeetingInput {
+    title: String!
+    description: String
+    startDateTime: DateTime!
+    repeat: RepeatRule
+    hostId: ID!
+    coHostId: ID!
+    firstAlternativeId: ID!
+  }
+
+  extend type Query {
+    meetings: [Meeting]
+    meeting(id: ID!): Meeting
+  }
+
+  extend type Mutation {
+    createMeeting(input: MeetingInput!): Meeting
+    updateMeeting(id: ID!, input: MeetingInput!): Meeting
+    deleteMeeting(id: ID!): Boolean
+  }
 `;
 
-module.exports = typeDefs;
+export default typeDefs;

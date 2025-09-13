@@ -1,8 +1,8 @@
-// const faker = require('faker');
-const userSeeds = require('./userSeed.json');
-const jobSeeds = require('./jobSeed.json');
-const db = require('../config/connection');
-const { Job, User } = require('../models');
+// const faker from 'faker');
+import userSeeds from './userSeed.json';
+import jobSeeds from './jobSeed.json';
+import db from '../config/connection.js';
+import { Job, User } from '../models.js';
 
 db.once('open', async () => {
   try {

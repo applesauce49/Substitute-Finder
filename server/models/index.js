@@ -1,4 +1,5 @@
-const User = require('./User');
-const Job = require('./Job');
+import User from './User.js';
+import Job from './Job.js';
+import Meeting from './Meeting.js';
 
-module.exports = { User, Job };
+export { User, Job, Meeting };

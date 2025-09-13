@@ -3,7 +3,7 @@ import { useQuery } from "@apollo/client";
 import { useMutation } from "@apollo/client";
 import { ADD_JOB } from "../../utils/mutations";
 import { QUERY_JOBS, QUERY_ME } from "../../utils/queries";
-import { Calendar } from "react-multi-date-picker";
+import { CalendarView } from "../CalendarView";
 
 const JobForm = () => {
   const { data: userData } = useQuery(QUERY_ME);
@@ -125,14 +125,13 @@ const JobForm = () => {
               onChange={handleChange}
             />
             <label className="text-dark">Dates:</label>
-            <Calendar
+            <CalendarView
               multiple
               value={jobText.dates}
               onChange={handleDatesChange}
               minDate={minDate}
               maxDate={maxDate}
             />
-
             <label className="text-dark">Description:</label>
             <textarea
               placeholder="Your responsibilities will be..."

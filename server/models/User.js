@@ -1,5 +1,5 @@
-const { Schema, model } = require('mongoose');
-const bcrypt = require('bcrypt');
+import { Schema, model } from 'mongoose';
+import bcrypt from 'bcrypt';
 
 const userSchema = new Schema(
   {
@@ -30,9 +30,12 @@ const userSchema = new Schema(
     about: {
       type: String
     },
-    meeting: {
-      type: String
-    },
+    meetings: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Meeting'
+      }
+    ],
     admin: {
       type: Boolean,
       default: false
@@ -80,6 +83,10 @@ userSchema.virtual('jobCount').get(function() {
   return this.jobs.length;
 });
 
+userSchema.virtual('meetingCount').get(function() {
+  return this.meetings.length;
+});
+
 const User = model('User', userSchema);
 
-module.exports = User;
+export default User;

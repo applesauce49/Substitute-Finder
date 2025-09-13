@@ -90,3 +90,13 @@ export const QUERY_ME_BASIC = gql`
     }
   }
 `;
+
+export const QUERY_MEETINGS = gql`
+  {
+    meetings {
+      _id
+      title
+      startDateTime
+    }
+  }
+`;

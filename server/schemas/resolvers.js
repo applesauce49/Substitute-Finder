@@ -1,6 +1,6 @@
-const { AuthenticationError } = require('apollo-server-express');
-const { User, Job } = require('../models');
-const { signToken } = require('../utils/auth');
+import { AuthenticationError }  from 'apollo-server-express';
+import { User, Job, Meeting } from "../models/index.js";
+import { signToken } from "../utils/auth.js";
 
 const resolvers = {
   Query: {
@@ -34,7 +34,19 @@ const resolvers = {
     job: async (parent, { _id }) => {
       return Job.findOne({ _id })
       .populate('applications');
-    }
+    },
+    meetings: async () => {
+      return Meeting.find({})
+        .populate("host")
+        .populate("coHost")
+        .populate("firstAlternate");
+    },
+    meeting: async (parent, { id }) => {
+      return Meeting.findById(id)
+        .populate("host")
+        .populate("coHost")
+        .populate("firstAlternate");
+    },  
   },
 
   Mutation: {
@@ -112,8 +124,28 @@ const resolvers = {
         return updatedJob;
       }
       throw new AuthenticationError('You need to be logged in!');
+    },
+    createMeeting: async (parent, { input }) => {
+      const meeting = await Meeting.create(input);
+
+      //update user records to reference this meeting
+      await User.findByIdAndUpdate(input.host, {
+        $push: {meetings: meeting._id},
+      });
+
+      await User.findByIdAndUpdate(input.coHost, {
+        $push: {meetings: meeting._id},
+      });
+
+      if (input.firstAlternative) {
+        await User.findByIdAndUpdate(input.firstAlternative, {
+          $push: {meetings: meeting._id},
+        });
+      }
+
+      return meeting.populate("host coHost firstAlternative");
     }
   }
 };
 
-module.exports = resolvers;
+export default resolvers;

@@ -8,12 +8,21 @@ import { Animated } from "react-animated-css";
 
 import logo from "./logo.svg";
 import "./App.css";
+import { useQuery } from "@apollo/client";
+import { QUERY_ME } from "../../utils/queries";
 
 const Header = () => {
   const logout = (event) => {
     event.preventDefault();
     Auth.logout();
   };
+
+  const { data } = useQuery(QUERY_ME, {
+    skip: !Auth.loggedIn(),
+  });
+
+  const me = data?.me;
+  const isAdmin = me?.admin === true;
 
   return (
     <header className="bg-dark mb-4 flex-row align-center text-white">
@@ -43,6 +52,13 @@ const Header = () => {
               <Link className="nav-bar-links" to="/profile">
                 Me
               </Link>
+
+              {isAdmin && (
+                <Link className="nav-bar-links" to="/admin/meetings">
+                  Meetings
+                </Link>
+              )}
+
               <a className="nav-bar-links" href="/" onClick={logout}>
                 Logout
               </a>
