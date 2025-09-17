@@ -7,9 +7,18 @@ import { useQuery } from '@apollo/client';
 import { QUERY_JOBS, QUERY_ME } from '../utils/queries';
 
 const Home = () => {
-  const { loading, data } = useQuery(QUERY_JOBS);
   const { data: userData } = useQuery(QUERY_ME);
+  console.log(userData?.me?.username);
+
+  const { loading, data } = useQuery(QUERY_JOBS, {
+    skip: !userData?.me?.username,
+    variables: { username: userData?.me?.username },
+  });
+  console.log(data);
+
   const jobs = data?.jobs || [];
+  console.log(jobs);
+
   const admin = userData?.me.admin || "";
   const myJobs = userData?.me.jobs || [];
 

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useQuery } from "@apollo/client";
 import { useMutation } from "@apollo/client";
 import { ADD_JOB, DEACTIVATE_JOB } from "../../utils/mutations";
-import { QUERY_JOBS, QUERY_ME } from "../../utils/queries";
+import { QUERY_ME } from "../../utils/queries";
 import { CalendarView } from "../CalendarView";
+import { gql } from "@apollo/client";
 
 const JobForm = () => {
   const { data: userData } = useQuery(QUERY_ME);
@@ -14,9 +15,9 @@ const JobForm = () => {
   const meeting = userData?.me?.meeting;
   const [jobText, setText] = useState({
     active: true,
-    dates: [],
+    dates: "",
     description: "",
-    meeting: meeting,
+    meeting: meeting || "",
   });
   const [characterCount, setCharacterCount] = useState(0);
 
@@ -32,29 +33,45 @@ const JobForm = () => {
     setMaxDate(sixMonthsLater);
   }, []);
 
-  const [addJob, { error }] = useMutation(ADD_JOB, {
-    update(cache, { data: { addJob } }) {
-      // could potentially not exist yet, so wrap in a try/catch
-      try {
-        // update me array's cache
-        const { me } = cache.readQuery({ query: QUERY_ME });
+const [addJob, { error }] = useMutation(ADD_JOB, {
+  update(cache, { data: { addJob } }) {
+    if (addJob.conflict) {
+      // handle duplicate case (toast, error message, etc.)
+      return;
+    }
 
-        cache.writeQuery({
-          query: QUERY_ME,
-          data: { me: { ...me, jobs: [...me.jobs, addJob] } },
-        });
-      } catch (e) {
-        console.warn("First job insertion by user!");
-      }
+    const newJob = addJob.job;
 
-      // update job array's cache
-      const { jobs } = cache.readQuery({ query: QUERY_JOBS });
-      cache.writeQuery({
-        query: QUERY_JOBS,
-        data: { jobs: [addJob, ...jobs] },
-      });
-    },
-  });
+    cache.modify({
+      fields: {
+        jobs(existingJobs = [], { args } ) {
+          console.log("Got args", args);
+          if (!args?.username || args.username === newJob.createdBy.username ) {
+            const newJobRef = cache.writeFragment({
+              data: newJob,
+              fragment: gql`
+                fragment NewJob on Job {
+                  _id
+                  description
+                  meeting
+                  dates
+                  active
+                  createdBy {
+                    _id
+                    username
+                    email
+                  }
+                }
+              `,
+            });
+            return [...existingJobs, newJobRef];
+          }
+          return existingJobs;
+        },
+      },
+    });
+  },
+});
 
   const [deactivateJob] = useMutation(DEACTIVATE_JOB);
 
@@ -105,9 +122,9 @@ const JobForm = () => {
       // clear form value
       setText({
         active: true,
-        dates: [],
+        dates: "",
         description: "",
-        meeting: meeting,
+        meeting: meeting || "",
       });
       setCharacterCount(0);
     } catch (e) {
