@@ -28,12 +28,11 @@ const resolvers = {
         .select('-__v -password')
         .populate('jobs');
     },
-    jobs: async (parent, { username }) => {
-      const params = username ? { username } : {};
-      return Job.find(params)
-      .populate("createdBy")
-      .populate('applications')
-      .sort({ createdAt: -1 });
+    jobs: async () => {
+      return Job.find({})
+        .populate("createdBy")
+        .populate("applications")
+        .sort({ createdAt: -1 });
     },
     job: async (parent, { _id }) => {
       return Job.findOne({ _id })

@@ -67,11 +67,12 @@ const Header = () => {
             </>
           ) : (
             <>
-              <a
-                className="nav-bar-links" href="http://127.0.0.1:3001/auth/google"
-              >
+              <Link className="nav-bar-links" to="/login">
                 Login
-              </a>
+              </Link>
+              <Link className="nav-bar-links" to="/signup">
+                Signup
+              </Link>
             </>
           )}
         </nav>

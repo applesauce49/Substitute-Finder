@@ -8,18 +8,14 @@ import { QUERY_JOBS, QUERY_ME } from '../utils/queries';
 
 const Home = () => {
   const { data: userData } = useQuery(QUERY_ME);
-  console.log(userData?.me?.username);
+  console.log("Username: ", userData?.me?.username);
 
-  const { loading, data } = useQuery(QUERY_JOBS, {
-    skip: !userData?.me?.username,
-    variables: { username: userData?.me?.username },
-  });
-  console.log(data);
+  const { loading, data, error } = useQuery(QUERY_JOBS);
+  console.log("loading:", loading, "data:", data, "error:", error);
 
   const jobs = data?.jobs || [];
-  console.log(jobs);
 
-  const admin = userData?.me.admin || "";
+  // const admin = userData?.me.admin || "";
   const myJobs = userData?.me.jobs || [];
 
   const loggedIn = Auth.loggedIn();
@@ -38,9 +34,7 @@ const Home = () => {
               <div>Loading...</div>
             ) : (
               <JobList
-                jobs={jobs.filter(
-                  job => job.createdBy && job.createdBy._id !== userData?.me?._id
-                )}
+                jobs={jobs}
                 title="Available Jobs"
               />
             )}

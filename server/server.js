@@ -17,7 +17,7 @@ import { typeDefs, resolvers } from "./schemas/index.js";
 import db from "./config/connection.js";
 // Load passport strategy after env has been configured
 await import("./auth.js");
-import authMiddleware from "./authMiddleware.js";
+import authMiddleware, { getUserFromReq } from "./authMiddleware.js";
 
 const PORT = process.env.PORT || 3001;
 const app = express();
@@ -29,7 +29,7 @@ app.use(express.json());
 // CORS so CRA dev can talk to backend
 app.use(
   cors({
-    origin: "http://127.0.01:3000",
+    origin: "http://127.0.1:3000",
     credentials: true,
   })
 );
@@ -83,7 +83,7 @@ app.get(
         { upsert: true, new: true }
       );
     }
-    
+
     const token = signToken(req.user);   // 👈 cleaner
     // Use a real route so BrowserRouter mounts Login; carry token in hash
     res.redirect(`http://127.0.01:3000/login#token=${token}`);
@@ -103,20 +103,19 @@ let server;
 try {
 
   // Apollo server with context from passport session
-    server = new ApolloServer({
+  server = new ApolloServer({
     typeDefs,
     resolvers,
     context: ({ req }) => {
-      // case 1: Passport session has a user
-      if (req.user) {
-        return { user: req.user };
-      }
-  
-      const user = authMiddleware( { req } );
-      return { user };
-    }
-  } 
-);
+      // Case 1: Passport session user
+      if (req.user) return { user: req.user };
+
+      // Case 2: Decode JWT manually
+      return { user: getUserFromReq(req) };
+    },
+    introspection: true,
+    playground: true, 
+  });
 } catch (err) {
   console.error("Error while building GraphQL Schema:", err.message);
   console.error(err.stack);

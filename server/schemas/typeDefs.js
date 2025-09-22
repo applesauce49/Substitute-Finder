@@ -39,7 +39,7 @@ const typeDefs = gql`
     me: User
     users: [User]
     user(username: String!): User
-    jobs(username: String): [Job]
+    jobs: [Job]
     job(_id: ID!): Job
   }
 

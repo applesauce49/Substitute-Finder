@@ -16,9 +16,10 @@ const Login = () => {
 
     let token = null;
     if (hash.includes("token=")) {
-      // Support both "#/login?token=..." and "#token=..." formats
       const afterHash = hash.startsWith("#") ? hash.slice(1) : hash;
-      const queryPart = afterHash.includes("?") ? afterHash.split("?")[1] : afterHash;
+      const queryPart = afterHash.includes("?")
+        ? afterHash.split("?")[1]
+        : afterHash;
       const params = new URLSearchParams(queryPart);
       token = params.get("token");
     } else if (search.includes("token=")) {
@@ -27,7 +28,7 @@ const Login = () => {
     }
 
     if (token) {
-      Auth.login(token);   // 👈 stores under "id_token"
+      Auth.login(token);
       navigate("/");
     }
   }, [navigate]);
@@ -48,7 +49,7 @@ const Login = () => {
       const { data } = await login({
         variables: { ...formState },
       });
-      Auth.login(data.login.token);   // same storage step
+      Auth.login(data.login.token); // same storage step as Google
       navigate("/");
     } catch (e) {
       console.error(e);
@@ -56,12 +57,15 @@ const Login = () => {
 
     setFormState({ email: "", password: "" });
   };
+
   return (
     <main className="flex-row justify-center mb-4">
       <div className="col-12 col-md-6">
         <div style={{ textAlign: "center", marginTop: "4rem" }}>
           <h2>Welcome to Substitute Finder</h2>
           <p>Please sign in:</p>
+
+          {/* Google Login */}
           <a
             href="http://127.0.0.1:3001/auth/google"
             style={{
@@ -72,20 +76,25 @@ const Login = () => {
               borderRadius: "4px",
               textDecoration: "none",
               color: "#555",
+              marginBottom: "1rem",
             }}
           >
             <img
               src="/google-icon.svg"
               alt="Google logo"
-              style={{ width: "20px", marginRight: "8px", verticalAlign: "middle" }}
+              style={{
+                width: "20px",
+                marginRight: "8px",
+                verticalAlign: "middle",
+              }}
             />
             Sign in with Google
           </a>
         </div>
 
-        {/* If you want to keep email/password login uncomment this */}
-        {/* <div className="card">
-          <h4 className="card-header">Login</h4>
+        {/* Local email/password login */}
+        <div className="card">
+          <h4 className="card-header">Login with Email</h4>
           <div className="card-body">
             <form className="login-form" onSubmit={handleFormSubmit}>
               <input
@@ -110,12 +119,12 @@ const Login = () => {
                 className="btn d-block w-100 no-border-btn btn-primary"
                 type="submit"
               >
-                Submit
+                Login
               </button>
             </form>
             {error && <div>Login failed</div>}
           </div>
-        </div> */}
+        </div>
       </div>
     </main>
   );
