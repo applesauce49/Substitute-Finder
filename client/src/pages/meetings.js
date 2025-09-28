@@ -7,7 +7,7 @@ import { useQuery } from "@apollo/client";
 const Meetings = () => {
     const [showForm, setShowForm] = useState(false);
     const { data, loading } = useQuery(QUERY_MEETINGS);
-    const meetings = data?.meetings || [];
+    const calendars = data?.calendars || [];
 
     if (loading) {
         return <div>Loading...</div>;

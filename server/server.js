@@ -12,6 +12,7 @@ import passport from "passport";
 import cors from "cors";
 
 import { signToken } from "./utils/auth.js";
+import { syncCalendar } from "./services/calendarSync.js"
 
 import { typeDefs, resolvers } from "./schemas/index.js";
 import db from "./config/connection.js";
@@ -73,21 +74,26 @@ app.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/login" }),
   async (req, res) => {
+    try {
+      const refreshToken = req.authInfo?.refreshToken;
 
-    const refreshToken = req.authInfo?.refreshToken;
+      if (refreshToken) {
+        await OAuthToken.findOneAndUpdate(
+          { provider: "google-calendar", userId: req.user._id },
+          { refreshToken },
+          { upsert: true, new: true }
+        );
+      }
 
-    if (refreshToken) {
-      await OAuthToken.findOneAndUpdate(
-        { provider: "google-calendar", userId: user._id },
-        { refreshToken },
-        { upsert: true, new: true }
-      );
+      // 👇 Run the calendar sync for this user
+      await syncCalendar(req.user._id, "primary");
+      console.log(`[Auth] Synced meetings for user ${req.user.email}`);
+    } catch (err) {
+      console.error("[Auth] Error during Google callback:", err);
     }
 
-    const token = signToken(req.user);   // 👈 cleaner
-    // Use a real route so BrowserRouter mounts Login; carry token in hash
-    res.redirect(`http://127.0.01:3000/login#token=${token}`);
-
+    const token = signToken(req.user);
+    res.redirect(`http://127.0.0.1:3000/login#token=${token}`);
   }
 );
 

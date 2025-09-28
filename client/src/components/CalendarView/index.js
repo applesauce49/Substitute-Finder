@@ -1,18 +1,19 @@
 import React from "react";
 import { Calendar } from "react-multi-date-picker";
 import "./CalendarView.css";
+import { formatDateLocal } from "../../utils/dateUtils";
 
 const CalendarView = ({
   value,
   onChange,
-  meetings = [],
+  meetings = new Set(),
   multiple = false,
   minDate,
   maxDate,
   ...props
 }) => {
   return (
-    <div className="calendar-view">
+    <div className="calendar-view big-calendar">
       <Calendar
         multiple={multiple}
         value={value}
@@ -20,26 +21,16 @@ const CalendarView = ({
         minDate={minDate}
         maxDate={maxDate}
         mapDays={({ date }) => {
-        const dateStr = date.toDate().toISOString().split("T")[0];
-        const hasMeeting = meetings.some(
-          (m) => m.startDateTime.split("T")[0] === dateStr
-        );
-
-        if (hasMeeting) {
-          return {
-            className: "meeting-day",
-            style: { backgroundColor: "#0d6efd", color: "white", borderRadius: "50%" },
-            onClick: () => {
-              alert(
-                meetings
-                  .filter((m) => m.startDateTime.split("T")[0] === dateStr)
-                  .map((m) => m.title)
-                  .join("\n")
-              );
-            },
-          };
-        }
-      }}
+          const dateStr = formatDateLocal(date.toDate()); // use local format
+          if (meetings.has(dateStr)) {
+            return {
+              className: "meeting-day",
+              onClick: () => {
+                alert(`Meetings available on ${dateStr}`);
+              }
+            };
+          }
+        }}
         {...props}
       />
     </div>

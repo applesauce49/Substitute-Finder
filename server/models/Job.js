@@ -17,8 +17,9 @@ const jobSchema = new Schema(
       required: true
     },
     meeting: {
-      type: String,
-      required: true
+      type: Schema.Types.ObjectId,
+      ref: "Meeting",
+      required: true,
     },
     createdAt: {
       type: Date,
@@ -32,10 +33,11 @@ const jobSchema = new Schema(
     },
     applications: [
       {
-        type: Schema.Types.ObjectId,
-        ref: 'User'
+        user: { type: Schema.Types.ObjectId, ref: "User" },
+        appliedAt: {type: Date, default: Date.now }
       }
-    ]
+    ],
+    assignedTo: { type: Schema.Types.ObjectId, ref: "User"}
   },
   {
     toJSON: {

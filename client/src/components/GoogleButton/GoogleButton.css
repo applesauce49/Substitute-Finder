@@ -1,0 +1,56 @@
+.gsi-material-button {
+  background-color: #fff;
+  border: 1px solid #747775;
+  border-radius: 4px;
+  box-shadow: none;
+  color: #1f1f1f;
+  cursor: pointer;
+  font-family: "Roboto", arial, sans-serif;
+  font-size: 14px;
+  height: 40px;
+  letter-spacing: 0.25px;
+  outline: none;
+  overflow: hidden;
+  padding: 0 12px;
+  position: relative;
+  text-align: center;
+  transition: background-color 0.218s, border-color 0.218s, box-shadow 0.218s;
+  width: auto;
+  min-width: 200px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gsi-material-button:hover {
+  background-color: #f6f9fe;
+}
+
+.gsi-material-button:active {
+  background-color: #e8f0fe;
+}
+
+.gsi-material-button .gsi-material-button-icon {
+  height: 18px;
+  margin-right: 12px;
+  min-width: 18px;
+  width: 18px;
+}
+
+.gsi-material-button .gsi-material-button-contents {
+  flex-grow: 1;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.gsi-material-button .gsi-material-button-state {
+  background-color: #000;
+  opacity: 0;
+  transition: opacity 0.218s;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}

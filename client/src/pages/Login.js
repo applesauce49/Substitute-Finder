@@ -3,6 +3,7 @@ import { useMutation } from "@apollo/client";
 import { LOGIN_USER } from "../utils/mutations";
 import { useNavigate } from "react-router-dom";
 import Auth from "../utils/auth";
+import GoogleButton from "../components/GoogleButton/GoogleButton.js";
 
 const Login = () => {
   const [formState, setFormState] = useState({ email: "", password: "" });
@@ -64,32 +65,7 @@ const Login = () => {
         <div style={{ textAlign: "center", marginTop: "4rem" }}>
           <h2>Welcome to Substitute Finder</h2>
           <p>Please sign in:</p>
-
-          {/* Google Login */}
-          <a
-            href="http://127.0.0.1:3001/auth/google"
-            style={{
-              display: "inline-block",
-              background: "#fff",
-              border: "1px solid #ccc",
-              padding: "8px 16px",
-              borderRadius: "4px",
-              textDecoration: "none",
-              color: "#555",
-              marginBottom: "1rem",
-            }}
-          >
-            <img
-              src="/google-icon.svg"
-              alt="Google logo"
-              style={{
-                width: "20px",
-                marginRight: "8px",
-                verticalAlign: "middle",
-              }}
-            />
-            Sign in with Google
-          </a>
+          <GoogleButton onClick={() => window.location.href = "http://127.0.0.1:3001/auth/google"} />
         </div>
 
         {/* Local email/password login */}

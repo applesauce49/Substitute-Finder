@@ -1,23 +1,30 @@
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@apollo/client";
-import { useMutation } from "@apollo/client";
+import { useQuery, useMutation, gql } from "@apollo/client";
 import { ADD_JOB, DEACTIVATE_JOB } from "../../utils/mutations";
-import { QUERY_ME } from "../../utils/queries";
+import { QUERY_MY_EVENTS } from "../../utils/queries";
 import { CalendarView } from "../CalendarView";
-import { gql } from "@apollo/client";
+import { formatDateLocal } from "../../utils/dateUtils";
 
 const JobForm = () => {
-  const { data: userData } = useQuery(QUERY_ME);
+  const { loading: meetingsLoading, data: meetingsData } = useQuery(QUERY_MY_EVENTS);
+
+  const myEvents = meetingsData?.myEvents || [];
+
+  const meetingDates = new Set(
+    myEvents.map(m => {
+      const start = m.start?.dateTime || m.start?.date;
+      return formatDateLocal(start);
+    })
+  );
 
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [pendingJob, setPendingJob] = useState(null);
 
-  const meeting = userData?.me?.meeting;
   const [jobText, setText] = useState({
     active: true,
-    dates: "",
+    dates: [],
     description: "",
-    meeting: meeting || "",
+    meetings: [], // note plural
   });
   const [characterCount, setCharacterCount] = useState(0);
 
@@ -33,62 +40,57 @@ const JobForm = () => {
     setMaxDate(sixMonthsLater);
   }, []);
 
-const [addJob, { error }] = useMutation(ADD_JOB, {
-  update(cache, { data: { addJob } }) {
-    if (addJob.conflict) {
-      // handle duplicate case (toast, error message, etc.)
-      return;
-    }
+  const [addJob, { error }] = useMutation(ADD_JOB, {
+    update(cache, { data: { addJob } }) {
+      if (addJob.conflict) return;
+      const newJob = addJob.job;
 
-    const newJob = addJob.job;
-
-    cache.modify({
-      fields: {
-        jobs(existingJobs = [], { args } ) {
-          console.log("Got args", args);
-          if (!args?.username || args.username === newJob.createdBy.username ) {
-            const newJobRef = cache.writeFragment({
-              data: newJob,
-              fragment: gql`
-                fragment NewJob on Job {
-                  _id
-                  description
-                  meeting
-                  dates
-                  active
-                  createdBy {
+      cache.modify({
+        fields: {
+          jobs(existingJobs = [], { args }) {
+            if (!args?.username || args.username === newJob.createdBy.username) {
+              const newJobRef = cache.writeFragment({
+                data: newJob,
+                fragment: gql`
+                  fragment NewJob on Job {
                     _id
-                    username
-                    email
+                    description
+                    meeting
+                    dates
+                    active
+                    createdBy {
+                      _id
+                      username
+                      email
+                    }
                   }
-                }
-              `,
-            });
-            return [...existingJobs, newJobRef];
-          }
-          return existingJobs;
+                `,
+              });
+              return [...existingJobs, newJobRef];
+            }
+            return existingJobs;
+          },
         },
-      },
-    });
-  },
-});
+      });
+    },
+  });
 
   const [deactivateJob] = useMutation(DEACTIVATE_JOB);
 
-  // update state based on form input changes
+  // Update state for textarea
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setText({
-      ...jobText,
+    setText((prev) => ({
+      ...prev,
       [name]: value,
-    });
-    console.log(jobText);
-    if (document.getElementById("description").value.length <= 280) {
-      setCharacterCount(document.getElementById("description").value.length);
+    }));
+
+    if (name === "description") {
+      setCharacterCount(value.length);
     }
   };
 
-  const handleDatesChange = (values) => {
+    const handleDatesChange = (values) => {
     // values is an array of DateObjects from the picker
     const formatted = values.map((d) =>
       d.toDate().toISOString().split("T")[0]
@@ -96,22 +98,38 @@ const [addJob, { error }] = useMutation(ADD_JOB, {
     setText((prev) => ({ ...prev, dates: formatted }));
   };
 
+  // Handle FullCalendar event click (toggle meeting selection)
+  // const handleEventClick = (info) => {
+  //   const meetingId = info.event.id;
+  //   setText((prev) => {
+  //     const already = prev.meetings.includes(meetingId);
+  //     return {
+  //       ...prev,
+  //       meetings: already
+  //         ? prev.meetings.filter((id) => id !== meetingId)
+  //         : [...prev.meetings, meetingId],
+  //     };
+  //   });
+  // };
+
   // submit form
   const handleFormSubmit = async (event) => {
     event.preventDefault();
 
     try {
-      for (const date of jobText.dates) {
+      for (const meetingId of jobText.meetings) {
         const { data } = await addJob({
           variables: {
-            ...jobText,
-            dates: date,
+            active: jobText.active,
+            dates: jobText.dates, // adapt if you want per-meeting date
+            description: jobText.description,
+            meeting: meetingId,
           },
         });
 
         if (data.addJob.conflict) {
           setPendingJob({
-            newJob: { ...jobText, dates: date },
+            newJob: { ...jobText, meeting: meetingId },
             existing: data.addJob.job,
           });
           setShowConflictModal(true);
@@ -119,12 +137,12 @@ const [addJob, { error }] = useMutation(ADD_JOB, {
         }
       }
 
-      // clear form value
+      // reset
       setText({
         active: true,
-        dates: "",
+        dates: [],
         description: "",
-        meeting: meeting || "",
+        meetings: [],
       });
       setCharacterCount(0);
     } catch (e) {
@@ -132,13 +150,19 @@ const [addJob, { error }] = useMutation(ADD_JOB, {
     }
   };
 
+  if (meetingsLoading) return <p>Loading meetings...</p>;
+
+  // transform meetings → FullCalendar events
+  // const events = meetings.map((m) => ({
+  //   id: m._id,
+  //   title: m.title,
+  //   start: m.startDateTime, // ensure ISO date string
+  //   end: m.endDateTime,
+  //   allDay: m.allDay || false,
+  // }));
+
   return (
     <>
-      <div className="text-center mb-3">
-        <a href="#job-list">
-          <button className="btn hide"> View Your Jobs</button>
-        </a>
-      </div>
       <div className="card">
         <h5 className="card-header">Create a new Job!</h5>
         <div className="card-body m-2">
@@ -146,24 +170,16 @@ const [addJob, { error }] = useMutation(ADD_JOB, {
             className="flex-row justify-center justify-space-between-md align-stretch"
             onSubmit={handleFormSubmit}
           >
-            <label className="text-dark">Meeting:</label>
-            <input
-              type="text"
-              id="meeting"
-              name="meeting"
-              placeholder="Enter meeting name"
-              className="form-input col-12 col-md-12"
-              value={jobText.meeting}
-              onChange={handleChange}
-            />
             <label className="text-dark">Dates:</label>
+             <div className="meeting-calendar col-12 col-md-12">
             <CalendarView
               multiple
-              value={jobText.dates}
+              meetings={meetingDates}
               onChange={handleDatesChange}
               minDate={minDate}
               maxDate={maxDate}
             />
+             </div>
             <label className="text-dark">Description:</label>
             <textarea
               placeholder="Your responsibilities will be..."
@@ -171,21 +187,26 @@ const [addJob, { error }] = useMutation(ADD_JOB, {
               id="description"
               className="form-input col-12 col-md-12"
               onChange={handleChange}
+              value={jobText.description}
             ></textarea>
             <p
-              className={`m-0 ${characterCount === 280 || error ? "text-error" : ""
-                }`}
+              className={`m-0 ${characterCount === 280 || error ? "text-error" : ""}`}
             >
               Character Count: {characterCount}/280
               {error && <span className="ml-2">Something went wrong...</span>}
             </p>
             <div className="w-75 mr-auto ml-auto text-center">
               <br />
-              <button className="btn no-border-btn btn-primary mt-0 col-12 w-100 text-center" type="submit">
+              <button
+                className="btn no-border-btn btn-primary mt-0 col-12 w-100 text-center"
+                type="submit"
+              >
                 Submit
               </button>
             </div>
           </form>
+
+          {/* Conflict modal remains unchanged */}
           {showConflictModal && (
             <div className="modal show d-block" tabIndex="-1" role="dialog">
               <div className="modal-dialog" role="document">
@@ -202,10 +223,7 @@ const [addJob, { error }] = useMutation(ADD_JOB, {
                   </div>
                   <div className="modal-body">
                     <p>
-                      You already have a job on <strong>{pendingJob?.newJob.dates}</strong>.
-                    </p>
-                    <p>
-                      Do you want to replace it with this new one?
+                      You already have a job for this meeting.
                     </p>
                   </div>
                   <div className="modal-footer">
@@ -220,11 +238,9 @@ const [addJob, { error }] = useMutation(ADD_JOB, {
                       type="button"
                       className="btn btn-danger"
                       onClick={async () => {
-                        // deactivate existing
                         await deactivateJob({
                           variables: { jobId: pendingJob.existing._id, active: false },
                         });
-                        // create new
                         await addJob({ variables: pendingJob.newJob });
                         setShowConflictModal(false);
                         setPendingJob(null);

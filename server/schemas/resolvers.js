@@ -6,6 +6,12 @@ import { getCalendarClient, getUserCalendarClient } from '../services/googleClie
 
 const resolvers = {
   JSON: GraphQLJSON,
+  
+  Meeting: {
+    startDateTime: (meeting) => meeting.start?.dateTime || null,
+    endDateTime: (meeting) => meeting.end?.dateTime || null,
+  },
+  
   Query: {
     me: async (parent, args, context) => {
       if (context.user) {
@@ -32,24 +38,32 @@ const resolvers = {
       return Job.find({})
         .populate("createdBy")
         .populate("applications")
+        .populate("meeting")
         .sort({ createdAt: -1 });
     },
     job: async (parent, { _id }) => {
-      return Job.findOne({ _id })
+      const job = await Job.findOne({ _id })
       .populate('createdBy')
-      .populate('applications');
+      .populate('applications')
+      .populate('meeting');
+
+      if (!job.applications) {
+        job.applications = [];
+      }
+      
+      return job;
     },
     meetings: async () => {
       return Meeting.find({})
         .populate("host")
         .populate("coHost")
-        .populate("firstAlternate");
+        .populate("firstAlternative");
     },
     meeting: async (parent, { id }) => {
       return Meeting.findById(id)
         .populate("host")
         .populate("coHost")
-        .populate("firstAlternate");
+        .populate("firstAlternative");
     },
     myEvents: async (_, __, context) => {
       if (!context.user) {
@@ -57,25 +71,67 @@ const resolvers = {
       }
 
       const calendar = await getUserCalendarClient(context.user._id);
+
       const { data } = await calendar.events.list({
         calendarId: "primary",
-        timeMin: (new Date()).toISOString(),
+        timeMin: new Date().toISOString(),
         maxResults: 20,
         singleEvents: true,
         orderBy: 'startTime',
       });
 
-      return data.items.map((ev) => ({
-        id: ev.id,
+      return (data.items || []).map(ev => ({
+        _id: ev.id,
         summary: ev.summary,
         description: ev.description,
         start: ev.start,
         end: ev.end,
         attendees: ev.attendees || []
       }));
+    },
+    myCalendars: async (_, __, context) => {
+      if (!context.user) {
+        throw new AuthenticationError("Not logged in");
+      }
+
+      const gcal = await getUserCalendarClient(context.user._id);
+
+      const res = await gcal.calendarList.list();
+      const calendars = res.data.items || [];
+
+        const { data: primaryData } = await gcal.events.list({
+        calendarId: "primary",
+        timeMin: new Date().toISOString(),
+        maxResults: 20,
+        singleEvents: true,
+        orderBy: 'startTime',
+      });
+
+      const primaryEvents = (primaryData.items || []).map(ev => ({
+        _id: ev.id,
+        summary: ev.summary,
+        description: ev.description,
+        start: ev.start,
+        end: ev.end,
+        attendees: ev.attendees || []
+      }));
+
+      return {
+        primary: {
+          _id: "primary",
+          events: primaryEvents
+        },
+        others: calendars
+          .filter(c => c.id !== "primary")
+          .map(c => ({
+            _id: c.id,
+            name: c.summary,
+            color: c.backgroundColor,
+            accessRole: c.accessRole
+          }))
+      };
     }
   },
-
   Attendee: {
     user: async (attendee) => {
       return User.findOne({ email: attendee.email });
@@ -105,11 +161,12 @@ const resolvers = {
       const token = signToken(user);
       return { token, user };
     },
-    addJob: async (parent, { dates, description, meeting }, context) => {
+    addJob: async (parent, { dates, description, meetingId }, context) => {
 
       const existing = await Job.findOne({
         createdBy: context.user._id,
         dates: dates,
+        meeting: meetingId,
         active: true
       }).populate("createdBy");
 
@@ -124,7 +181,7 @@ const resolvers = {
         const job = await Job.create({
           dates,
           description,
-          meeting,
+          meeting: meetingId,
           active: true,
           createdBy: context.user._id,
         });
@@ -135,7 +192,7 @@ const resolvers = {
           { new: true }
         );
 
-        const populated = await Job.findById(job._id).populate("createdBy");
+        const populated = await Job.findById(job._id).populate("meeting createdBy");
 
         return {
           conflict: false,

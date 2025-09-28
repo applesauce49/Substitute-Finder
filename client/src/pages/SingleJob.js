@@ -9,8 +9,9 @@ import { QUERY_JOB, QUERY_ME } from "../utils/queries";
 import { useMutation } from "@apollo/client";
 import { ADD_APPLICATION, DEACTIVATE_JOB } from "../utils/mutations";
 
-const SingleJob = () => {
-  const { id: jobId } = useParams();
+const SingleJob = ( { jobId: propJobId }) => {
+  const { id: routeJobId } = useParams();
+  const jobId = propJobId || routeJobId;
   const [addApplication] = useMutation(ADD_APPLICATION);
   const [deactivateJob] = useMutation(DEACTIVATE_JOB);
   const { data: userData } = useQuery(QUERY_ME);
@@ -18,15 +19,16 @@ const SingleJob = () => {
   const admin = userData?.me.admin || "";
   const navigate = useNavigate();
 
-  const { loading, data } = useQuery(QUERY_JOB, {
+  const { loading, data, error } = useQuery(QUERY_JOB, {
     variables: { id: jobId },
+    skip: !jobId,
   });
 
-  const job = data?.job || {};
+  if (!jobId) return <p>No Job ID Provided</p>;
+  if (error) return <p>Error loading job.</p>;
+  if (loading) return <div>Loading...</div>;
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  const job = data?.job || {};
 
   const handleFormSubmit = async (event) => {
     event.preventDefault();
@@ -53,7 +55,7 @@ const SingleJob = () => {
     navigate("/");
   };
 
-  const applied = job.applications.find((app) => app._id === userData?.me._id);
+  const applied = job?.applications?.find((app) => app._id === userData?.me._id);
 
   return (
     <div className="text-center single-job-close">
@@ -91,7 +93,7 @@ const SingleJob = () => {
         </div>
       </div>
 
-      {job.applicationCount > 0  && (
+      {(job?.applicationCount ?? 0) > 0 && job?.applications && (
         <div>
           <ApplicantList applications={job.applications} />
         </div>

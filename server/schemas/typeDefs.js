@@ -23,11 +23,12 @@ const typeDefs = gql`
     active: Boolean
     dates: String
     description: String
-    meeting: String
+    meeting: Meeting!
     createdAt: String
     createdBy: User!
     applicationCount: Int
     applications: [User]
+    assignedTo: User
   }
 
   type Auth {
@@ -35,34 +36,12 @@ const typeDefs = gql`
     user: User
   }
 
-  type Query {
-    me: User
-    users: [User]
-    user(username: String!): User
-    jobs: [Job]
-    job(_id: ID!): Job
-  }
-
-  type AddJobResponse {
-    conflict: Boolean!
-    job: Job
-  }
-
-  type Mutation {
-    login(email: String!, password: String!): Auth
-    addUser(username: String!, email: String!, password: String!, meeting: String, admin: Boolean): Auth
-    addApplication(jobId: ID!): Job
-    updateMe(email: String, phone: String degree: Boolean, about: String): User
-    deactivateJob(jobId: ID!, active: Boolean!): Job
-
-    addJob(dates: String!, description: String, meeting: String): AddJobResponse
-  }
-
   type Meeting {
-    id: ID
+    _id: ID
     title: String!
     description: String
-    startDateTime: DateTime!
+    startDateTime: DateTime
+    endDateTime: DateTime
     repeat: RepeatRule!
     host: User!
     coHost: User!
@@ -71,13 +50,31 @@ const typeDefs = gql`
     substitutions: [Substitution]
     createdAt: String!
   }
-  
+
   type Event {
-    id: ID
+    _id: ID!
     summary: String
     description: String
     start: JSON
     end: JSON
+    attendees: [JSON]
+  }
+
+  type CalendarMeta {
+    _id: ID!
+    name: String
+    color: String
+    accessRole: String  
+  }
+
+  type CalendarWithEvents {
+    _id: ID!
+    events: [Event!]!
+  }
+
+  type MyCalendarsPayload {
+    primary: CalendarWithEvents!
+    others: [CalendarMeta!]!
   }
 
   type Attendee {
@@ -88,15 +85,11 @@ const typeDefs = gql`
   }
   
   type Substitution {
-    id: ID!
+    _id: ID!
     originalHost: User!
     substitute: User!
     meeting: Meeting!
     createdAt: DateTime!
-  }
-
-  extend type Query {
-    myEvents: [Event]
   }
 
   enum RepeatRule {
@@ -116,13 +109,34 @@ const typeDefs = gql`
     firstAlternativeId: ID!
   }
 
-  extend type Query {
+  type Query {
+    me: User
+    users: [User]
+    user(username: String!): User
+    jobs: [Job]
+    job(_id: ID!): Job
     meetings: [Meeting]
     meeting(id: ID!): Meeting
-    myEvents: [Event]
+
+    # Calendar-related
+    myEvents: [Event!]!
+    myCalendars: MyCalendarsPayload!
   }
 
-  extend type Mutation {
+  type AddJobResponse {
+    conflict: Boolean!
+    job: Job
+  }
+
+  type Mutation {
+    login(email: String!, password: String!): Auth
+    addUser(username: String!, email: String!, password: String!, meeting: String, admin: Boolean): Auth
+    addApplication(jobId: ID!): Job
+    updateMe(email: String, phone: String, degree: Boolean, about: String): User
+    deactivateJob(jobId: ID!, active: Boolean!): Job
+
+    addJob(dates: String!, description: String, meeting: ID!): AddJobResponse
+
     createMeeting(input: MeetingInput!): Meeting
     updateMeeting(id: ID!, input: MeetingInput!): Meeting
     deleteMeeting(id: ID!): Boolean

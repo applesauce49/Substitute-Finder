@@ -8,12 +8,17 @@ const meetingSchema = new Schema(
       enum: ["google", "internal"],
       default: "google",
     },
+    userID: {
+      type: Schema.Types.ObjectId, 
+      ref: "User"
+    },
     calendarId: String,
     gcalEventId: String,
     gcalRecurringEventId: String,
     iCalUID: String,
     etag: String,
     syncToken: String,
+    lastSynced: { type: Date },
 
     // Time
     start: {dateTime: Date, timeZone: String},
@@ -73,6 +78,8 @@ const meetingSchema = new Schema(
     }
   }
 );
+
+meetingSchema.index ({ gcalEventId: 1, calendarId: 1 }, {unique: true, sparce: true })
 
 const Meeting = model('Meeting', meetingSchema);
 

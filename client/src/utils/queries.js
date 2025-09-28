@@ -12,7 +12,15 @@ export const QUERY_JOBS = gql`
         username
         email
       }
-      meeting
+      meeting {
+      _id
+      title
+      startDateTime
+      host {
+        username
+        email
+      }
+    }
       dates
       applicationCount
     }
@@ -32,7 +40,15 @@ export const QUERY_JOB = gql`
         username
         email
       }
-      meeting
+      meeting {
+      _id
+      title
+      startDateTime
+      host {
+        username
+        email
+      }
+    }
       applicationCount
       applications {
         _id
@@ -54,7 +70,6 @@ export const QUERY_USER = gql`
       phone
       about
       degree
-      meeting
       jobs {
         _id
         description
@@ -75,13 +90,20 @@ export const QUERY_ME = gql`
       admin
       about
       degree
-      meeting
       jobs {
         _id
         active
         description
         dates
-        meeting
+        meeting {
+          _id
+          title
+          startDateTime
+          host {
+            username
+            email
+          }
+        }
         createdAt
       }
     }
@@ -101,10 +123,15 @@ export const QUERY_ME_BASIC = gql`
 
 export const QUERY_MEETINGS = gql`
   {
-    meetings {
-      _id
-      title
-      startDateTime
+    calendars {
+      id
+      name
+      color
+      meetings {
+        _id
+        title
+        startDateTime
+      }
     }
   }
 `;
@@ -112,11 +139,33 @@ export const QUERY_MEETINGS = gql`
 export const QUERY_MY_EVENTS = gql`
   query MyEvents {
     myEvents {
-      id
+      _id
       summary
       description
       start
       end
+    }
+  }
+`;
+
+export const QUERY_MY_CALENDARS = gql`
+  query MyCalendars {
+    myCalendars {
+      primary {
+        _id
+        events {
+          _id
+          summary
+          start
+          end
+        }
+      }
+      others {
+        _id
+        name
+        color
+        accessRole
+      }
     }
   }
 `;
