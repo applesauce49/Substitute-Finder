@@ -1,21 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, gql } from "@apollo/client";
 import { ADD_JOB, DEACTIVATE_JOB } from "../../utils/mutations";
-import { QUERY_MY_EVENTS } from "../../utils/queries";
+import { QUERY_MEETINGS } from "../../utils/queries";
 import { CalendarView } from "../CalendarView";
 import { formatDateLocal } from "../../utils/dateUtils";
+import MeetingSelectModal from "../MeetingSelectModal";
 
 const JobForm = () => {
-  const { loading: meetingsLoading, data: meetingsData } = useQuery(QUERY_MY_EVENTS);
+  const { loading: meetingsLoading, data: meetingsData } = useQuery(QUERY_MEETINGS);
 
-  const myEvents = meetingsData?.myEvents || [];
+  const meetings = meetingsData?.meetings || [];
 
-  const meetingDates = new Set(
-    myEvents.map(m => {
-      const start = m.start?.dateTime || m.start?.date;
-      return formatDateLocal(start);
-    })
-  );
+  const meetingsByDate = new Map();
+
+  for (const m of meetings) {
+    const date = formatDateLocal(m.startDateTime);
+    if (!meetingsByDate.has(date)) {
+      meetingsByDate.set(date, []);
+    }
+    meetingsByDate.get(date).push(m);
+  }
+  const meetingDates = new Set(meetingsByDate.keys());
 
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [pendingJob, setPendingJob] = useState(null);
@@ -40,37 +45,65 @@ const JobForm = () => {
     setMaxDate(sixMonthsLater);
   }, []);
 
-  const [addJob, { error }] = useMutation(ADD_JOB, {
-    update(cache, { data: { addJob } }) {
-      if (addJob.conflict) return;
-      const newJob = addJob.job;
+  const NEW_JOB_FRAGMENT = gql`
+  fragment NewJob on Job {
+    __typename
+    _id
+    active
+    description
+    dates
+    createdAt
+    createdBy {
+      __typename
+      _id
+      username
+      email
+    }
+    meeting {
+      __typename
+      _id
+      title
+      startDateTime
+    }
+    applicationCount
+  }
+`;
 
-      cache.modify({
-        fields: {
-          jobs(existingJobs = [], { args }) {
-            if (!args?.username || args.username === newJob.createdBy.username) {
-              const newJobRef = cache.writeFragment({
-                data: newJob,
-                fragment: gql`
-                  fragment NewJob on Job {
-                    _id
-                    description
-                    meeting
-                    dates
-                    active
-                    createdBy {
-                      _id
-                      username
-                      email
-                    }
-                  }
-                `,
-              });
-              return [...existingJobs, newJobRef];
-            }
-            return existingJobs;
-          },
-        },
+  const [addJob, { error }] = useMutation(ADD_JOB, {
+    update(cache, { data }) {
+      const payload = data?.addJob;
+      if (!payload || payload.conflict || !payload.job) return;
+
+      const newJob = payload.job;
+
+      // // 1) Append to the global jobs list (QUERY_JOBS) if it's in the cache
+      // try {
+      //   cache.updateQuery({ query: QUERY_JOBS }, (prev) => {
+      //     if (!prev?.jobs) return prev;
+      //     if (prev.jobs.some(j => j._id === newJob._id)) return prev;
+      //     return { ...prev, jobs: [...prev.jobs, newJob] };
+      //   });
+      // } catch {
+      //   // QUERY_JOBS might not be in cache yet; that's fine.
+      // }
+
+      // // 2) Append to me.jobs if the creator is the current user and 'me' is in cache
+      // try {
+      //   cache.updateQuery({ query: QUERY_ME }, (prev) => {
+      //     if (!prev?.me) return prev;
+      //     if (newJob.createdBy?._id !== prev.me._id) return prev;
+      //     const already = (prev.me.jobs || []).some(j => j._id === newJob._id);
+      //     if (already) return prev;
+      //     return { ...prev, me: { ...prev.me, jobs: [...(prev.me.jobs || []), newJob] } };
+      //   });
+      // } catch {
+      //   // QUERY_ME not in cache; ignore.
+      // }
+
+      // 3) (Optional) Also normalize a ref so later reads are consistent
+      cache.writeFragment({
+        data: newJob,
+        fragment: NEW_JOB_FRAGMENT,
       });
     },
   });
@@ -90,46 +123,76 @@ const JobForm = () => {
     }
   };
 
-    const handleDatesChange = (values) => {
-    // values is an array of DateObjects from the picker
-    const formatted = values.map((d) =>
-      d.toDate().toISOString().split("T")[0]
-    );
-    setText((prev) => ({ ...prev, dates: formatted }));
+  const [modalState, setModalState] = useState({
+    open: false,
+    date: null,
+    meetings: [],
+  });
+
+  const openMeetingSelectModal = ({ date, meetings }) => {
+    setModalState({ open: true, date, meetings });
   };
 
-  // Handle FullCalendar event click (toggle meeting selection)
-  // const handleEventClick = (info) => {
-  //   const meetingId = info.event.id;
-  //   setText((prev) => {
-  //     const already = prev.meetings.includes(meetingId);
-  //     return {
-  //       ...prev,
-  //       meetings: already
-  //         ? prev.meetings.filter((id) => id !== meetingId)
-  //         : [...prev.meetings, meetingId],
-  //     };
-  //   });
-  // };
+  const handleDatesChange = (values) => {
+    console.log("Got values: ", values);
+
+    // Normalize selected dates
+    const selectedDates = values.map((d) =>
+      formatDateLocal(d)
+    );
+    console.log("sselectedDates: ", selectedDates);
+    console.log("meetingsByDate: ", meetingsByDate);
+
+    const selectedMeetings = [];
+
+    for (const date of selectedDates) {
+      const meetingsOnDate = meetingsByDate.get(date) || [];
+
+      if (meetingsOnDate.length === 1) {
+        // ✅ exactly one — auto select it
+        selectedMeetings.push({ id: meetingsOnDate[0]._id, date });
+      } else if (meetingsOnDate.length > 1) {
+        // 🚨 multiple — show modal here
+        openMeetingSelectModal({ date, meetings: meetingsOnDate });
+      }
+    }
+
+    console.log("Selected Meetings: ", selectedMeetings);
+    setText((prev) => ({
+      ...prev,
+      dates: selectedDates,
+      meetings: selectedMeetings,
+    }));
+  };
 
   // submit form
   const handleFormSubmit = async (event) => {
     event.preventDefault();
 
     try {
-      for (const meetingId of jobText.meetings) {
+      console.log("jobText.meetings at submit: ", jobText.meetings);
+
+      for (const meeting of jobText.meetings) {
+        console.log("Meeting info: ", meeting)
         const { data } = await addJob({
           variables: {
-            active: jobText.active,
-            dates: jobText.dates, // adapt if you want per-meeting date
+            dates: meeting.date,        // single string
             description: jobText.description,
-            meeting: meetingId,
+            meeting: meeting.id,
           },
         });
 
         if (data.addJob.conflict) {
           setPendingJob({
-            newJob: { ...jobText, meeting: meetingId },
+            newJob: {
+              active: jobText.active,
+              description: jobText.description,
+              dates: [meeting.date],  // keep array shape consistent
+              meeting: {
+                id: meeting.id,
+                date: meeting.date,
+              },
+            },
             existing: data.addJob.job,
           });
           setShowConflictModal(true);
@@ -142,7 +205,7 @@ const JobForm = () => {
         active: true,
         dates: [],
         description: "",
-        meetings: [],
+        meetings: [], // stays an array of {id, date}, just emptied
       });
       setCharacterCount(0);
     } catch (e) {
@@ -151,15 +214,6 @@ const JobForm = () => {
   };
 
   if (meetingsLoading) return <p>Loading meetings...</p>;
-
-  // transform meetings → FullCalendar events
-  // const events = meetings.map((m) => ({
-  //   id: m._id,
-  //   title: m.title,
-  //   start: m.startDateTime, // ensure ISO date string
-  //   end: m.endDateTime,
-  //   allDay: m.allDay || false,
-  // }));
 
   return (
     <>
@@ -171,15 +225,15 @@ const JobForm = () => {
             onSubmit={handleFormSubmit}
           >
             <label className="text-dark">Dates:</label>
-             <div className="meeting-calendar col-12 col-md-12">
-            <CalendarView
-              multiple
-              meetings={meetingDates}
-              onChange={handleDatesChange}
-              minDate={minDate}
-              maxDate={maxDate}
-            />
-             </div>
+            <div className="meeting-calendar col-12 col-md-12">
+              <CalendarView
+                multiple
+                meetings={meetingDates}
+                onChange={handleDatesChange}
+                minDate={minDate}
+                maxDate={maxDate}
+              />
+            </div>
             <label className="text-dark">Description:</label>
             <textarea
               placeholder="Your responsibilities will be..."
@@ -200,8 +254,9 @@ const JobForm = () => {
               <button
                 className="btn no-border-btn btn-primary mt-0 col-12 w-100 text-center"
                 type="submit"
+                disabled={meetingsLoading || !jobText.dates || jobText.dates.length === 0}
               >
-                Submit
+                {meetingsLoading ? "Submitting..." : "Submit"}
               </button>
             </div>
           </form>
@@ -241,7 +296,16 @@ const JobForm = () => {
                         await deactivateJob({
                           variables: { jobId: pendingJob.existing._id, active: false },
                         });
-                        await addJob({ variables: pendingJob.newJob });
+
+                        await addJob({
+                          variables: {
+                            active: pendingJob.newJob.active,
+                            dates: [pendingJob.newJob.meeting.date],   // ensure single date
+                            description: pendingJob.newJob.description,
+                            meeting: pendingJob.newJob.meeting.id,     // meeting id
+                          },
+                        });
+
                         setShowConflictModal(false);
                         setPendingJob(null);
                       }}
@@ -255,6 +319,27 @@ const JobForm = () => {
           )}
         </div>
       </div>
+      <MeetingSelectModal
+        isOpen={modalState.open}
+        date={modalState.date}
+        meetings={modalState.meetings}
+        onClose={() => setModalState({ open: false, date: null, meetings: [] })}
+        onConfirm={(chosenMeetings) => {
+          setText((prev) => ({
+            ...prev,
+            dates: [
+              ...prev.dates,
+              ...chosenMeetings.map(() => modalState.date), // one date per meeting
+            ],
+            meetings: [
+              ...prev.meetings,
+              ...chosenMeetings.map((m) => ({ id: m._id, date: modalState.date })),
+            ],
+          }));
+          setModalState({ open: false, date: null, meetings: [] });
+        }}
+      />
+
     </>
   );
 };

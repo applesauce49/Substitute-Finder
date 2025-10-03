@@ -15,26 +15,30 @@ const JobList = ({ jobs, title }) => {
           .map(job => (
             <div key={job._id} className="card col-12 mb-3">
               <p className="card-header job-list-header">
-                <Link
-                  to={`/profile/${job?.createdBy?.username ?? "N/A"}`}
-                  style={{ fontWeight: 700 }}
-                  className="text-dark"
-                >
-                  {job?.createdBy?.username ?? "N/A"}&nbsp;
-                </Link>{' '}
-                {job.createdAt}
+                {job.meeting.title}
               </p>
               <div className="card-body text-center">
-                <Link 
+                <Link
                   to="#"
                   onClick={(e) => {
                     e.preventDefault();
                     setSelectedJob(job)
                   }}
                 >
-                  <p className='text-dark job-description'>{job.description}</p>
-                  <hr></hr>
-                  <p><b>Date(s): </b>{job.dates}<br /><b>Meeting: </b> {job.meeting}<br /></p>
+                  <p>
+                    <b>Date: </b>{job.dates}<br />
+                    <Link
+                      to={`/profile/${job?.createdBy?.username ?? "N/A"}`}
+                      style={{ fontWeight: 700 }}
+                      className="text-dark"
+                    >
+                      {job?.createdBy?.username ?? "N/A"}&nbsp;
+                    </Link>{' '}<br />
+                    <b>Posted: </b>{job.createdAt}<br />
+                    <b>Applications: </b>{job.applicationCount}
+
+                    {/* <b>Notes: </b> {job.description}<br /> */}
+                  </p>
                 </Link>
               </div>
             </div>
@@ -49,7 +53,7 @@ const JobList = ({ jobs, title }) => {
           <div className="modal-dialog modal-lg">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">{selectedJob.description}</h5>
+                <h5 className="modal-title">Available Job Details</h5>
                 <button
                   type="button"
                   className="btn-close"

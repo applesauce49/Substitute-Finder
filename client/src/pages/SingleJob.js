@@ -8,8 +8,9 @@ import { useQuery } from "@apollo/client";
 import { QUERY_JOB, QUERY_ME } from "../utils/queries";
 import { useMutation } from "@apollo/client";
 import { ADD_APPLICATION, DEACTIVATE_JOB } from "../utils/mutations";
+import { isJobApplyDisabled } from "../utils/jobHelpers";
 
-const SingleJob = ( { jobId: propJobId }) => {
+const SingleJob = ({ jobId: propJobId }) => {
   const { id: routeJobId } = useParams();
   const jobId = propJobId || routeJobId;
   const [addApplication] = useMutation(ADD_APPLICATION);
@@ -59,37 +60,17 @@ const SingleJob = ( { jobId: propJobId }) => {
 
   return (
     <div className="text-center single-job-close">
-      {Auth.loggedIn()  && (
-          <form
-            className="flex-row justify-center align-stretch"
-            onSubmit={handleDeactivate}
-          >
-            <div className=" w-100 ">
-              <button
-                className="no-border-btn btn btn-danger w-100 mb-3 "
-                type="submit"
-              >
-                Close Job Listing
-              </button>
-            </div>
-          </form>
-      )}
       <div className="card mb-3">
         <p className="card-header single-job-header">
-          <span style={{ fontWeight: 700 }}>{job?.createdBy?.username ?? "N/A"}</span>
-          &nbsp;{job.createdAt}
+          {job.meeting.title}
         </p>
         <div className="card-body">
           <p>
-          <p className="text-dark job-description">{job.description}</p>
-            <hr></hr>
-            <b>Date(s): </b>
-            {job.dates}
-            <br />
-            <b>Meeting: </b>
-            {job.meeting}
+            <b>Date: </b>{job.dates}<br />
+            <p className="text-dark">{job?.createdBy?.username ?? "N/A"}</p>
+            <b>Posted: </b>{job.createdAt}<br />
+            <b>Notes: </b> {job.description}<br />
           </p>
-          
         </div>
       </div>
 
@@ -98,15 +79,29 @@ const SingleJob = ( { jobId: propJobId }) => {
           <ApplicantList applications={job.applications} />
         </div>
       )}
+      <div className="d-flex justify-content-end gap-2">
+        {Auth.loggedIn() && job.createdBy._id === Auth.getProfile().data._id && (
+          <form onSubmit={handleDeactivate}>
+            <button
+              className="no-border-btn btn btn-danger"
+              type="submit"
+            >
+              Close Job
+            </button>
+          </form>
+        )}
 
-      {Auth.loggedIn() && !admin && !applied && (
         <form onSubmit={handleFormSubmit}>
-          <button className="btn no-border-btn btn-success col-12 col-md-3" type="submit">
+          <button
+            className="btn no-border-btn btn-success"
+            type="submit"
+            disabled={isJobApplyDisabled(job, { admin, applied })}
+          >
             Apply
           </button>
         </form>
-      )}
-      {Auth.loggedIn() && !admin && applied && <p>Already Applied!</p>}
+      </div>
+
     </div>
   );
 };

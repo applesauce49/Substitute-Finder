@@ -12,10 +12,10 @@ const jobSchema = new Schema(
       required: 'You need to leave a job!',
       maxlength: 280
     },
-    dates: {
+    dates: [{
       type: String,
       required: true
-    },
+    }],
     meeting: {
       type: Schema.Types.ObjectId,
       ref: "Meeting",

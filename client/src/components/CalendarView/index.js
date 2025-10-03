@@ -16,6 +16,7 @@ const CalendarView = ({
     <div className="calendar-view big-calendar">
       <Calendar
         multiple={multiple}
+        color="red"
         value={value}
         onChange={onChange}
         minDate={minDate}
