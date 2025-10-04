@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 import ApplicantList from "../components/ApplicantList";
 
@@ -7,18 +7,17 @@ import Auth from "../utils/auth";
 import { useQuery } from "@apollo/client";
 import { QUERY_JOB, QUERY_ME } from "../utils/queries";
 import { useMutation } from "@apollo/client";
-import { ADD_APPLICATION, DEACTIVATE_JOB } from "../utils/mutations";
+import { APPLY_FOR_JOB, CANCEL_JOB } from "../utils/mutations";
 import { isJobApplyDisabled } from "../utils/jobHelpers";
 
-const SingleJob = ({ jobId: propJobId }) => {
+const SingleJob = ({ jobId: propJobId, onClose }) => {
   const { id: routeJobId } = useParams();
   const jobId = propJobId || routeJobId;
-  const [addApplication] = useMutation(ADD_APPLICATION);
-  const [deactivateJob] = useMutation(DEACTIVATE_JOB);
+  const [applyForJob] = useMutation(APPLY_FOR_JOB);
+  const [cancelJob] = useMutation(CANCEL_JOB);
   const { data: userData } = useQuery(QUERY_ME);
 
   const admin = userData?.me.admin || "";
-  const navigate = useNavigate();
 
   const { loading, data, error } = useQuery(QUERY_JOB, {
     variables: { id: jobId },
@@ -31,32 +30,35 @@ const SingleJob = ({ jobId: propJobId }) => {
 
   const job = data?.job || {};
 
+  console.log("Loading job: ", job);
+
   const handleFormSubmit = async (event) => {
     event.preventDefault();
 
     try {
-      await addApplication({
-        variables: { jobId },
-      });
+      await applyForJob({variables: { jobId }});
     } catch (e) {
       console.error(e);
     }
+    onClose();
   };
 
-  const handleDeactivate = async (event) => {
+  const handleCancelJob = async (event) => {
     event.preventDefault();
 
+    console.log("Cancelling job ", jobId);
     try {
-      await deactivateJob({
-        variables: { jobId: jobId, active: false },
-      });
+      await cancelJob({variables: { jobId: jobId }});
     } catch (e) {
       console.error(e);
     }
-    navigate("/");
+    onClose();
   };
 
   const applied = job?.applications?.find((app) => app._id === userData?.me._id);
+
+  const accepted = () => { console.log("Application Accepted")};
+  const denied = () => { console.log("Application DENIED.")};
 
   return (
     <div className="text-center single-job-close">
@@ -76,12 +78,12 @@ const SingleJob = ({ jobId: propJobId }) => {
 
       {(job?.applicationCount ?? 0) > 0 && job?.applications && (
         <div>
-          <ApplicantList applications={job.applications} />
+          <ApplicantList applications={job?.applications} onAccepted={accepted} onDenied={denied} />
         </div>
       )}
       <div className="d-flex justify-content-end gap-2">
         {Auth.loggedIn() && job.createdBy._id === Auth.getProfile().data._id && (
-          <form onSubmit={handleDeactivate}>
+          <form onSubmit={handleCancelJob}>
             <button
               className="no-border-btn btn btn-danger"
               type="submit"

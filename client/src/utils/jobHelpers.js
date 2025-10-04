@@ -6,9 +6,10 @@ export function isJobApplyDisabled(job, { admin, applied }) {
 
   const userId = Auth.getProfile().data._id;
 
-  return (
-    admin ||              // admins can't apply
-    applied ||            // already applied
-    job.createdBy._id === userId // owner of the job
-  );
+  return false;
+  // return (
+  //   admin ||              // admins can't apply
+  //   applied ||            // already applied
+  //   job.createdBy._id === userId // owner of the job
+  // );
 }

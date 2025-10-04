@@ -38,6 +38,13 @@ type Mutation {
   ): AddJobPayload!
   acceptJob(jobId: ID!): Job
   applyForJob(jobId: ID!): Job   # optional, if you want applications
+  cancelJob(jobId: ID!): Boolean!
+}
+
+type Application {
+  _id: ID!
+  appliedAt: DateTime!
+  user: User!
 }
 
 type Job {
@@ -49,8 +56,8 @@ type Job {
   createdBy: User!
   meeting: Meeting!
   applicationCount: Int!
-  applications: [User!]   # if you want to support applications
-  assignedTo: User        # optional for accepted subs
+  applications: [Application]   # if you want to support applications
+  assignedTo: User!        # optional for accepted subs
 }
 
 type Meeting {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import SingleJob from '../../pages/SingleJob.js';
 
-const JobList = ({ jobs, title }) => {
+const JobList = ({ jobs, title, onRefetch }) => {
 
   const [selectedJob, setSelectedJob] = useState(null);
 
@@ -27,13 +27,7 @@ const JobList = ({ jobs, title }) => {
                 >
                   <p>
                     <b>Date: </b>{job.dates}<br />
-                    <Link
-                      to={`/profile/${job?.createdBy?.username ?? "N/A"}`}
-                      style={{ fontWeight: 700 }}
-                      className="text-dark"
-                    >
-                      {job?.createdBy?.username ?? "N/A"}&nbsp;
-                    </Link>{' '}<br />
+                    {job?.createdBy?.username ?? "N/A"}&nbsp;
                     <b>Posted: </b>{job.createdAt}<br />
                     <b>Applications: </b>{job.applicationCount}
 
@@ -61,7 +55,12 @@ const JobList = ({ jobs, title }) => {
                 ></button>
               </div>
               <div className="modal-body">
-                <SingleJob jobId={selectedJob._id} />
+                <SingleJob jobId={selectedJob._id}
+                  onClose={() => {
+                    setSelectedJob(null);
+                    onRefetch(); // ✅ trigger refresh after closing modal
+                  }}
+                />
               </div>
             </div>
           </div>

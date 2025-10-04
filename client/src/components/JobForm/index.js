@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, gql } from "@apollo/client";
-import { ADD_JOB, DEACTIVATE_JOB } from "../../utils/mutations";
+import { ADD_JOB, CANCEL_JOB } from "../../utils/mutations";
 import { QUERY_MEETINGS } from "../../utils/queries";
 import { CalendarView } from "../CalendarView";
 import { formatDateLocal } from "../../utils/dateUtils";
 import MeetingSelectModal from "../MeetingSelectModal";
 
-const JobForm = () => {
+const JobForm = ({ onRefetch }) => {
   const { loading: meetingsLoading, data: meetingsData } = useQuery(QUERY_MEETINGS);
 
   const meetings = meetingsData?.meetings || [];
@@ -108,7 +108,7 @@ const JobForm = () => {
     },
   });
 
-  const [deactivateJob] = useMutation(DEACTIVATE_JOB);
+  const [cancelJob] = useMutation(CANCEL_JOB);
 
   // Update state for textarea
   const handleChange = (event) => {
@@ -128,6 +128,9 @@ const JobForm = () => {
     date: null,
     meetings: [],
   });
+
+  const [formError, setFormError] = useState(false);
+
 
   const openMeetingSelectModal = ({ date, meetings }) => {
     setModalState({ open: true, date, meetings });
@@ -168,6 +171,14 @@ const JobForm = () => {
   // submit form
   const handleFormSubmit = async (event) => {
     event.preventDefault();
+
+    if (!jobText.description.trim()) {
+      setFormError(true);
+      return;
+    }
+    else {
+      setFormError(false);
+    }
 
     try {
       console.log("jobText.meetings at submit: ", jobText.meetings);
@@ -211,6 +222,7 @@ const JobForm = () => {
     } catch (e) {
       console.error(e);
     }
+    onRefetch();
   };
 
   if (meetingsLoading) return <p>Loading meetings...</p>;
@@ -234,9 +246,9 @@ const JobForm = () => {
                 maxDate={maxDate}
               />
             </div>
-            <label className="text-dark">Description:</label>
+            <label className="text-dark">Reason:</label>
             <textarea
-              placeholder="Your responsibilities will be..."
+              placeholder="Required"
               name="description"
               id="description"
               className="form-input col-12 col-md-12"
@@ -244,9 +256,10 @@ const JobForm = () => {
               value={jobText.description}
             ></textarea>
             <p
-              className={`m-0 ${characterCount === 280 || error ? "text-error" : ""}`}
+              className={`m-0 ${characterCount === 280 || formError ? "text-error" : ""}`}
             >
-              Character Count: {characterCount}/280
+              Character Count: {characterCount}/280<br />
+              {formError && <span className="ml-2">Reason is required...</span>}
               {error && <span className="ml-2">Something went wrong...</span>}
             </p>
             <div className="w-75 mr-auto ml-auto text-center">
@@ -293,7 +306,7 @@ const JobForm = () => {
                       type="button"
                       className="btn btn-danger"
                       onClick={async () => {
-                        await deactivateJob({
+                        await cancelJob({
                           variables: { jobId: pendingJob.existing._id, active: false },
                         });
 

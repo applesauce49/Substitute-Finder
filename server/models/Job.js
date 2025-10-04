@@ -34,7 +34,11 @@ const jobSchema = new Schema(
     applications: [
       {
         user: { type: Schema.Types.ObjectId, ref: "User" },
-        appliedAt: {type: Date, default: Date.now }
+        appliedAt: {
+          type: Date, 
+          default: Date.now ,
+          get: timestamp => dateFormat(timestamp)
+        }
       }
     ],
     assignedTo: { type: Schema.Types.ObjectId, ref: "User"}

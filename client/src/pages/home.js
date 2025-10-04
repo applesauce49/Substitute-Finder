@@ -10,7 +10,7 @@ const Home = () => {
   const { data: userData } = useQuery(QUERY_ME);
   console.log("Username: ", userData?.me?.username);
 
-  const { loading, data, error } = useQuery(QUERY_JOBS);
+  const { loading, data, error, refetch } = useQuery(QUERY_JOBS);
   console.log("loading:", loading, "data:", data, "error:", error);
 
   const jobs = data?.jobs || [];
@@ -25,7 +25,7 @@ const Home = () => {
       <div className="flex-row justify-space-between">
         {loggedIn && (
           <div className={`col-12 col-lg-4 mb-3`}>
-            <JobForm />
+            <JobForm onRefetch={refetch} />
           </div>
         )}
         {loggedIn && (
@@ -36,6 +36,7 @@ const Home = () => {
               <JobList
                 jobs={jobs}
                 title="Available Jobs"
+                onRefetch={refetch}
               />
             )}
           </div>

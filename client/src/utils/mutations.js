@@ -66,28 +66,27 @@ export const ADD_JOB = gql`
   }
 `;
 
-export const ADD_APPLICATION = gql`
-  mutation addApplication($jobId: ID!) {
-    addApplication(jobId: $jobId) {
+export const APPLY_FOR_JOB = gql`
+  mutation ApplyForJob($jobId: ID!) {
+    applyForJob(jobId: $jobId) {
       _id
       applicationCount
       applications {
         _id
-        username
-        email
-        phone
-        degree
+        appliedAt
+        user {
+          _id
+          username
+          email      
+        }
       }
     }
   }
 `;
 
-export const DEACTIVATE_JOB = gql`
-  mutation deactivateJob($jobId: ID!, $active: Boolean!) {
-    deactivateJob(jobId: $jobId, active: $active) {
-      _id
-      active
-    }
+export const CANCEL_JOB = gql`
+  mutation CancelJob($jobId: ID!) {
+    cancelJob(jobId: $jobId)
   }
 `;
 

@@ -1,4 +1,4 @@
-import { AuthenticationError }  from 'apollo-server-express';
+import { AuthenticationError } from 'apollo-server-express';
 import { User, Job, Meeting } from "../models/index.js";
 import { signToken } from "../utils/auth.js";
 import { GraphQLJSON } from 'graphql-type-json';
@@ -6,12 +6,12 @@ import { getCalendarClient, getUserCalendarClient } from '../services/googleClie
 
 const resolvers = {
   JSON: GraphQLJSON,
-  
+
   Meeting: {
     startDateTime: (meeting) => meeting.start?.dateTime || null,
     endDateTime: (meeting) => meeting.end?.dateTime || null,
   },
-  
+
   Query: {
     me: async (parent, args, context) => {
       if (context.user) {
@@ -41,16 +41,13 @@ const resolvers = {
         .populate("meeting")
         .sort({ createdAt: -1 });
     },
-    job: async (parent, { _id }) => {
-      const job = await Job.findOne({ _id })
-      .populate('createdBy')
-      .populate('applications')
-      .populate('meeting');
+    job: async (_, { _id }) => {
+      const job = await Job.findById(_id)
+        .populate({ path: "createdBy", select: "_id username email" })
+        .populate({ path: "meeting", select: "_id title description startDateTime endDateTime" })
+        .populate({ path: "applications.user", select: "_id username email" });
 
-      if (!job.applications) {
-        job.applications = [];
-      }
-      
+      if (!job) throw new Error("Job not found");
       return job;
     },
     meetings: async () => {
@@ -59,84 +56,7 @@ const resolvers = {
         .populate("coHost")
         .populate("firstAlternative");
     },
-    // meeting: async (parent, { id }) => {
-    //   return Meeting.findById(id)
-    //     .populate("host")
-    //     .populate("coHost")
-    //     .populate("firstAlternative");
-    // },
-    // myEvents: async (_, __, context) => {
-    //   if (!context.user) {
-    //     throw new AuthenticationError('Not logged in');
-    //   }
-
-    //   const calendar = await getUserCalendarClient(context.user._id);
-
-    //   const { data } = await calendar.events.list({
-    //     calendarId: "primary",
-    //     timeMin: new Date().toISOString(),
-    //     maxResults: 20,
-    //     singleEvents: true,
-    //     orderBy: 'startTime',
-    //   });
-
-    //   return (data.items || []).map(ev => ({
-    //     _id: ev.id,
-    //     summary: ev.summary,
-    //     description: ev.description,
-    //     start: ev.start,
-    //     end: ev.end,
-    //     attendees: ev.attendees || []
-    //   }));
-    // },
-    // myCalendars: async (_, __, context) => {
-    //   if (!context.user) {
-    //     throw new AuthenticationError("Not logged in");
-    //   }
-
-    //   const gcal = await getUserCalendarClient(context.user._id);
-
-    //   const res = await gcal.calendarList.list();
-    //   const calendars = res.data.items || [];
-
-    //     const { data: primaryData } = await gcal.events.list({
-    //     calendarId: "primary",
-    //     timeMin: new Date().toISOString(),
-    //     maxResults: 20,
-    //     singleEvents: true,
-    //     orderBy: 'startTime',
-    //   });
-
-    //   const primaryEvents = (primaryData.items || []).map(ev => ({
-    //     _id: ev.id,
-    //     summary: ev.summary,
-    //     description: ev.description,
-    //     start: ev.start,
-    //     end: ev.end,
-    //     attendees: ev.attendees || []
-    //   }));
-
-    //   return {
-    //     primary: {
-    //       _id: "primary",
-    //       events: primaryEvents
-    //     },
-    //     others: calendars
-    //       .filter(c => c.id !== "primary")
-    //       .map(c => ({
-    //         _id: c.id,
-    //         name: c.summary,
-    //         color: c.backgroundColor,
-    //         accessRole: c.accessRole
-    //       }))
-    //   };
-    // }
   },
-  // Attendee: {
-  //   user: async (attendee) => {
-  //     return User.findOne({ email: attendee.email });
-  //   },
-  // },
 
   Mutation: {
     addJob: async (_, { dates, description, meeting }, context) => {
@@ -182,64 +102,47 @@ const resolvers = {
       }
     },
 
-    // addApplication: async(parent, {jobId}, context) => {
-    //   if (context.user) {
-    //     const user = await User.findOne({username: context.user.username});
-        
-    //     console.log(user);
-    //     const updatedJob = await Job.findOneAndUpdate(
-    //       {_id: jobId},
-    //       { $addToSet: {applications: {_id: user._id, username: user.username}}},
-    //       {new: true}
-    //     ).populate('applications');
+    applyForJob: async (_, { jobId }, context) => {
+      if (!context.user) {
+        throw new AuthenticationError("You must be logged in");
+      }
 
-    //     return updatedJob;
-    //   }
+      const job = await Job.findById(jobId);
+      if (!job) throw new Error("Job not found");
 
-    //   throw new AuthenticationError('You need to be logged in!');
-    // },
-    // updateMe: async (parent, {email, phone, degree, about}, context) => {
-    //   if (context.user) {
-    //     const updatedUser = await User.findOneAndUpdate(
-    //       {_id: context.user._id},
-    //       {$set: {email: email, phone: phone, degree: degree, about: about}},
-    //       {new: true}
-    //     )
-    //     return updatedUser;
-    //   }
-    //   throw new AuthenticationError('You need to be logged in!');
-    // },
-    // deactivateJob: async(parent, {jobId, active}, context) => {
-    //   if (context.user) {
-    //     const updatedJob = await Job.findOneAndUpdate(
-    //       {_id: jobId},
-    //       {$set: {active: active}},
-    //       {new: true}
-    //     )
-    //     return updatedJob;
-    //   }
-    //   throw new AuthenticationError('You need to be logged in!');
-    // },
-    // createMeeting: async (parent, { input }) => {
-    //   const meeting = await Meeting.create(input);
+      // prevent duplicate applications
+      if (job.applications.includes(context.user._id)) {
+        throw new Error("Already applied");
+      }
 
-    //   //update user records to reference this meeting
-    //   await User.findByIdAndUpdate(input.host, {
-    //     $push: {meetings: meeting._id},
-    //   });
+      // push properly shaped subdoc
+      job.applications.push({
+        user: context.user._id,
+        appliedAt: new Date()
+      });
 
-    //   await User.findByIdAndUpdate(input.coHost, {
-    //     $push: {meetings: meeting._id},
-    //   });
+      await job.save();
 
-    //   if (input.firstAlternative) {
-    //     await User.findByIdAndUpdate(input.firstAlternative, {
-    //       $push: {meetings: meeting._id},
-    //     });
-    //   }
+      await job.populate("createdBy");
+      await job.populate("meeting");
+      await job.populate("applications");
 
-    //   return meeting.populate("host coHost firstAlternative");
-    // }
+      return job;
+    },
+    cancelJob: async (_, { jobId }, context) => {
+      if (!context.user) throw new AuthenticationError("Not logged in");
+
+      const job = await Job.findById(jobId);
+      if (!job) throw new Error("Job not found");
+
+      // Optional: only allow creator or admin
+      if (job.createdBy.toString() !== context.user._id.toString()) {
+        throw new AuthenticationError("Not authorized");
+      }
+
+      await Job.findByIdAndDelete(jobId);
+      return true;   // ✅ GraphQL expects something back
+    }
   }
 };
 

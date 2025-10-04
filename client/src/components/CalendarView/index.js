@@ -26,9 +26,9 @@ const CalendarView = ({
           if (meetings.has(dateStr)) {
             return {
               className: "meeting-day",
-              onClick: () => {
-                alert(`Meetings available on ${dateStr}`);
-              }
+              // onClick: () => {
+              //   alert(`Meetings available on ${dateStr}`);
+              // }
             };
           }
         }}

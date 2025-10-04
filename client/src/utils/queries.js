@@ -91,10 +91,12 @@ export const QUERY_JOB = gql`
       applicationCount
       applications {
         _id
-        username
-        email
-        phone
-        degree
+        appliedAt
+        user {
+          _id
+          username
+          email
+        }
       }
     }
   }
