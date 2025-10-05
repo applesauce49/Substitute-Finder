@@ -39,6 +39,8 @@ type Mutation {
   acceptJob(jobId: ID!): Job
   applyForJob(jobId: ID!): Job   # optional, if you want applications
   cancelJob(jobId: ID!): Boolean!
+  acceptApplication(jobId: ID!, applicationId: ID!): Boolean!
+  declineApplication(jobId: ID!, applicationId: ID!): Boolean!
 }
 
 type Application {

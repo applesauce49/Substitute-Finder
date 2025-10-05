@@ -136,7 +136,38 @@ const resolvers = {
 
       await Job.findByIdAndDelete(jobId);
       return true;   // ✅ GraphQL expects something back
-    }
+    },
+    acceptApplication: async (_, { jobId, applicationId }, context) => {
+      if (!context.user) {
+        throw new AuthenticationError("Not logged in");
+      }
+
+      const job = Job.findOne(jobId);
+
+      if (!job) {
+        throw new Error("Job not found");
+      }
+
+      return true;
+    },
+    declineApplication: async (_, { jobId, applicationId }, context) => {
+      if (!context.user) {
+        throw new AuthenticationError("Not logged in");
+      }
+
+      // Try to update the job and remove the application entry
+      const job = await Job.findByIdAndUpdate(
+        jobId,
+        { $pull: { applications: { _id: applicationId } } },
+        { new: true }
+      );
+
+      if (!job) {
+        throw new Error("Job not found");
+      }
+
+      return true; // simple success indicator
+    },
   }
 };
 

@@ -14,15 +14,18 @@ const ApplicantList = ({ applications, onAccepted, onDenied }) => {
               <b>Applied: </b>{application.appliedAt}<br />
             </p>
             <div className="d-flex justify-content-center gap-2 mb-2 mr-2">
-
               <button
                 type="button"
                 className="btn btn-success"
-                onClick={onAccepted}
+                onClick={() => onAccepted?.(application._id)}
               >
                 Accept
               </button>
-              <button type="button" className="btn btn-secondary" onClick={onDenied}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => onDenied?.(application._id)}
+              >
                 Decline
               </button>
             </div>

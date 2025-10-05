@@ -7,7 +7,7 @@ import Auth from "../utils/auth";
 import { useQuery } from "@apollo/client";
 import { QUERY_JOB, QUERY_ME } from "../utils/queries";
 import { useMutation } from "@apollo/client";
-import { APPLY_FOR_JOB, CANCEL_JOB } from "../utils/mutations";
+import { ACCEPT_APPLICATION, APPLY_FOR_JOB, CANCEL_JOB, DECLINE_APPLICATION } from "../utils/mutations";
 import { isJobApplyDisabled } from "../utils/jobHelpers";
 
 const SingleJob = ({ jobId: propJobId, onClose }) => {
@@ -15,11 +15,13 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
   const jobId = propJobId || routeJobId;
   const [applyForJob] = useMutation(APPLY_FOR_JOB);
   const [cancelJob] = useMutation(CANCEL_JOB);
+  const [declineApplication] = useMutation(DECLINE_APPLICATION);
+  const [acceptApplication] = useMutation(ACCEPT_APPLICATION);
   const { data: userData } = useQuery(QUERY_ME);
 
   const admin = userData?.me.admin || "";
 
-  const { loading, data, error } = useQuery(QUERY_JOB, {
+  const { loading, data, error, refetch } = useQuery(QUERY_JOB, {
     variables: { id: jobId },
     skip: !jobId,
   });
@@ -36,7 +38,7 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
     event.preventDefault();
 
     try {
-      await applyForJob({variables: { jobId }});
+      await applyForJob({ variables: { jobId } });
     } catch (e) {
       console.error(e);
     }
@@ -48,7 +50,7 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
 
     console.log("Cancelling job ", jobId);
     try {
-      await cancelJob({variables: { jobId: jobId }});
+      await cancelJob({ variables: { jobId: jobId } });
     } catch (e) {
       console.error(e);
     }
@@ -57,8 +59,31 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
 
   const applied = job?.applications?.find((app) => app._id === userData?.me._id);
 
-  const accepted = () => { console.log("Application Accepted")};
-  const denied = () => { console.log("Application DENIED.")};
+  const accepted = async (appId, jobId) => { 
+    try {
+      console.log(`Acception application ${appId} for job ${jobId}`);
+      acceptApplication({ variables: {jobId: jobId, applicationId: appId } });
+      await refetch();
+    }
+    catch (e) {
+      console.error(e);
+    }
+    console.log("Application Accepted") 
+  };
+
+  const denied = async (appId, jobId) => {
+    try {
+      console.log(`Declining application ${appId} for job ${jobId}`);
+      declineApplication({ variables: { jobId: jobId, applicationId: appId } });
+      await refetch();
+    }
+    catch (e) {
+      console.error(e);
+    }
+
+    console.log("Application DENIED.");
+
+  };
 
   return (
     <div className="text-center single-job-close">
@@ -78,7 +103,11 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
 
       {(job?.applicationCount ?? 0) > 0 && job?.applications && (
         <div>
-          <ApplicantList applications={job?.applications} onAccepted={accepted} onDenied={denied} />
+          <ApplicantList
+            applications={job?.applications}
+            onAccepted={(appId) => accepted(appId, job._id)}
+            onDenied={(appId) => denied(appId, job._id)}
+          />
         </div>
       )}
       <div className="d-flex justify-content-end gap-2">

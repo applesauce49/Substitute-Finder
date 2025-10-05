@@ -77,7 +77,7 @@ export const APPLY_FOR_JOB = gql`
         user {
           _id
           username
-          email      
+          email
         }
       }
     }
@@ -87,6 +87,19 @@ export const APPLY_FOR_JOB = gql`
 export const CANCEL_JOB = gql`
   mutation CancelJob($jobId: ID!) {
     cancelJob(jobId: $jobId)
+  }
+`;
+
+export const ACCEPT_APPLICATION = gql`
+  mutation AcceptApplication($jobId: ID!, $applicationId: ID!) {
+    acceptApplication(jobId: $jobId, applicationId: $applicationId)
+  }
+`;
+
+
+export const DECLINE_APPLICATION = gql`
+  mutation DeclineApplication($jobId: ID!, $applicationId: ID!) {
+    declineApplication(jobId: $jobId, applicationId: $applicationId)
   }
 `;
 
