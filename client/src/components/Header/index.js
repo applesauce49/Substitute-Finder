@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 
 import Auth from "../../utils/auth";
 // import { FaReact } from "react-icons/fa";
-import { Animated } from "react-animated-css";
+// import { Animated } from "react-animated-css";
+import { motion } from "framer-motion";
 
 import logo from "./logo.svg";
 import "./App.css";
@@ -27,10 +28,22 @@ const Header = () => {
     <header className="bg-dark mb-4 flex-row align-center text-white">
       <div className="container flex-row justify-space-between-lg justify-center align-center main-logo">
         <Link className="main-logo" to="/">
-          <Animated
-            animationIn="bounceInLeft"
-            animationOut="fadeOut"
-            isVisible={true}
+          <motion.div
+            initial={{ x: -100, opacity: 0 }}   // off-screen to the left, invisible
+            animate={{
+              x: 0,
+              opacity: 1,
+              transition: {
+                type: "spring",   // natural bounce
+                stiffness: 120,
+                damping: 12,
+                duration: 0.8,
+              },
+            }}
+            exit={{
+              opacity: 0,
+              transition: { duration: 0.4 },
+            }}
           >
             {/* <h1 className='mb-1 mt-1 main-logo'>Sub At<span className='icon'><FaReact/></span>mic</h1> */}
             <h1 className="mb-1 mt-0 main-logo">
@@ -42,7 +55,7 @@ const Header = () => {
               mic
             </h1>
             <p className="sub-title">An app for finding Substitute Peer Parents</p>
-          </Animated>
+          </motion.div>
         </Link>
 
         <nav className="text-center">
