@@ -45,7 +45,7 @@ const ProfileModal = () => {
     about: userData.about,
   });
 
-  const [updateMe, { error }] = useMutation(UPDATE_ME);
+  const [ updateMe ] = useMutation(UPDATE_ME);
 
   // update state based on form input changes
   const handleChange = (event) => {

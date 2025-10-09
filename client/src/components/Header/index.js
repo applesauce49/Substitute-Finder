@@ -8,8 +8,8 @@ import { motion } from "framer-motion";
 
 import logo from "./logo.svg";
 import "./App.css";
-import { useQuery } from "@apollo/client";
-import { QUERY_ME } from "../../utils/queries";
+// import { useQuery } from "@apollo/client";
+// import { QUERY_ME } from "../../utils/queries";
 
 const Header = () => {
   const logout = (event) => {
@@ -17,12 +17,12 @@ const Header = () => {
     Auth.logout();
   };
 
-  const { data } = useQuery(QUERY_ME, {
-    skip: !Auth.loggedIn(),
-  });
+  // const { data } = useQuery(QUERY_ME, {
+  //   skip: !Auth.loggedIn(),
+  // });
 
-  const me = data?.me;
-  const isAdmin = me?.admin === true;
+  // const me = data?.me;
+  // const isAdmin = me?.admin === true;
 
   return (
     <header className="bg-dark mb-4 flex-row align-center text-white">
