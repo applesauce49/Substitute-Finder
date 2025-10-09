@@ -2,7 +2,15 @@ import decode from "jwt-decode";
 
 class AuthService {
   getProfile() {
-    return decode(this.getToken());
+    const token = this.getToken();
+    if (!token) return null;
+
+    try {
+      return decode(token);
+    } catch (err) {
+      console.error("Invalid token", err);
+      return null;
+    }
   }
 
   loggedIn() {
