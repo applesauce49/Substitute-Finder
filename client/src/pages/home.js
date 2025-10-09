@@ -17,7 +17,7 @@ const Home = () => {
 
   // // const admin = userData?.me.admin || "";
   // const myJobs = userData?.me.jobs || [];
-  const userId = Auth.getProfile().data._id;
+  const userId = Auth.getProfile()?.data?._id;
 
   const assignedJobs = jobs.filter(job => job.assignedTo?._id === userId);
   const availableJobs = jobs.filter(job => job.active && !job.assignedTo);
