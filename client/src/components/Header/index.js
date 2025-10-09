@@ -2,7 +2,6 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 import Auth from "../../utils/auth";
-import "bootstrap/dist/css/bootstrap.min.css";
 // import { FaReact } from "react-icons/fa";
 import { Animated } from "react-animated-css";
 

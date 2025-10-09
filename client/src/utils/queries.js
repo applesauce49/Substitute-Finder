@@ -59,6 +59,11 @@ export const QUERY_JOBS = gql`
         username
         email
       }
+      assignedTo {
+        _id
+        username
+        email
+      }
       meeting {
         _id
         title

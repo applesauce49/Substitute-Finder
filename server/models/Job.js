@@ -41,7 +41,11 @@ const jobSchema = new Schema(
         }
       }
     ],
-    assignedTo: { type: Schema.Types.ObjectId, ref: "User"}
+    assignedTo: { 
+      type: Schema.Types.ObjectId, 
+      ref: "User", 
+      default: null
+    },
   },
   {
     toJSON: {

@@ -59,7 +59,7 @@ type Job {
   meeting: Meeting!
   applicationCount: Int!
   applications: [Application]   # if you want to support applications
-  assignedTo: User!        # optional for accepted subs
+  assignedTo: User        # optional for accepted subs
 }
 
 type Meeting {

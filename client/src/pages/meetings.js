@@ -6,12 +6,13 @@ import { useQuery } from "@apollo/client";
 
 const Meetings = () => {
     const [showForm, setShowForm] = useState(false);
-    // const { data, loading } = useQuery(QUERY_MEETINGS);
-    // const calendars = data?.calendars || [];
+    const { data, loading } = useQuery(QUERY_MEETINGS);
+    const calendars = data?.calendars || [];
+    console.log(calendars);
 
-    // if (loading) {
-    //     return <div>Loading...</div>;
-    // }
+    if (loading) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <div className="container py-4">

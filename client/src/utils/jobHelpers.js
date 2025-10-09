@@ -10,6 +10,8 @@ export function isJobApplyDisabled(job, { admin, applied }) {
   // return (
   //   admin ||              // admins can't apply
   //   applied ||            // already applied
-  //   job.createdBy._id === userId // owner of the job
+  //   job.createdBy._id === userId || // owner of the job
+  //   !job.active ||
+  //  job.assignedTo
   // );
 }

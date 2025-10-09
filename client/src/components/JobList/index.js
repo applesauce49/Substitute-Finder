@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import SingleJob from '../../pages/SingleJob.js';
 
 const JobList = ({ jobs, title, onRefetch }) => {
-
+  console.log(jobs)
   const [selectedJob, setSelectedJob] = useState(null);
 
   return (
@@ -11,29 +11,40 @@ const JobList = ({ jobs, title, onRefetch }) => {
       <h3 className='list-heading text-center mb-4 mt-2'>{title}</h3>
       {jobs && jobs.length > 0 ? (
 
-        jobs.filter(job => job.active === true)
+        jobs.filter(job => job.active === true || true)
           .map(job => (
-            <div key={job._id} className="card col-12 mb-3">
-              <p className="card-header job-list-header">
+            <div
+              key={job._id}
+              className="card col-12 mb-3"
+            >
+              <p className={`card-header ${job.active ? "" : "bg-success text-white"} job-list-header`}>
                 {job.meeting.title}
               </p>
-              <div className="card-body text-center">
-                <Link
-                  to="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setSelectedJob(job)
-                  }}
-                >
-                  <p>
-                    <b>Date: </b>{job.dates}<br />
-                    {job?.createdBy?.username ?? "N/A"}&nbsp;
-                    <b>Posted: </b>{job.createdAt}<br />
-                    <b>Applications: </b>{job.applicationCount}
 
-                    {/* <b>Notes: </b> {job.description}<br /> */}
+              <div className={`card-body text-center`}>
+                {job.active ? (
+                  <Link
+                    to="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setSelectedJob(job);
+                    }}
+                    style={{ textDecoration: "none", color: "inherit" }}
+                  >
+                    <p>
+                      <b>Date:</b> {job.dates}<br />
+                      <b>For:</b> {job?.createdBy?.username ?? "N/A"}<br />
+                      <b>Posted:</b> {job.createdAt}<br />
+                      <b>Applications:</b> {job.applicationCount ?? 0}
+                    </p>
+                  </Link>
+                ) : (
+                  <p>
+                    <b>Date:</b> {job.dates}<br />
+                    <b>For:</b> {job?.createdBy?.username ?? "N/A"}<br />
+                    <b>Assigned To:</b> {job.assignedTo?.username ?? "Unassigned"}
                   </p>
-                </Link>
+                )}
               </div>
             </div>
           ))

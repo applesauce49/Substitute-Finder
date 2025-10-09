@@ -5,6 +5,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { QUERY_MEETINGS } from "../../utils/queries";
+import { formatDateLocal } from "../../utils/dateUtils";
 
 
 const Calendar = () => {
@@ -13,30 +14,36 @@ const Calendar = () => {
   if (loading) return <p>Loading your meetings...</p>
   if (error) return <p>Error: {error.message}</p>
 
-  const eventSources = [];
+  console.log("Data: ", data);
+  // const eventSources = [];
 
-  // Primary calendar (with events)
-  if (data?.Meetings?.primary) {
-    eventSources.push({
-      events: data?.meetings?.Meetings.map(ev => ({
-        _id: ev._id,
-        title: ev.summary,
-        start: ev.start?.dateTime || ev.start?.date,
-        end: ev.end?.dateTime || ev.end?.date,
-      })),
-      color: "blue",
-      textColor: "white"
-    });
-  }
-
-  // // Other calendars (metadata only for now)
-  // (data?.Calendars?.others || []).forEach(cal => {
+  // // Primary calendar (with events)
+  // if (data?.meetings) {
   //   eventSources.push({
-  //     url: `/google-api-proxy/${cal._id}`,  // placeholder: later you can fetch via Google API
-  //     color: cal.color || "gray",
+  //     events: data?.meetings?.map(ev => ({
+  //       _id: ev._id,
+  //       title: ev.summary,
+  //       start: ev.start?.dateTime || ev.start?.date,
+  //       end: ev.end?.dateTime || ev.end?.date,
+  //     })),
+  //     color: "blue",
   //     textColor: "white"
   //   });
-  // });
+
+  const events = data.meetings.map((m) => ({
+    id: m._id,
+    title: m.title,
+    start: formatDateLocal(m.startDateTime, true),
+    end: formatDateLocal(m.endDateTime, true),
+    extendedProps: {
+      description: m.description,
+      gcalEventId: m.gcalEventId,
+    },
+    color: "blue",
+    textColor: "white"
+  }));
+
+  console.log("Events: ", events);
 
   const handleDateClick = (info) => {
     alert(`Clicked on date: ${info.dateStr}`);
@@ -56,7 +63,7 @@ const Calendar = () => {
           center: "title",
           right: "dayGridMonth,timeGridWeek,timeGridDay",
         }}
-        eventSources={eventSources}
+        events={events}
         dateClick={handleDateClick}
         eventClick={handleEventClick}
         editable={false}

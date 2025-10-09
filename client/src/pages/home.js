@@ -8,15 +8,19 @@ import { QUERY_JOBS, QUERY_ME } from '../utils/queries';
 
 const Home = () => {
   const { data: userData } = useQuery(QUERY_ME);
-  console.log("Username: ", userData?.me?.username);
+  console.log("Username: ", userData?.me?.username, "myJobs: ", userData?.me?.jobs);
 
   const { loading, data, error, refetch } = useQuery(QUERY_JOBS);
   console.log("loading:", loading, "data:", data, "error:", error);
 
   const jobs = data?.jobs || [];
 
-  // const admin = userData?.me.admin || "";
-  const myJobs = userData?.me.jobs || [];
+  // // const admin = userData?.me.admin || "";
+  // const myJobs = userData?.me.jobs || [];
+  const userId = Auth.getProfile().data._id;
+
+  const assignedJobs = jobs.filter(job => job.assignedTo?._id === userId);
+  const availableJobs = jobs.filter(job => job.active && !job.assignedTo);
 
   const loggedIn = Auth.loggedIn();
 
@@ -34,7 +38,7 @@ const Home = () => {
               <div>Loading...</div>
             ) : (
               <JobList
-                jobs={jobs}
+                jobs={availableJobs}
                 title="Available Jobs"
                 onRefetch={refetch}
               />
@@ -47,8 +51,8 @@ const Home = () => {
               <div>Loading...</div>
             ) : (
               <JobList
-                jobs={myJobs}
-                title="My Jobs"
+                jobs={assignedJobs}
+                title="Upcoming Jobs"
               />
             )}
           </div>

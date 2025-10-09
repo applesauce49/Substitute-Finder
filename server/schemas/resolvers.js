@@ -29,16 +29,21 @@ const resolvers = {
         .select('-__v -password')
         .populate('jobs');
     },
-    jobs: async () => {
-      return Job.find({})
-        .populate("createdBy")
+    jobs: async (_, args, context) => {
+      const now = new Date();
+      const filter = { startDateTime: { $gte: now } };
+
+      return Job.find(filter)
+        .populate("createdBy", "_id username email")
+        .populate("assignedTo", "_id username email")
+        .populate("meeting", "_id title startDateTime")
         .populate("applications")
-        .populate("meeting")
         .sort({ createdAt: -1 });
     },
     job: async (_, { _id }) => {
       const job = await Job.findById(_id)
         .populate({ path: "createdBy", select: "_id username email" })
+        .populate({ path: "assignedTo", select: "_id username email " })
         .populate({ path: "meeting", select: "_id title description startDateTime endDateTime" })
         .populate({ path: "applications.user", select: "_id username email" });
 
@@ -142,11 +147,35 @@ const resolvers = {
         throw new AuthenticationError("Not logged in");
       }
 
-      const job = Job.findOne(jobId);
+      const job = await Job.findById(jobId);
 
       if (!job) {
         throw new Error("Job not found");
       }
+
+      const acceptedApp = (job.applications || []).find(
+        (app) => app._id.toString() === applicationId
+      );
+
+      if (!acceptedApp) {
+        throw new Error("Application not found.");
+      }
+
+      // mark job as inactive and assign user
+      job.active = false;
+      job.assignedTo = acceptedApp.user._id;
+
+      // TODO: optional: handle declining the rest of the apps here
+      // job.applications = [acceptedApp];
+
+      await job.save();
+
+      // add job to the accepted user's profile
+      await User.findByIdAndUpdate(
+        acceptedApp.user._id,
+        { $addToSet: { acceptedJobs: job._id } },
+        { new: true }
+      );
 
       return true;
     },
