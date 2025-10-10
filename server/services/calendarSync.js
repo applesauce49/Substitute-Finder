@@ -1,7 +1,7 @@
 import { addMonths } from "date-fns";
 import { getUserCalendarClient } from "./googleClient.js";
 import Meeting from "../models/Meeting.js";
-import CalendarSyncState from "../models/CalendarSyncState.js"; // assuming you have this
+import CalendarSyncState from "../models/calendarSyncState.js"; // assuming you have this
 
 const FWD_MONTHS = 6;
 
