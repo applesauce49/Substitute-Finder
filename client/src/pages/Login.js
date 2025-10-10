@@ -1,13 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { useMutation } from "@apollo/client";
-import { LOGIN_USER } from "../utils/mutations";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Auth from "../utils/auth";
 import GoogleButton from "../components/GoogleButton/GoogleButton.js";
 
 const Login = () => {
-  const [formState, setFormState] = useState({ email: "", password: "" });
-  const [login, { error }] = useMutation(LOGIN_USER);
   const navigate = useNavigate();
 
   // ✅ Handle token returned from Google OAuth
@@ -34,31 +30,6 @@ const Login = () => {
     }
   }, [navigate]);
 
-  // Update form state
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setFormState({
-      ...formState,
-      [name]: value,
-    });
-  };
-
-  // Handle form submit (email/password login)
-  const handleFormSubmit = async (event) => {
-    event.preventDefault();
-    try {
-      const { data } = await login({
-        variables: { ...formState },
-      });
-      Auth.login(data.login.token); // same storage step as Google
-      navigate("/");
-    } catch (e) {
-      console.error(e);
-    }
-
-    setFormState({ email: "", password: "" });
-  };
-
   const API_BASE = process.env.REACT_APP_API_URL || "http://127.0.0.1:3001"
 
   return (
@@ -69,40 +40,6 @@ const Login = () => {
           <p>Please sign in:</p>
           <GoogleButton onClick={() => window.location.href = `${API_BASE}/auth/google`} />
         </div>
-
-        {/* Local email/password login 
-        <div className="card">
-          <h4 className="card-header">Login with Email</h4>
-          <div className="card-body">
-            <form className="login-form" onSubmit={handleFormSubmit}>
-              <input
-                className="form-input"
-                placeholder="Your email"
-                name="email"
-                type="email"
-                id="email"
-                value={formState.email}
-                onChange={handleChange}
-              />
-              <input
-                className="form-input"
-                placeholder="******"
-                name="password"
-                type="password"
-                id="password"
-                value={formState.password}
-                onChange={handleChange}
-              />
-              <button
-                className="btn d-block w-100 no-border-btn btn-primary"
-                type="submit"
-              >
-                Login
-              </button>
-            </form>
-            {error && <div>Login failed</div>}
-          </div>
-        </div>*/}
       </div>
     </main>
   );
