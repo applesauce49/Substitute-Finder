@@ -95,7 +95,8 @@ app.get(
     }
 
     const token = signToken(req.user);
-    res.redirect(`http://127.0.0.1:3000/login#token=${token}`);
+    const redirectBase = process.env.CLIENT_URL || "http://127.0.0.1:3000";
+    res.redirect(`${redirectBase}/login#token=${token}`);
   }
 );
 
@@ -132,12 +133,12 @@ try {
 }
 
 // Production: serve React build
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../client/build")));
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../client/build/index.html"));
-  });
-}
+// if (process.env.NODE_ENV === "production") {
+//   app.use(express.static(path.join(__dirname, "../client/build")));
+//   app.get("*", (req, res) => {
+//     res.sendFile(path.join(__dirname, "../client/build/index.html"));
+//   });
+// }
 
 // Start Apollo + Express
 const startApolloServer = async () => {
@@ -149,7 +150,7 @@ const startApolloServer = async () => {
   app.listen(PORT, () => {
     console.log(`API server running on port ${PORT}!`);
     console.log(
-      `GraphQL at http://127.0.01:${PORT}${server.graphqlPath}`
+      `GraphQL endpoint: http://localhost:${PORT}${server.graphqlPath}`
     );
   });
 };
