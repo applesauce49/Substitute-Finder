@@ -21,8 +21,10 @@ import Signup from "./pages/Signup";
 import Calendar from "./components/Calendar";
 // import RequireAdmin from "./components/RequireAdmin";
 
+const API_BASE = process.env.REACT_APP_API_URL || "";
+
 const httpLink = createHttpLink({
-  uri: "/graphql",
+  uri: `${API_BASE}/graphql`,
 });
 
 const authLink = setContext((_, { headers }) => {
