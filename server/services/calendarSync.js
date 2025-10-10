@@ -7,9 +7,10 @@ const FWD_MONTHS = 6;
 
 function mapGoogleEvent(ev, calendarId) {
   const allDay = !!ev.start?.date;
+  const ownerId = context?.user?._id || "google"
   return {
     source: "google",
-    ownership: "google",
+    ownership: ownerId,
     calendarId,
     gcalEventId: ev.id,
     iCalUID: ev.iCalUID,

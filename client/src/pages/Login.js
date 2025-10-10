@@ -70,7 +70,7 @@ const Login = () => {
           <GoogleButton onClick={() => window.location.href = `${API_BASE}/auth/google`} />
         </div>
 
-        {/* Local email/password login */}
+        {/* Local email/password login 
         <div className="card">
           <h4 className="card-header">Login with Email</h4>
           <div className="card-body">
@@ -102,7 +102,7 @@ const Login = () => {
             </form>
             {error && <div>Login failed</div>}
           </div>
-        </div>
+        </div>*/}
       </div>
     </main>
   );
