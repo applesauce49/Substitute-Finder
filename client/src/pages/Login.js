@@ -59,13 +59,15 @@ const Login = () => {
     setFormState({ email: "", password: "" });
   };
 
+  const API_BASE = process.env.REACT_APP_API_URL || "http://127.0.0.1:3001"
+
   return (
     <main className="flex-row justify-center mb-4">
       <div className="col-12 col-md-6">
         <div style={{ textAlign: "center", marginTop: "4rem" }}>
           <h2>Welcome to Substitute Finder</h2>
           <p>Please sign in:</p>
-          <GoogleButton onClick={() => window.location.href = "http://127.0.0.1:3001/auth/google"} />
+          <GoogleButton onClick={() => window.location.href = `${API_BASE}/auth/google`} />
         </div>
 
         {/* Local email/password login */}
