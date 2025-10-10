@@ -50,8 +50,8 @@ const resolvers = {
       if (!job) throw new Error("Job not found");
       return job;
     },
-    meetings: async () => {
-      return Meeting.find({})
+    meetings: async (parent, args, context) => {
+      return Meeting.find({ userId: context.user._id })
         .populate("host")
         .populate("coHost")
         .populate("firstAlternative");

@@ -16,7 +16,6 @@ import Login from "./pages/Login";
 import NoMatch from "./pages/NoMatch";
 import SingleJob from "./pages/SingleJob";
 import Profile from "./pages/profile";
-import Signup from "./pages/Signup";
 
 import Calendar from "./components/Calendar";
 // import RequireAdmin from "./components/RequireAdmin";
@@ -26,7 +25,6 @@ const API_BASE = process.env.REACT_APP_API_URL || "";
 const httpLink = createHttpLink({
   uri: `${API_BASE}/graphql`,
 });
-
 const authLink = setContext((_, { headers }) => {
   const token = localStorage.getItem("id_token");
   return {
@@ -52,7 +50,6 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
               <Route path="/profile">
                 <Route path=":username" element={<Profile />} />
                 <Route path="" element={<Profile />} />

@@ -69,7 +69,9 @@ type Meeting {
   description: String
   startDateTime: DateTime
   endDateTime: DateTime
-  host: User
+  ownership: String
+  userId: String
+  allDay: Boolean
 }
 
 type Calendar {

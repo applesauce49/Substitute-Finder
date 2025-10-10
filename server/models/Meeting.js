@@ -68,6 +68,8 @@ const meetingSchema = new Schema(
 
     ownership: { type: String, enum: ["google", "app"], default: "google" },
 
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+
     updatedAt: { type: Date, default: Date.now },
     createdAt: { type: Date, default: Date.now }
   },

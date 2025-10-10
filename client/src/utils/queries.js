@@ -116,6 +116,9 @@ export const QUERY_MEETINGS = gql`
       startDateTime
       endDateTime
       description
+      ownership
+      userId
+      allDay
     }
   }
 `;

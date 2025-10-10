@@ -5,12 +5,12 @@ import CalendarSyncState from "../models/calendarSyncState.js"; // assuming you 
 
 const FWD_MONTHS = 6;
 
-function mapGoogleEvent(ev, calendarId) {
+function mapGoogleEvent(ev, calendarId, userId) {
   const allDay = !!ev.start?.date;
-  const ownerId = context?.user?._id || "google"
   return {
     source: "google",
-    ownership: ownerId,
+    ownership: "google",
+    userId,
     calendarId,
     gcalEventId: ev.id,
     iCalUID: ev.iCalUID,
@@ -70,7 +70,7 @@ export async function syncCalendar(userId, calendarId = "primary") {
       if (ev.status === "cancelled") continue;
 
       console.log(`[Sync] Upserting event: ${ev.summary} (ID: ${ev.id})`);
-      const doc = mapGoogleEvent(ev, calendarId);
+      const doc = mapGoogleEvent(ev, calendarId, userId);
       console.log("[Sync] Document to insert:", doc);
 
       await Meeting.updateOne(

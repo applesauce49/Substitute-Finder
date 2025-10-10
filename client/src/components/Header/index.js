@@ -82,9 +82,6 @@ const Header = () => {
               <Link className="nav-bar-links" to="/login">
                 Login
               </Link>
-              <Link className="nav-bar-links" to="/signup">
-                Signup
-              </Link>
             </>
           )}
         </nav>
