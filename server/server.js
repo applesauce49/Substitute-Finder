@@ -15,11 +15,13 @@ import { signToken } from "./utils/auth.js";
 import { syncCalendar } from "./services/calendarSync.js"
 
 import { typeDefs, resolvers } from "./schemas/index.js";
-import db from "./config/connection.js";
+// import db from "./config/connection.js";
+import { connectDB } from "./config/connection.js";
 // Load passport strategy after env has been configured
 await import("./auth.js");
 import authMiddleware, { getUserFromReq } from "./authMiddleware.js";
 
+const db = await connectDB();
 const PORT = process.env.PORT || 3001;
 const app = express();
 
@@ -107,6 +109,7 @@ app.post("/logout", (req, res) => {
 let server;
 
 try {
+  await connectDB();
 
   // Apollo server with context from passport session
   server = new ApolloServer({
@@ -138,16 +141,16 @@ if (process.env.NODE_ENV === "production") {
 
 // Start Apollo + Express
 const startApolloServer = async () => {
+
   await server.start();
   server.applyMiddleware({ app });
 
-  db.once("open", () => {
-    app.listen(PORT, () => {
-      console.log(`API server running on port ${PORT}!`);
-      console.log(
-        `GraphQL at http://127.0.01:${PORT}${server.graphqlPath}`
-      );
-    });
+
+  app.listen(PORT, () => {
+    console.log(`API server running on port ${PORT}!`);
+    console.log(
+      `GraphQL at http://127.0.01:${PORT}${server.graphqlPath}`
+    );
   });
 };
 
