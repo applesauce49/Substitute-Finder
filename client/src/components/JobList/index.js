@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import SingleJob from '../../pages/SingleJob.js';
 
-const JobList = ({ jobs, title, onRefetch }) => {
+const JobList = ({ jobs, title, onRefetch, children }) => {
   console.log(jobs)
   const [selectedJob, setSelectedJob] = useState(null);
 
   return (
     <div className='job-list-container'>
       <h3 className='list-heading text-center mb-4 mt-2'>{title}</h3>
+      {children && <div className="joblist-actions mb-3">{children}</div>}
       {jobs && jobs.length > 0 ? (
 
         jobs.filter(job => job.active === true || true)
@@ -58,7 +59,7 @@ const JobList = ({ jobs, title, onRefetch }) => {
           <div className="modal-dialog modal-lg">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Available Job Details</h5>
+                <h5 className="modal-title">{title} Details</h5>
                 <button
                   type="button"
                   className="btn-close"

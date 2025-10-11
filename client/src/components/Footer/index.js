@@ -18,7 +18,7 @@ const Footer = () => {
         <a
           target="_blank"
           rel="noopener noreferrer"
-          href="https://github.com/rva-mike/Substitute-Finder"
+          href="https://github.com/applesauce49/Substitute-Finder"
         >
           <FaGithub className="github-icon" />
         </a>

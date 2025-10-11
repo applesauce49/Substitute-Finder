@@ -94,7 +94,7 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
         <div className="card-body">
           <p>
             <b>Date: </b>{job.dates}<br />
-            <p className="text-dark">{job?.createdBy?.username ?? "N/A"}</p>
+            <b>For: </b>{job?.createdBy?.username ?? "N/A"}<br />
             <b>Posted: </b>{job.createdAt}<br />
             <b>Notes: </b> {job.description}<br />
           </p>
