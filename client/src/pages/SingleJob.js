@@ -7,7 +7,12 @@ import Auth from "../utils/auth";
 import { useQuery } from "@apollo/client";
 import { QUERY_JOB, QUERY_ME } from "../utils/queries";
 import { useMutation } from "@apollo/client";
-import { ACCEPT_APPLICATION, APPLY_FOR_JOB, CANCEL_JOB, DECLINE_APPLICATION } from "../utils/mutations";
+import { ACCEPT_APPLICATION, 
+        APPLY_FOR_JOB, 
+        CANCEL_JOB, 
+        DECLINE_APPLICATION,
+        RUN_MATCH_ENGINE,
+      } from "../utils/mutations";
 import { isJobApplyDisabled } from "../utils/jobHelpers";
 
 const SingleJob = ({ jobId: propJobId, onClose }) => {
@@ -17,6 +22,7 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
   const [cancelJob] = useMutation(CANCEL_JOB);
   const [declineApplication] = useMutation(DECLINE_APPLICATION);
   const [acceptApplication] = useMutation(ACCEPT_APPLICATION);
+  const [runMatchEngine] = useMutation(RUN_MATCH_ENGINE);
   const { data: userData } = useQuery(QUERY_ME);
 
   const admin = userData?.me.admin || "";
@@ -56,6 +62,18 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
     }
     onClose();
   };
+
+  const handleRunMatchEngine = async (event) => {
+    event.preventDefault();
+
+    console.log("Running Match Engine");
+    try {
+      await runMatchEngine();
+    } catch (e) {
+      console.error(e);
+    }
+    onClose();
+  }
 
   const applied = job?.applications?.find((app) => app._id === userData?.me._id);
 
@@ -111,6 +129,14 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
         </div>
       )}
       <div className="d-flex justify-content-end gap-2">
+        <form onSubmit={handleRunMatchEngine}>
+          <button 
+          className="btn no-border-btn btn-info"
+          type="submit"
+          >
+            Run Match Engine
+          </button>
+        </form>
         {Auth.loggedIn() && job.createdBy._id === Auth.getProfile().data._id && (
           <form onSubmit={handleCancelJob}>
             <button

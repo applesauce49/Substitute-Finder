@@ -103,6 +103,12 @@ export const DECLINE_APPLICATION = gql`
   }
 `;
 
+export const RUN_MATCH_ENGINE = gql`
+  mutation RunMatchEngine {
+    runMatchEngine
+  }
+`;
+
 export const UPDATE_ME = gql`
   mutation updateMe(
     $email: String

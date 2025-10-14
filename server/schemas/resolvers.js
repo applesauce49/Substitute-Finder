@@ -2,6 +2,7 @@ import { AuthenticationError } from 'apollo-server-express';
 import { User, Job, Meeting } from "../models/index.js";
 import { signToken } from "../utils/auth.js";
 import { GraphQLJSON } from 'graphql-type-json';
+import { runMatchEngine } from "../matchEngine/matchEngine.js";
 import { getCalendarClient, getUserCalendarClient } from '../services/googleClient.js';
 
 const resolvers = {
@@ -143,19 +144,21 @@ const resolvers = {
       return true;   // ✅ GraphQL expects something back
     },
     acceptApplication: async (_, { jobId, applicationId }, context) => {
-      if (!context.user) {
-        throw new AuthenticationError("Not logged in");
-      }
-
+      // if (!context.user) {
+      //   throw new AuthenticationError("Not logged in");
+      // }
+      console.log(`Accepting application ${applicationId} for jobId ${jobId}`)
       const job = await Job.findById(jobId);
 
       if (!job) {
         throw new Error("Job not found");
       }
 
-      const acceptedApp = (job.applications || []).find(
-        (app) => app._id.toString() === applicationId
-      );
+      const acceptedApp =
+        job.applications.id(applicationId) ||
+        (job.applications || []).find(
+          (a) => String(a?._id) === String(applicationId)
+        );
 
       if (!acceptedApp) {
         throw new Error("Application not found.");
@@ -196,6 +199,13 @@ const resolvers = {
       }
 
       return true; // simple success indicator
+    },
+    runMatchEngine: async (_, __, context) => {
+      // if (!context.user || context.user.role !== "admin") {
+      //   throw new Error("Unauthorized");
+      // }
+      await runMatchEngine();
+      return true;
     },
   }
 };

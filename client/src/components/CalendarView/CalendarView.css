@@ -27,3 +27,12 @@
   left: 50%;
   transform: translateX(-50%);
 }
+
+.meeting-calendar {
+  display: flex;
+  justify-content: center;
+}
+
+.calendar-view {
+  display: inline-block;
+}

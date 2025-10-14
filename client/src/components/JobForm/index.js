@@ -22,6 +22,8 @@ const JobForm = ({ onRefetch }) => {
   }
   const meetingDates = new Set(meetingsByDate.keys());
 
+  console.log(`meetingDates:`, meetingDates);
+
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [pendingJob, setPendingJob] = useState(null);
 
@@ -237,10 +239,10 @@ const JobForm = ({ onRefetch }) => {
             onSubmit={handleFormSubmit}
           >
             <label className="text-dark">Dates:</label>
-            <div className="meeting-calendar col-12 col-md-12">
+            <div className="meeting-calendar d-flex justify-content-center align-items-center col-12 col-md-12">
               <CalendarView
                 multiple
-                meetings={meetingDates}
+                meetings={meetingsByDate}
                 onChange={handleDatesChange}
                 minDate={minDate}
                 maxDate={maxDate}

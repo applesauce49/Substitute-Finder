@@ -41,6 +41,7 @@ type Mutation {
   cancelJob(jobId: ID!): Boolean!
   acceptApplication(jobId: ID!, applicationId: ID!): Boolean!
   declineApplication(jobId: ID!, applicationId: ID!): Boolean!
+  runMatchEngine: Boolean!
 }
 
 type Application {

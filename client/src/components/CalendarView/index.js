@@ -6,7 +6,7 @@ import { formatDateLocal } from "../../utils/dateUtils";
 const CalendarView = ({
   value,
   onChange,
-  meetings = new Set(),
+  meetings = new Map(),
   multiple = false,
   minDate,
   maxDate,
@@ -15,6 +15,8 @@ const CalendarView = ({
   return (
     <div className="calendar-view big-calendar">
       <Calendar
+        mainPosition="bottom"
+        relativePosition="center"
         multiple={multiple}
         color="red"
         value={value}
@@ -23,12 +25,17 @@ const CalendarView = ({
         maxDate={maxDate}
         mapDays={({ date }) => {
           const dateStr = formatDateLocal(date.toDate()); // use local format
-          if (meetings.has(dateStr)) {
+
+          const meetingInfo = meetings.get(dateStr);
+
+          if (meetingInfo) {
+            const tooltipText = Array.isArray(meetingInfo)
+              ? meetingInfo.map(m => m.title || "Untitled").join("\n")
+              : "Meeting scheduled";
+            
             return {
               className: "meeting-day",
-              // onClick: () => {
-              //   alert(`Meetings available on ${dateStr}`);
-              // }
+              title: tooltipText,
             };
           }
         }}
