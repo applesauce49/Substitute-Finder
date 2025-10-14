@@ -14,7 +14,7 @@ import bootstrap5Plugin from "@fullcalendar/bootstrap5";
 const Calendar = () => {
   // const { data, loading, error } = useQuery(QUERY_MEETINGS);
   const { data: calendarsData, loading: calendarsLoading, error: calendarsError } = useQuery(QUERY_CALENDARS);
-  const [fetchEvents, {data: eventsData }] = useLazyQuery(QUERY_EVENTS);
+  const [fetchEvents] = useLazyQuery(QUERY_EVENTS);
   const [allEvents, setAllEvents] = useState([]);
 
   const handleDateClick = (info) => {
@@ -27,6 +27,10 @@ const Calendar = () => {
 
 useEffect(() => {
   if (calendarsLoading) return;
+  if (calendarsError) {
+    console.error("Error loading calendars:", calendarsError);
+    return;
+  }
   if (!calendarsData?.googleCalendars) return;
 
   const loadAll = async () => {
@@ -57,7 +61,7 @@ useEffect(() => {
   };
 
   loadAll();
-}, [calendarsLoading, calendarsData, fetchEvents]);
+}, [calendarsLoading, calendarsData, calendarsError, fetchEvents]);
 
   return (
     <div style={{ maxWidth: "1080px", margin: "0 auto" }}>
