@@ -1,49 +1,21 @@
-import React from "react";
-import { useQuery } from "@apollo/client";
+import React, { useState, useEffect } from "react";
+import { useQuery, useLazyQuery } from "@apollo/client";
+import { QUERY_CALENDARS, QUERY_EVENTS } from "../../utils/queries";
+
+import 'bootstrap/dist/css/bootstrap.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
+
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import { QUERY_MEETINGS } from "../../utils/queries";
-import { formatDateLocal } from "../../utils/dateUtils";
-
+import bootstrap5Plugin from "@fullcalendar/bootstrap5";
 
 const Calendar = () => {
-  const { data, loading, error } = useQuery(QUERY_MEETINGS);
-
-  if (loading) return <p>Loading your meetings...</p>
-  if (error) return <p>Error: {error.message}</p>
-
-  console.log("Data: ", data);
-  // const eventSources = [];
-
-  // // Primary calendar (with events)
-  // if (data?.meetings) {
-  //   eventSources.push({
-  //     events: data?.meetings?.map(ev => ({
-  //       _id: ev._id,
-  //       title: ev.summary,
-  //       start: ev.start?.dateTime || ev.start?.date,
-  //       end: ev.end?.dateTime || ev.end?.date,
-  //     })),
-  //     color: "blue",
-  //     textColor: "white"
-  //   });
-
-  const events = data.meetings.map((m) => ({
-    id: m._id,
-    title: m.title,
-    start: formatDateLocal(m.startDateTime, true),
-    end: formatDateLocal(m.endDateTime, true),
-    extendedProps: {
-      description: m.description,
-      gcalEventId: m.gcalEventId,
-    },
-    color: "blue",
-    textColor: "white"
-  }));
-
-  console.log("Events: ", events);
+  // const { data, loading, error } = useQuery(QUERY_MEETINGS);
+  const { data: calendarsData, loading: calendarsLoading, error: calendarsError } = useQuery(QUERY_CALENDARS);
+  const [fetchEvents, {data: eventsData }] = useLazyQuery(QUERY_EVENTS);
+  const [allEvents, setAllEvents] = useState([]);
 
   const handleDateClick = (info) => {
     alert(`Clicked on date: ${info.dateStr}`);
@@ -53,22 +25,57 @@ const Calendar = () => {
     alert(`Meeting: ${info.event.title}`);
   };
 
+useEffect(() => {
+  if (calendarsLoading) return;
+  if (!calendarsData?.googleCalendars) return;
+
+  const loadAll = async () => {
+    const all = [];
+
+    for (const cal of calendarsData.googleCalendars) {
+      try {
+        const { data } = await fetchEvents({
+          variables: { calendarId: cal.id },
+        });
+
+        if (data?.googleEvents) {
+          const colored = data.googleEvents.map((ev) => ({
+            ...ev,
+            title: `${ev.summary} (${cal.summary})`,
+            backgroundColor: cal.backgroundColor || "#3788d8",
+            borderColor: cal.backgroundColor || "#3788d8",
+            textColor: cal.foregroundColor || "white",
+          }));
+          all.push(...colored);
+        }
+      } catch (err) {
+        console.error(`Error loading events for ${cal.summary}:`, err);
+      }
+    }
+
+    setAllEvents(all);
+  };
+
+  loadAll();
+}, [calendarsLoading, calendarsData, fetchEvents]);
+
   return (
     <div style={{ maxWidth: "1080px", margin: "0 auto" }}>
       <FullCalendar
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, bootstrap5Plugin]}
         initialView="dayGridMonth"
         headerToolbar={{
           left: "prev,next today",
           center: "title",
           right: "dayGridMonth,timeGridWeek,timeGridDay",
         }}
-        events={events}
+        events={allEvents}
         dateClick={handleDateClick}
         eventClick={handleEventClick}
         editable={false}
         selectable={true}
         height="auto"
+        themeSystem="bootstrap5"
       />
     </div>
   );

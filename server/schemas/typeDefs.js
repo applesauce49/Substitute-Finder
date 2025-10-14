@@ -82,6 +82,29 @@ type Calendar {
   meetings: [Meeting!]!
 }
 
+type CalendarListEntry {
+  id: String!
+  summary: String
+  primary: Boolean
+  accessRole: String
+  backgroundColor: String
+  foregroundColor: String
+}
+
+type CalendarEvent {
+  id: String!
+  summary: String
+  description: String
+  start: String
+  end: String
+  calendarId: String
+}
+
+extend type Query {
+  googleCalendars: [CalendarListEntry!]!
+  googleEvents(calendarId: String!): [CalendarEvent!]!
+}
+
 `;
 
 export default typeDefs;

@@ -45,7 +45,6 @@ export const QUERY_ME = gql`
   }
 `;
 
-
 // JOB Info
 export const QUERY_JOBS = gql`
   query Jobs {
@@ -124,16 +123,27 @@ export const QUERY_MEETINGS = gql`
 `;
 
 export const QUERY_CALENDARS = gql`
-  query Calendars {
-    calendars {
-      _id
-      name
-      color
-      meetings {
-        _id
-        title
-        startDateTime
-      }
+  query {
+    googleCalendars {
+      id
+      summary
+      primary
+      backgroundColor
+      foregroundColor
+      accessRole
     }
   }
+`;
+
+export const QUERY_EVENTS = gql`
+  query ($calendarId: String!) {
+    googleEvents(calendarId: $calendarId) {
+      id
+      summary
+      start
+      end
+      description
+      calendarId
+      }
+    }
 `;
