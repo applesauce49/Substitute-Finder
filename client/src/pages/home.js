@@ -31,7 +31,7 @@ const Home = () => {
     <main>
       <div className="flex-row justify-space-between">
         {loggedIn && (
-          <div className={`col-12 col-lg-4 mb-3`}>
+          <div className={`col-12 col-lg-3 mb-3`}>
             {/* <JobForm onRefetch={refetch} /> */}
             {loading ? (
               <div>Loading...</div>
@@ -55,7 +55,18 @@ const Home = () => {
         )}
 
         {showForm && (
-          <div className="modal show" style={{ display: "block" }}>
+          <>
+          <div
+            className="modal-backdrop fade show"
+            style={{ zIndex: 1040 }}
+            onClick={() => setShowForm(false)} // closes when clicking outside
+          />
+          <div 
+            className="modal show" 
+            style={{ display: "block", zIndex:1050 }}
+            tabIndex="-1"
+            role="dialog"
+          >
             <div className="modal-dialog modal-md">
               <div className="modal-content">
                 <div className="modal-header">
@@ -77,10 +88,11 @@ const Home = () => {
               </div>
             </div>
           </div>
+          </>
         )}
 
         {loggedIn && (
-          <div className={`col-12 col-lg-4 mb-3`}>
+          <div className={`col-12 col-lg-3 mb-3`}>
             {loading ? (
               <div>Loading...</div>
             ) : (
@@ -93,7 +105,7 @@ const Home = () => {
           </div>
         )}
         {loggedIn && (
-          <div id="job-list" className={`col-12 col-lg-4 mb-3`}>
+          <div id="job-list" className={`col-12 col-lg-3 mb-3`}>
             {loading ? (
               <div>Loading...</div>
             ) : (
