@@ -1,0 +1,22 @@
+/* src/components/FullCalendarList.css */
+.small-calendar {
+  font-size: 0.9rem; /* inherit slightly smaller text */
+}
+
+.small-calendar .fc {
+  font-family: inherit;  /* match your form font */
+}
+
+.small-calendar .fc-toolbar-title {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.small-calendar .fc-event-title {
+  font-size: 0.85rem;
+}
+
+.small-calendar .fc-list-day-cushion {
+  background-color: var(--bs-light);
+  font-weight: 500;
+}
