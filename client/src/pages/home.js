@@ -4,7 +4,7 @@ import JobForm from '../components/JobForm';
 
 import Auth from '../utils/auth';
 import { useQuery } from '@apollo/client';
-import { QUERY_JOBS, QUERY_ME } from '../utils/queries';
+import { QUERY_JOBS } from '../utils/queries';
 
 const Home = () => {
   // const { data: userData } = useQuery(QUERY_ME);
