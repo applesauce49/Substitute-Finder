@@ -58,7 +58,7 @@ if (CONFIG.USE_HTTPS) {
   // const HOST = process.env.HOST || '0.0.0.0';
 
   app.listen(PORT, () => {
-    console.log(`🚀 Server running at http://${HOST}:${PORT}${apolloServer.graphqlPath}`);
+    console.log(`🚀 Server running on  port ${PORT}`);
   });
 
 }
