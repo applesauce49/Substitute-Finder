@@ -34,13 +34,13 @@ const JobList = ({ jobs, title, onRefetch, children }) => {
                     <p>
                       <b>Date:</b> {job.meetingSnapshot?.startDateTime}<br />
                       <b>For:</b> {job?.createdBy?.username ?? "N/A"}<br />
-                      <b>Posted:</b> {job.createdAt}<br />
+                      <b>Posted:</b> {new Date(job.createdAt).toLocaleString()}<br />
                       <b>Applications:</b> {job.applicationCount ?? 0}
                     </p>
                   </Link>
                 ) : (
                   <p>
-                    <b>Date:</b> {job.meetingSnapshot?.startDateTime}<br />
+                    <b>Date:</b> {new Date(job.meetingSnapshot?.startDateTime).toLocaleString()}<br />
                     <b>For:</b> {job?.createdBy?.username ?? "N/A"}<br />
                     <b>Assigned To:</b> {job.assignedTo?.username ?? "Unassigned"}
                   </p>

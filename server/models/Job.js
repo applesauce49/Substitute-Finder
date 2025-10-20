@@ -1,5 +1,4 @@
 import { Schema, model } from 'mongoose';
-import dateFormat from '../utils/dateFormat.js';
 import meetingSnapshotSchema from './meetingSnapshot.js';
 
 const jobSchema = new Schema(
@@ -18,7 +17,6 @@ const jobSchema = new Schema(
     createdAt: {
       type: Date,
       default: Date.now,
-      get: timestamp => dateFormat(timestamp)
     },
     createdBy: {
       type: Schema.Types.ObjectId,
@@ -31,7 +29,6 @@ const jobSchema = new Schema(
         appliedAt: {
           type: Date, 
           default: Date.now ,
-          get: timestamp => dateFormat(timestamp)
         }
       }
     ],
