@@ -4,7 +4,8 @@ const allowedOrigins = [
     'https://localhost:3000/',
     'https://localhost:3001/',
     'https://studio.apollographql.com',
-    'https://substitute-finder.onrender.com'
+    'https://substitute-finder.onrender.com',
+    'https://oplmsubatomic.netlify.app'
 ];
 
 export const corsOptions = {
