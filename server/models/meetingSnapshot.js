@@ -1,5 +1,4 @@
 import { Schema, model } from "mongoose";
-import dateFormat from "../utils/dateFormat.js";
 
 const meetingSnapshotSchema = new Schema({
     eventId: { type: String, required: true  },
@@ -9,12 +8,10 @@ const meetingSnapshotSchema = new Schema({
     startDateTime: { 
         type: Date, 
         required: true,
-        get: timestamp => dateFormat(timestamp)
     },
     endDateTime: { 
         type: Date, 
         required: true,
-        get: timestamp => dateFormat(timestamp)
     },
 }, { _id: false });
 

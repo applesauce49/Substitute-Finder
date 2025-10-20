@@ -1,5 +1,4 @@
 import { Schema, model } from 'mongoose';
-import dateFormat from '../utils/dateFormat.js';
 
 const meetingSchema = new Schema(
   {
