@@ -3,7 +3,8 @@ const allowedOrigins = [
     'http://localhost:3001/',
     'https://localhost:3000/',
     'https://localhost:3001/',
-    'https://studio.apollographql.com'
+    'https://studio.apollographql.com',
+    'https://substitute-finder.onrender.com'
 ];
 
 export const corsOptions = {
