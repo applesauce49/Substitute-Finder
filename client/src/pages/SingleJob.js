@@ -86,7 +86,8 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
     catch (e) {
       console.error(e);
     }
-    console.log("Application Accepted") 
+    console.log("Application Accepted");
+    onClose(); 
   };
 
   const denied = async (appId, jobId) => {
@@ -100,6 +101,7 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
     }
 
     console.log("Application DENIED.");
+    onClose();
 
   };
 
@@ -107,11 +109,11 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
     <div className="text-center single-job-close">
       <div className="card mb-3">
         <p className="card-header single-job-header">
-          {job.meeting.title}
+          {job.meetingSnapshot?.title || "No Title Provided"}
         </p>
         <div className="card-body">
           <p>
-            <b>Date: </b>{job.dates}<br />
+            <b>Date: </b>{job.meetingSnapshot?.startDateTime}<br />
             <b>For: </b>{job?.createdBy?.username ?? "N/A"}<br />
             <b>Posted: </b>{job.createdAt}<br />
             <b>Notes: </b> {job.description}<br />

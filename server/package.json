@@ -24,6 +24,7 @@
     "googleapis": "^159.0.0",
     "graphql": "^16.2.0",
     "graphql-type-json": "^0.3.2",
+    "https-proxy-agent": "^7.0.6",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.1.6",
     "passport": "^0.7.0",

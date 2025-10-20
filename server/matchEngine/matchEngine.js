@@ -18,7 +18,6 @@ export async function runMatchEngine() {
         assignedTo: null,
         "applications.0": { $exists: true } 
     })
-        .populate("meeting")
         .populate("createdBy")
         .populate("applications.user");
 

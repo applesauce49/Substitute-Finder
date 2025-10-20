@@ -40,19 +40,19 @@ export const ADD_USER = gql`
 `;
 
 export const ADD_JOB = gql`
-  mutation AddJob($dates: [String!]!, $description: String, $meeting: ID!) {
-    addJob(dates: $dates, description: $description, meeting: $meeting) {
+  mutation AddJob($description: String, $meeting: String!) {
+    addJob(description: $description, meeting: $meeting) {
       conflict
       message
       job {
         _id
         active
-        description
-        dates
-        meeting {
-          _id
+        meetingSnapshot {
+          eventId
           title
+          description
           startDateTime
+          endDateTime
         }
         createdAt
         createdBy {
@@ -96,7 +96,6 @@ export const ACCEPT_APPLICATION = gql`
   }
 `;
 
-
 export const DECLINE_APPLICATION = gql`
   mutation DeclineApplication($jobId: ID!, $applicationId: ID!) {
     declineApplication(jobId: $jobId, applicationId: $applicationId)
@@ -128,7 +127,6 @@ export const UPDATE_ME = gql`
         _id
         active
         description
-        dates
         createdAt
       }
     }

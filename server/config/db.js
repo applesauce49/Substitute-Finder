@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Meeting from "../models/Meeting.js";
+import Jobs from "../models/Job.js"
 
 export async function connectDB() {
   try {
@@ -8,8 +8,8 @@ export async function connectDB() {
     );
     console.log("MongoDB connected");
 
-    await Meeting.syncIndexes();
-    console.log("Meeting indexes synced");
+    await Jobs.syncIndexes();
+    console.log("Jobs indexes synced");
   }
   catch (err) {
     console.error("Error connecting to MongoDB or syncing indexes:", err);

@@ -10,18 +10,16 @@ const JobForm = ({ onRefetch }) => {
   });
 
   const meetings = data || [];
-
-  console.log("QUERY_MEETINGS returned: ", meetings);
+  const events = data?.googleEvents || [];
 
   const [jobText, setText] = useState({
     active: true,
-    dates: [],
     description: "",
     meetings: [], // note plural
   });
   const [characterCount, setCharacterCount] = useState(0);
 
-  const [{ error }] = useMutation(ADD_JOB, {
+  const [addJob, { error }] = useMutation(ADD_JOB, {
     update(cache, { data }) {
       const payload = data?.addJob;
       if (!payload || payload.conflict || !payload.job) return;
@@ -54,50 +52,42 @@ const JobForm = ({ onRefetch }) => {
   // submit form
   const handleFormSubmit = async (event) => {
     event.preventDefault();
+    setFormError(false);
+    const meetingsMap = new Map(events.map(e => [e.id, e]));
 
-    if (!jobText.description.trim()) {
-      setFormError(true);
-      return;
-    }
-    else {
-      setFormError(false);
-    }
+    console.log(meetingsMap);
+
+    // if (!jobText.description.trim()) {
+    //   setFormError(true);
+    //   return;
+    // }
+    // else {
+    //   setFormError(false);
+    // }
 
     try {
       console.log("jobText.meetings at submit: ", jobText.meetings);
 
-      // for (const meeting of jobText.meetings) {
-      //   console.log("Meeting info: ", meeting)
-      //   const { data } = await addJob({
-      //     variables: {
-      //       dates: meeting.date,        // single string
-      //       description: jobText.description,
-      //       meeting: meeting.id,
-      //     },
-      //   });
+      for (const event of selectedEvents) {
+        console.log("Adding job with meeting data ", meetingsMap.get(event));
+        const meeting = meetingsMap.get(event);
 
-      // if (data.addJob.conflict) {
-      //   setPendingJob({
-      //     newJob: {
-      //       active: jobText.active,
-      //       description: jobText.description,
-      //       dates: [meeting.date],  // keep array shape consistent
-      //       meeting: {
-      //         id: meeting.id,
-      //         date: meeting.date,
-      //       },
-      //     },
-      //     existing: data.addJob.job,
-      //   });
-      //   setShowConflictModal(true);
-      //   return;
-      // }
-      // }
+        const { data } = await addJob({
+          variables: {
+            description: jobText.description,
+            meeting: meeting.id,
+          },
+        });
+
+        if (data.addJob.conflict) {
+          alert("Meeting conflict");
+          return;
+        }
+      }
 
       // reset
       setText({
         active: true,
-        dates: [],
         description: "",
         meetings: [], // stays an array of {id, date}, just emptied
       });

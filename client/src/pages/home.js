@@ -8,12 +8,11 @@ import { QUERY_JOBS, QUERY_ME } from '../utils/queries';
 
 const Home = () => {
   const { data: userData } = useQuery(QUERY_ME);
-  console.log("Username: ", userData?.me?.username, "myJobs: ", userData?.me?.jobs);
-
   const { loading, data, error, refetch } = useQuery(QUERY_JOBS);
-  console.log("loading:", loading, "data:", data, "error:", error);
 
   const jobs = data?.jobs || [];
+
+  console.log('Jobs data:', data);
 
   // // const admin = userData?.me.admin || "";
   // const myJobs = userData?.me.jobs || [];

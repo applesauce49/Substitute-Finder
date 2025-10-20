@@ -12,7 +12,6 @@ export const QUERY_USER = gql`
       jobs {
         _id
         description
-        dates
         createdAt
       }
     }
@@ -33,66 +32,52 @@ export const QUERY_ME = gql`
         _id
         active
         description
-        dates
-        meeting {
-          _id
-          title
-          startDateTime
-        }
         createdAt
       }
     }
   }
 `;
 
+export const JOB_BASE_FIELDS = gql`
+  fragment JobBaseFields on Job {
+    _id
+    active
+    createdAt
+    createdBy {
+      _id
+      username
+      email
+    }
+    assignedTo {
+      _id
+      username
+      email
+    }
+    meetingSnapshot {
+      eventId
+      title
+      startDateTime
+      endDateTime
+    }
+    description
+    applicationCount
+  }
+`
+
 // JOB Info
 export const QUERY_JOBS = gql`
   query Jobs {
     jobs {
-      _id
-      active
-      description
-      createdAt
-      createdBy {
-        _id
-        username
-        email
-      }
-      assignedTo {
-        _id
-        username
-        email
-      }
-      meeting {
-        _id
-        title
-        startDateTime
-      }
-      dates
-      applicationCount
+      ...JobBaseFields
     }
   }
+    ${JOB_BASE_FIELDS}
 `;
 
 export const QUERY_JOB = gql`
   query Job($id: ID!) {
     job(_id: $id) {
-      _id
-      active
-      description
-      dates
-      createdAt
-      createdBy {
-        _id
-        username
-        email
-      }
-      meeting {
-        _id
-        title
-        startDateTime
-      }
-      applicationCount
+      ...JobBaseFields
       applications {
         _id
         appliedAt
@@ -104,22 +89,7 @@ export const QUERY_JOB = gql`
       }
     }
   }
-`;
-
-export const QUERY_MEETINGS = gql`
-  query Meetings {
-    meetings {
-      _id
-      gcalEventId
-      title
-      startDateTime
-      endDateTime
-      description
-      ownership
-      userId
-      allDay
-    }
-  }
+  ${JOB_BASE_FIELDS}
 `;
 
 export const QUERY_CALENDARS = gql`

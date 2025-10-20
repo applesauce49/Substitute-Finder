@@ -13,7 +13,6 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import "./index.css";
 
 const Calendar = () => {
-  // const { data, loading, error } = useQuery(QUERY_MEETINGS);
   const { data: calendarsData, loading: calendarsLoading, error: calendarsError } = useQuery(QUERY_CALENDARS);
   const [fetchEvents] = useLazyQuery(QUERY_EVENTS);
   const [allEvents, setAllEvents] = useState([]);

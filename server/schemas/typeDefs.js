@@ -9,7 +9,6 @@ type Query {
   user(username: String!): User
   jobs: [Job!]!
   job(_id: ID!): Job
-  meetings: [Meeting!]!
   calendars: [Calendar!]!   # optional, if you want grouping
 }
 
@@ -32,9 +31,8 @@ type AddJobPayload {
 
 type Mutation {
   addJob(
-    dates: [String!]!
     description: String
-    meeting: ID!
+    meeting: String!
   ): AddJobPayload!
   acceptJob(jobId: ID!): Job
   applyForJob(jobId: ID!): Job   # optional, if you want applications
@@ -50,14 +48,21 @@ type Application {
   user: User!
 }
 
+type MeetingSnapshotSchema {
+  eventId: String!
+  title: String
+  description: String
+  startDateTime: DateTime
+  endDateTime: DateTime
+}
+
 type Job {
   _id: ID!
   active: Boolean
   description: String
-  dates: [String!]!
+  meetingSnapshot: MeetingSnapshotSchema!
   createdAt: DateTime!
   createdBy: User!
-  meeting: Meeting!
   applicationCount: Int!
   applications: [Application]   # if you want to support applications
   assignedTo: User        # optional for accepted subs

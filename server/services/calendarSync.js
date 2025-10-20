@@ -1,7 +1,7 @@
 import { addMonths } from "date-fns";
 import { getUserCalendarClient } from "./googleClient.js";
 import Meeting from "../models/Meeting.js";
-import CalendarSyncState from "../models/calendarSyncState.js"; // assuming you have this
+// import CalendarSyncState from "../models/calendarSyncState.js"; // assuming you have this
 
 const FWD_MONTHS = 6;
 
@@ -36,61 +36,61 @@ function mapGoogleEvent(ev, calendarId, userId) {
   };
 }
 
-export async function syncCalendar(userId, calendarId = "primary") {
-  const calendar = await getUserCalendarClient(userId);
+// export async function syncCalendar(userId, calendarId = "primary") {
+//   const calendar = await getUserCalendarClient(userId);
 
-  const { data } = await calendar.calendarList.list();
-  for (const c of data.items) {
-    console.log(`[Calendar] ${c.summary} (${c.accessRole}) → ID: ${c.id}`);
-  }
+//   const { data } = await calendar.calendarList.list();
+//   for (const c of data.items) {
+//     console.log(`[Calendar] ${c.summary} (${c.accessRole}) → ID: ${c.id}`);
+//   }
 
-  const state = await CalendarSyncState.findOne({ calendarId, userId });
+//   const state = await CalendarSyncState.findOne({ calendarId, userId });
 
-  const baseParams = state?.syncToken
-    ? { syncToken: state.syncToken, showDeleted: true }
-    : {
-        timeMin: new Date().toISOString(),
-        timeMax: addMonths(new Date(), FWD_MONTHS).toISOString(),
-        singleEvents: true,
-        showDeleted: true,
-        maxResults: 2500,
-      };
+//   const baseParams = state?.syncToken
+//     ? { syncToken: state.syncToken, showDeleted: true }
+//     : {
+//         timeMin: new Date().toISOString(),
+//         timeMax: addMonths(new Date(), FWD_MONTHS).toISOString(),
+//         singleEvents: true,
+//         showDeleted: true,
+//         maxResults: 2500,
+//       };
 
-  let pageToken;
-  let nextSyncToken;
+//   let pageToken;
+//   let nextSyncToken;
 
-  do {
-    const { data } = await calendar.events.list({
-      calendarId,
-      ...baseParams,
-      pageToken,
-    });
+//   do {
+//     const { data } = await calendar.events.list({
+//       calendarId,
+//       ...baseParams,
+//       pageToken,
+//     });
 
-    for (const ev of data.items || []) {
-      if (ev.status === "cancelled") continue;
+//     for (const ev of data.items || []) {
+//       if (ev.status === "cancelled") continue;
 
-      console.log(`[Sync] Upserting event: ${ev.summary} (ID: ${ev.id})`);
-      const doc = mapGoogleEvent(ev, calendarId, userId);
-      console.log("[Sync] Document to insert:", doc);
+//       console.log(`[Sync] Upserting event: ${ev.summary} (ID: ${ev.id})`);
+//       const doc = mapGoogleEvent(ev, calendarId, userId);
+//       console.log("[Sync] Document to insert:", doc);
 
-      await Meeting.updateOne(
-        { calendarId, gcalEventId: ev.id },
-        { $set: doc },
-        { upsert: true }
-      );
-    }
+//       await Meeting.updateOne(
+//         { calendarId, gcalEventId: ev.id },
+//         { $set: doc },
+//         { upsert: true }
+//       );
+//     }
 
-    pageToken = data.nextPageToken;
-    if (data.nextSyncToken) nextSyncToken = data.nextSyncToken;
-  } while (pageToken);
+//     pageToken = data.nextPageToken;
+//     if (data.nextSyncToken) nextSyncToken = data.nextSyncToken;
+//   } while (pageToken);
 
-  if (nextSyncToken) {
-    await CalendarSyncState.updateOne(
-      { calendarId, userId },
-      { $set: { syncToken: nextSyncToken, lastFullSync: new Date() } },
-      { upsert: true }
-    );
-  }
+//   if (nextSyncToken) {
+//     await CalendarSyncState.updateOne(
+//       { calendarId, userId },
+//       { $set: { syncToken: nextSyncToken, lastFullSync: new Date() } },
+//       { upsert: true }
+//     );
+//   }
 
-  return { ok: true };
-}
+//   return { ok: true };
+// }

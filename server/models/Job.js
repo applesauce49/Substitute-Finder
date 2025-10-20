@@ -1,5 +1,6 @@
 import { Schema, model } from 'mongoose';
 import dateFormat from '../utils/dateFormat.js';
+import meetingSnapshotSchema from './meetingSnapshot.js';
 
 const jobSchema = new Schema(
   {
@@ -7,19 +8,12 @@ const jobSchema = new Schema(
       type: Boolean,
       required: true
     },
+    meetingSnapshot: {
+      type: meetingSnapshotSchema,
+      required: true,
+    },
     description: {
       type: String,
-      required: 'You need to leave a job!',
-      maxlength: 280
-    },
-    dates: [{
-      type: String,
-      required: true
-    }],
-    meeting: {
-      type: Schema.Types.ObjectId,
-      ref: "Meeting",
-      required: true,
     },
     createdAt: {
       type: Date,

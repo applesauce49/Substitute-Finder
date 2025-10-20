@@ -85,4 +85,3 @@ meetingSchema.index ({ gcalEventId: 1, calendarId: 1 }, {unique: true, sparce: t
 
 const Meeting = model('Meeting', meetingSchema);
 
-export default Meeting;

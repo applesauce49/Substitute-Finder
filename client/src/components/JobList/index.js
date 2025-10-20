@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import SingleJob from '../../pages/SingleJob.js';
 
 const JobList = ({ jobs, title, onRefetch, children }) => {
-  console.log(jobs)
   const [selectedJob, setSelectedJob] = useState(null);
 
   return (
@@ -19,7 +18,7 @@ const JobList = ({ jobs, title, onRefetch, children }) => {
               className="card col-12 mb-3"
             >
               <p className={`card-header ${job.active ? "" : "bg-success text-white"} job-list-header`}>
-                {job.meeting.title}
+                {job?.meetingSnapshot?.title || "Untitled" }
               </p>
 
               <div className={`card-body text-center`}>
@@ -33,7 +32,7 @@ const JobList = ({ jobs, title, onRefetch, children }) => {
                     style={{ textDecoration: "none", color: "inherit" }}
                   >
                     <p>
-                      <b>Date:</b> {job.dates}<br />
+                      <b>Date:</b> {job.meetingSnapshot?.startDateTime}<br />
                       <b>For:</b> {job?.createdBy?.username ?? "N/A"}<br />
                       <b>Posted:</b> {job.createdAt}<br />
                       <b>Applications:</b> {job.applicationCount ?? 0}
@@ -41,7 +40,7 @@ const JobList = ({ jobs, title, onRefetch, children }) => {
                   </Link>
                 ) : (
                   <p>
-                    <b>Date:</b> {job.dates}<br />
+                    <b>Date:</b> {job.meetingSnapshot?.startDateTime}<br />
                     <b>For:</b> {job?.createdBy?.username ?? "N/A"}<br />
                     <b>Assigned To:</b> {job.assignedTo?.username ?? "Unassigned"}
                   </p>
