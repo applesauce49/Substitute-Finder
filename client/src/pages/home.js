@@ -7,8 +7,8 @@ import { useQuery } from '@apollo/client';
 import { QUERY_JOBS, QUERY_ME } from '../utils/queries';
 
 const Home = () => {
-  const { data: userData } = useQuery(QUERY_ME);
-  const { loading, data, error, refetch } = useQuery(QUERY_JOBS);
+  // const { data: userData } = useQuery(QUERY_ME);
+  const { loading, data, refetch } = useQuery(QUERY_JOBS);
 
   const jobs = data?.jobs || [];
 
