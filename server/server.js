@@ -55,9 +55,9 @@ if (CONFIG.USE_HTTPS) {
   });
 } else {
   const PORT = process.env.PORT || CONFIG.PORT || 3001;
-  const HOST = process.env.HOST || CONFIG.HOST || '0.0.0.0';
+  // const HOST = process.env.HOST || '0.0.0.0';
 
-  app.listen(PORT, HOST, () => {
+  app.listen(PORT, () => {
     console.log(`🚀 Server running at http://${HOST}:${PORT}${apolloServer.graphqlPath}`);
   });
 
