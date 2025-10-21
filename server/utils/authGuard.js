@@ -1,4 +1,4 @@
-import {AuthenticationError } from "apollo-server-express";
+import { AuthenticationError } from '@apollo/server/errors';
 
 export function requireAuth(user) {
     if (!user) {

@@ -1,5 +1,5 @@
 
-import { AuthenticationError } from "apollo-server-express";
+import { AuthenticationError } from '@apollo/server/errors';
 import { getUserCalendarClient } from "../../services/googleClient.js";
 
 export default {
