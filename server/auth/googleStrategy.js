@@ -8,7 +8,7 @@ export default new GoogleStrategy(
         callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3001/auth/google/callback",
     },
 
-    async (revokeAccessToken, refreshToken, profile, done) => {
+    async (accessToken, refreshToken, profile, done) => {
         try {
             const user = await upsertUserFromGoogle(profile);
             if (refreshToken) {
