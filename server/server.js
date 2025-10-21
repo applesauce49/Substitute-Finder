@@ -65,7 +65,7 @@ app.use(
   "/graphql",
   bodyParser.json(),
   async (req, res) => {
-    await apolloServer.executeHTTPGraphQLRequest({
+    const { body, headers, status } = await apolloServer.executeHTTPGraphQLRequest({
       httpGraphQLRequest: {
         body: req.body,
         headers: new Headers(req.headers),
@@ -75,10 +75,24 @@ app.use(
       context: async () => ({
         user: req.user || getUserFromReq(req),
       }),
-    }).then(({ body }) => {
-      res.setHeader("Content-Type", "application/json");
-      res.send(body.string);
     });
+
+    // ✅ Apply status code if Apollo provided one
+    if (status) {
+      res.status(status);
+    }
+
+    // ✅ Forward Apollo's headers (ensures HTML renders properly)
+    for (const [key, value] of headers) {
+      res.setHeader(key, value);
+    }
+
+    // ✅ Safely read Apollo's body (supports both string and text streams)
+    const responseBody = body.string
+      ? body.string
+      : await body.text?.();
+
+    res.send(responseBody);
   }
 );
 

@@ -6,7 +6,7 @@ export default {
     Query: {
         jobs: async (_, args, context) => {
             const now = new Date();
-            const filter = { startDateTime: { $gte: now } };
+            const filter = { "meetingSnapshot.startDateTime": { $gte: now } };
 
             return Job.find(filter)
                 .populate("createdBy", "_id username email")

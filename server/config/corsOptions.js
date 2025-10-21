@@ -3,6 +3,7 @@ const allowedOrigins = [
     'http://localhost:3001/',
     'https://localhost:3000/',
     'https://localhost:3001/',
+    'https://localhost:3001',
     'https://studio.apollographql.com',
     'https://substitute-finder.onrender.com',
     'https://oplmsubatomic.netlify.app'
