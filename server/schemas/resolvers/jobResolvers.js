@@ -1,4 +1,4 @@
-import { AuthenticationError } from '@apollo/server/errors';
+import { GraphQLError } from 'graphql';
 import { Job } from "../../models/index.js";
 import { getUserCalendarClient } from '../../services/googleClient.js';
 
@@ -106,14 +106,14 @@ export default {
         },
 
         cancelJob: async (_, { jobId }, context) => {
-            if (!context.user) throw new AuthenticationError("Not logged in");
+            if (!context.user) throw new GraphQLError("Not logged in");
 
             const job = await Job.findById(jobId);
             if (!job) throw new Error("Job not found");
 
             // Optional: only allow creator or admin
             if (job.createdBy.toString() !== context.user._id.toString()) {
-                throw new AuthenticationError("Not authorized");
+                throw new GraphQLError("Not authorized");
             }
 
             await Job.findByIdAndDelete(jobId);
@@ -162,7 +162,7 @@ export default {
 
         declineApplication: async (_, { jobId, applicationId }, context) => {
             if (!context.user) {
-                throw new AuthenticationError("Not logged in");
+                throw new GraphQLError("Not logged in");
             }
 
             // Try to update the job and remove the application entry

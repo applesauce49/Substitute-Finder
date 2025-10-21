@@ -1,10 +1,10 @@
-import { AuthenticationError } from '@apollo/server/errors';
+import { GraphQLError } from 'graphql';
 import { User } from "../../models/index.js";
 
 export default {
     Query: {
         me: async (_, __, { user }) => {
-            if (!user) throw new AuthenticationError('Not logged in');
+            if (!user) throw new GraphQLError('Not logged in');
 
             return User.findById(user._id)
                 .select('-__v -password')

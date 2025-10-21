@@ -1,11 +1,10 @@
-
-import { AuthenticationError } from '@apollo/server/errors';
+import { GraphQLError } from 'graphql';
 import { getUserCalendarClient } from "../../services/googleClient.js";
 
 export default {
     Query: {
         googleCalendars: async (_, __, { user }) => {
-            if (!user) throw new AuthenticationError("Not logged in");
+            if (!user) throw new GraphQLError("Not logged in");
 
             const calendar = await getUserCalendarClient(user._id);
             const { data } = await calendar.calendarList.list();
