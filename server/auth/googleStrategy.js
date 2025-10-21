@@ -11,7 +11,7 @@ export default new GoogleStrategy(
     async (accessToken, refreshToken, profile, done) => {
         try {
             const user = await upsertUserFromGoogle(profile);
-            if (refreshToken) {
+            if ( accessToken || refreshToken) {
                 await saveTokens(user._id, refreshToken, accessToken);
             }
             done(null, user);

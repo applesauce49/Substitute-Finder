@@ -23,6 +23,7 @@ const Header = () => {
 
   // const me = data?.me;
   // const isAdmin = me?.admin === true;
+  const API_BASE = process.env.REACT_APP_API_URL || "https://localhost:3001"
 
   return (
     <header className="bg-dark mb-4 flex-row align-center text-white">
@@ -79,7 +80,11 @@ const Header = () => {
             </>
           ) : (
             <>
-              <Link className="nav-bar-links" to="/login">
+              <Link 
+                className="nav-bar-links" 
+                to={`${API_BASE}/auth/google`}
+                target="_self"
+              >
                 Login
               </Link>
             </>
