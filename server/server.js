@@ -14,6 +14,7 @@ import passport from "./auth/index.js";
 import authMiddleware, { getUserFromReq } from "./auth/middleware.js";
 import { createApolloServer } from "./graphql/server.js";
 import routes from "./routes/index.js";
+import { Headers } from "node-fetch";
 
 await connectDB();
 
@@ -67,7 +68,7 @@ app.use(
     await apolloServer.executeHTTPGraphQLRequest({
       httpGraphQLRequest: {
         body: req.body,
-        headers: req.headers,
+        headers: new Headers(req.headers),
         method: req.method,
         search: req.url.split("?")[1] || "",
       },
