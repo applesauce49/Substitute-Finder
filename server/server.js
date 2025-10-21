@@ -41,6 +41,8 @@ app.use(routes);
 const apolloServer = await createApolloServer();
 apolloServer.applyMiddleware({ app });
 
+  console.log("Connected DB: ", mongoose.connection.name);
+
 if (CONFIG.USE_HTTPS) {
   const keyPath = path.join("certs", "key.pem");
   const certPath = path.join("certs", "cert.pem");
