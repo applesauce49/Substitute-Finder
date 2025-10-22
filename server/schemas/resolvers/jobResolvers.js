@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Job } from "../../models/index.js";
+import { pubsub } from '../../graphql/pubsub.js';
 import { getUserCalendarClient } from '../../services/googleClient.js';
 
 export default {
@@ -8,7 +9,7 @@ export default {
             const now = new Date();
             const filter = { "meetingSnapshot.startDateTime": { $gte: now } };
 
-            return Job.find(filter)
+            return Job.find({})
                 .populate("createdBy", "_id username email")
                 .populate("assignedTo", "_id username email")
                 .populate("meetingSnapshot", "_id title startDateTime")
@@ -70,6 +71,8 @@ export default {
                 createdBy: context.user._id,
             });
 
+            await pubsub.publish("JOB_CREATED", { jobCreated: await newJob.populate("createdBy") });
+
             return {
                 conflict: false,
                 message: "Job created successfully",
@@ -99,9 +102,10 @@ export default {
             await job.save();
 
             await job.populate("createdBy");
-            // await job.populate("meeting");
             await job.populate("applications");
 
+            console.log("Publishing JOB_UPDATED event");
+            pubsub.publish("JOB_UPDATED", { jobUpdated: job });
             return job;
         },
 
@@ -117,6 +121,8 @@ export default {
             }
 
             await Job.findByIdAndDelete(jobId);
+
+            await pubsub.publish("JOB_CANCELED", { jobCanceled: jobId });
             return true;   // ✅ GraphQL expects something back
         },
 
@@ -149,6 +155,8 @@ export default {
             // job.applications = [acceptedApp];
 
             await job.save();
+
+            await pubsub.publish("JOB_ASSIGNED", { jobAssigned: await job.populate("createdBy").populate("assignedTo") });
 
             // add job to the accepted user's profile
             // await User.findByIdAndUpdate(
@@ -186,6 +194,33 @@ export default {
             await runMatchEngine();
             return true;
         },
+    },
+    Subscription: {
+        jobUpdated: {
+            subscribe: () => {
+                console.log("Subscription to jobUpdated initiated");
+                return pubsub.asyncIterableIterator(['JOB_UPDATED']);
+            },
+        },
+        jobCreated: {
+            subscribe: () => {
+                console.log("Subscription to jobCreated initiated");
+                return pubsub.asyncIterableIterator(['JOB_CREATED']);
+            },
+        },
+        jobCanceled: {
+            subscribe: () => {
+                console.log("Subscription to jobCanceled initiated");
+                return pubsub.asyncIterableIterator(['JOB_CANCELED']);
+            },
+        },
+        jobAssigned: {
+            subscribe: () => {
+                console.log("Subscription to jobAssigned initiated");
+                return pubsub.asyncIterableIterator(['JOB_ASSIGNED']);
+            },
+        },
+
     },
     Job: {
         applicationCount: (job) => job.applications?.length || 0,

@@ -1,3 +1,7 @@
+import { WebSocketServer } from "ws";
+import { useServer } from "graphql-ws/use/ws";
+import { makeExecutableSchema } from "@graphql-tools/schema";
+import { typeDefs, resolvers } from "./schemas/index.js";
 import "./config/env.js";
 import express from "express";
 import session from "express-session";
@@ -46,6 +50,8 @@ let httpServer;
 if (CONFIG.USE_HTTPS) {
   const keyPath = path.join("certs", "key.pem");
   const certPath = path.join("certs", "cert.pem");
+
+
   httpServer = https.createServer(
     {
       key: fs.readFileSync(keyPath),
@@ -57,8 +63,16 @@ if (CONFIG.USE_HTTPS) {
   httpServer = http.createServer(app);
 }
 
+const schema = makeExecutableSchema({ typeDefs, resolvers });
+
+const wsServer = new WebSocketServer({
+  server: httpServer,
+  path: "/graphql",
+})
+const serverCleanup = useServer({ schema }, wsServer);
+
 // ✅ Create and start Apollo v5
-const apolloServer = await createApolloServer(httpServer);
+const apolloServer = await createApolloServer(httpServer, serverCleanup);
 
 // ✅ Add GraphQL route manually using Express JSON parser
 app.use(

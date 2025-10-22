@@ -1,14 +1,24 @@
 import { ApolloServer } from '@apollo/server';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
-import { typeDefs, resolvers } from '../schemas/index.js';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
-export async function createApolloServer(httpServer) {
+import { typeDefs, resolvers } from '../schemas/index.js';
+
+export async function createApolloServer(httpServer, serverCleanup) {
   const server = new ApolloServer({
     typeDefs,
     resolvers,
     introspection: true,
     plugins: [
       ApolloServerPluginDrainHttpServer({ httpServer }),
+      {
+        async serverWillStart() {
+          return {
+            async drainServer() {
+              await serverCleanup.dispose();
+            },
+          };
+        }
+      },
       ApolloServerPluginLandingPageLocalDefault({ embed: true }),
     ],
   });

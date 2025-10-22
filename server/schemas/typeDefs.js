@@ -110,6 +110,13 @@ extend type Query {
   googleEvents(calendarId: String!): [CalendarEvent!]!
 }
 
+type Subscription {
+  jobUpdated: Job
+  jobCreated: Job
+  jobCanceled: ID
+  jobAssigned: Job
+}
+  
 `;
 
 export default typeDefs;

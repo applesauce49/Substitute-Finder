@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import JobList from '../components/JobList';
 import JobForm from '../components/JobForm';
 
 import Auth from '../utils/auth';
 import { useQuery } from '@apollo/client';
-import { QUERY_JOBS } from '../utils/queries';
+import { QUERY_JOBS, JOB_UPDATED_SUB, JOB_CREATED_SUB, JOB_CANCELLED_SUB, JOB_ASSIGNED_SUB } from '../utils/queries';
+import { useSubscription } from '@apollo/client';
 
 const Home = () => {
   // const { data: userData } = useQuery(QUERY_ME);
@@ -13,6 +14,19 @@ const Home = () => {
   const jobs = data?.jobs || [];
 
   console.log('Jobs data:', data);
+
+  const { data: jobUpdated } = useSubscription(JOB_UPDATED_SUB);
+  const { data: jobCreated } = useSubscription(JOB_CREATED_SUB);
+  const { data: jobCancelled } = useSubscription(JOB_CANCELLED_SUB);
+  const { data: jobAssigned } = useSubscription(JOB_ASSIGNED_SUB);
+
+
+  useEffect(() => {
+    if (jobUpdated || jobCreated || jobCancelled || jobAssigned) {
+      console.log("Job updated via subscription:", jobUpdated, jobCreated, jobCancelled, jobAssigned);
+      refetch();
+    }
+  }, [jobUpdated, jobCreated, jobCancelled, jobAssigned, refetch]);
 
   // // const admin = userData?.me.admin || "";
   // const myJobs = userData?.me.jobs || [];
@@ -31,7 +45,6 @@ const Home = () => {
       <div className="flex-row justify-space-between">
         {loggedIn && (
           <div className={`col-12 col-lg-3 mb-3`}>
-            {/* <JobForm onRefetch={refetch} /> */}
             {loading ? (
               <div>Loading...</div>
             ) : (

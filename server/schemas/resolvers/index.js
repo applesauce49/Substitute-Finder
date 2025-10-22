@@ -14,6 +14,9 @@ export default {
         ...jobResolvers.Mutation,
         ...calendarResolvers.Mutation,
     },
+    Subscription: {
+        ...jobResolvers.Subscription,
+    },
     Job: {
         ...jobResolvers.Job,
     },
