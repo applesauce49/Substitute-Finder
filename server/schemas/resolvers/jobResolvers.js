@@ -71,7 +71,7 @@ export default {
                 createdBy: context.user._id,
             });
 
-            await pubsub.publish("JOB_CREATED", { jobCreated: await newJob.populate("createdBy") });
+            await pubsub.publish("JOB_CREATED", { jobCreated: newJob });
 
             return {
                 conflict: false,
@@ -156,7 +156,7 @@ export default {
 
             await job.save();
 
-            await pubsub.publish("JOB_ASSIGNED", { jobAssigned: await job.populate("createdBy").populate("assignedTo") });
+            await pubsub.publish("JOB_ASSIGNED", { jobAssigned: job });
 
             // add job to the accepted user's profile
             // await User.findByIdAndUpdate(
