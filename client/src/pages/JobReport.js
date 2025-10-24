@@ -133,16 +133,18 @@ function JobReport() {
                                 >
                                     {flexRender(header.column.columnDef.header, header.getContext())}
 
-                                    {/* Sorting Icons */}
                                     {header.column.getIsSorted() === "asc" && (
                                         <i className="bi bi-caret-up-fill ms-2"></i>
                                     )}
+
                                     {header.column.getIsSorted() === "desc" && (
                                         <i className="bi bi-caret-down-fill ms-2"></i>
                                     )}
-                                    {!header.column.getIsSorted() && header.column.getCanSort() && (
-                                        <i className="bi bi-caret-expand ms-2 text-muted"></i>
-                                    )}
+
+                                    {!header.column.getIsSorted() &&
+                                        header.column.getCanSort() && (
+                                            <i className="bi bi-caret-expand ms-2 text-muted"></i>
+                                        )}
                                 </th>
                             ))}
                         </tr>
