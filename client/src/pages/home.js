@@ -9,7 +9,9 @@ import { useSubscription } from '@apollo/client';
 
 const Home = () => {
   // const { data: userData } = useQuery(QUERY_ME);
-  const { loading, data, refetch } = useQuery(QUERY_JOBS);
+  const { loading, data, refetch } = useQuery(QUERY_JOBS, {
+    variables: { showAll: false },
+  });
 
   const jobs = data?.jobs || [];
 

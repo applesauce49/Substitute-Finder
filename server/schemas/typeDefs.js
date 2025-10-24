@@ -7,7 +7,7 @@ scalar JSON
 type Query {
   me: User
   user(username: String!): User
-  jobs: [Job!]!
+  jobs(showAll: Boolean): [Job!]!
   job(_id: ID!): Job
   calendars: [Calendar!]!   # optional, if you want grouping
 }

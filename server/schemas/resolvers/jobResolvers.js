@@ -5,11 +5,13 @@ import { getUserCalendarClient } from '../../services/googleClient.js';
 
 export default {
     Query: {
-        jobs: async (_, args, context) => {
+        jobs: async (_, { showAll }, context) => {
             const now = new Date();
-            const filter = { "meetingSnapshot.startDateTime": { $gte: now } };
+            let filter = {};
+            if (!showAll)
+                filter = { "meetingSnapshot.startDateTime": { $gte: now } };
 
-            return Job.find({})
+            return Job.find(filter)
                 .populate("createdBy", "_id username email")
                 .populate("assignedTo", "_id username email")
                 .populate("meetingSnapshot", "_id title startDateTime")

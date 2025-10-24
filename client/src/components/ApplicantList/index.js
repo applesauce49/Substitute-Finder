@@ -11,7 +11,7 @@ const ApplicantList = ({ applications, onAccepted, onDenied }) => {
               {application.user?.username ?? "N/A"}
             </h6>
             <p className="m-2">
-              <b>Applied: </b>{application.appliedAt}<br />
+              <b>Applied: </b>{new Date(application.appliedAt).toLocaleString()}<br />
             </p>
             <div className="d-flex justify-content-center gap-2 mb-2 mr-2">
               <button

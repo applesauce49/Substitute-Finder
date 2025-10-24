@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "proxy": "https://localhost:3001/",
+  "homepage": "https://applesauce49.github.io/Substitute-Finder/",
   "dependencies": {
     "@apollo/client": "3.14",
     "@fullcalendar/bootstrap5": "^6.1.19",
@@ -11,6 +12,7 @@
     "@fullcalendar/list": "^6.1.19",
     "@fullcalendar/react": "^6.1.19",
     "@fullcalendar/timegrid": "^6.1.19",
+    "@tanstack/react-table": "^8.21.3",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "eslint-config-react-app": "^7.0.1",

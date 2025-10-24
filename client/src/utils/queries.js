@@ -66,8 +66,8 @@ export const JOB_BASE_FIELDS = gql`
 
 // JOB Info
 export const QUERY_JOBS = gql`
-  query Jobs {
-    jobs {
+  query Jobs($showAll: Boolean) {
+    jobs(showAll: $showAll) {
       ...JobBaseFields
     }
   }
@@ -90,6 +90,15 @@ export const QUERY_JOB = gql`
     }
   }
   ${JOB_BASE_FIELDS}
+`;
+
+export const QUERY_ALL_JOBS = gql`
+  query JobsAllForReport{
+    jobs(showAll: true) {
+      ...JobBaseFields
+    }
+  }
+    ${JOB_BASE_FIELDS}
 `;
 
 export const QUERY_CALENDARS = gql`

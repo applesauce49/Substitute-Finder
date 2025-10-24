@@ -20,6 +20,7 @@ import Login from "./pages/Login";
 import NoMatch from "./pages/NoMatch";
 import SingleJob from "./pages/SingleJob";
 import Profile from "./pages/profile";
+import JobReport from "./pages/JobReport";
 
 import Calendar from "./components/Calendar";
 
@@ -97,6 +98,7 @@ function App() {
               </Route>
               <Route path="/job/:id" element={<SingleJob />} />
               <Route path="/my-calendar" element={<Calendar />} />
+              <Route path="/job-report" element={<JobReport />} />
               <Route path="*" element={<NoMatch />} />
             </Routes>
           </div>

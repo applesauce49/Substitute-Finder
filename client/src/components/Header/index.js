@@ -70,6 +70,10 @@ const Header = () => {
                 Calendar
               </Link>
 
+              <Link className="nav-bar-links" to="/job-report">
+                Sub Report
+              </Link>
+
               <Link className="nav-bar-links" to="/profile">
                 Profile
               </Link>
