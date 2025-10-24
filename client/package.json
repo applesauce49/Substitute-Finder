@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "proxy": "https://localhost:3001/",
-  "homepage": "https://applesauce49.github.io/Substitute-Finder/",
   "dependencies": {
     "@apollo/client": "3.14",
     "@fullcalendar/bootstrap5": "^6.1.19",
