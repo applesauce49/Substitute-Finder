@@ -4,7 +4,7 @@ import { signToken } from "../utils/auth.js";
 import OAuthToken from "../models/OAuthToken.js";
 
 const router = express.Router();
-const redirectBase =process.env.CLIENT_URL;
+const redirectBase = process.env.CLIENT_URL;
 
 router.get(
     "/google",
@@ -44,7 +44,7 @@ router.get(
     }
 );
 
-router.post(`${redirectBase}/logout`, (req, res) => {
+router.post("logout", (req, res) => {
     req.logout(() => {
         res.clearCookie("sid");
         res.sendStatus(204);
