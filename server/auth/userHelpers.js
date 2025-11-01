@@ -23,13 +23,9 @@ export async function upsertUserFromGoogle(profile) {
         return user;
     }
 
-    // Satisfy required password with a random string (unused for OAuth logins)
-    const randomPassword = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-
     user = await User.create({
         username: displayName,
         email,
-        password: randomPassword,
         profileURL,
     });
     return user;

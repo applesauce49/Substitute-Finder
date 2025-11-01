@@ -36,3 +36,9 @@ button {
     transform: rotate(360deg);
   }
 }
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* spacing between Jobs and hamburger */
+}

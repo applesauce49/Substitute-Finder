@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigate, useParams } from "react-router-dom";
-import { FaShareSquare, FaCheckCircle } from "react-icons/fa";
+import { FaShareSquare } from "react-icons/fa";
 
 import { useQuery } from "@apollo/client";
 import { QUERY_USER, QUERY_ME } from "../utils/queries";
@@ -15,8 +15,6 @@ const Profile = (props) => {
   });
 
   const user = data?.me || data?.user || {};
-
-  const hasDegree = user.degree;
 
   // navigate to personal profile page if username is yours
   if (Auth.loggedIn() && Auth.getProfile().data.username === userParam) {
@@ -39,17 +37,7 @@ const Profile = (props) => {
     <div className="ml-auto m-auto w-60 profile-card">
       <div className="card">
         <div className="ml-auto mr-auto">{/* <ImageUpload/> */}</div>
-        {Auth.loggedIn() && hasDegree && (
-          <div className=" ml-auto mr-auto text-center">
-            <h1 className="pt-3 display-inline-block text-dark">
-              {user.username}
-              &nbsp;
-              <FaCheckCircle className="email-icon" />
-              <hr />
-            </h1>
-          </div>
-        )}
-        {Auth.loggedIn() && !hasDegree && (
+        {Auth.loggedIn() && (
           <div className="flex-row ml-auto mr-auto">
             <h1 className="pt-3 display-inline-block text-dark">
               {user.username}

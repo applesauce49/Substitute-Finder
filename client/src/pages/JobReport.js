@@ -144,7 +144,7 @@ function JobReport() {
                                     {!header.column.getIsSorted() &&
                                         header.column.getCanSort() && (
                                             <i className="bi bi-caret-expand ms-2 text-muted"></i>
-                                        )}
+                                    )}
                                 </th>
                             ))}
                         </tr>

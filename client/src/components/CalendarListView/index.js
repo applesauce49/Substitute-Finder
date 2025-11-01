@@ -35,7 +35,7 @@ export default function FullCalendarList({
                 themeSystem="bootstrap5"
                 selectable="true"
                 initialView="listMonth"
-                height="auto"
+                height="400px"
                 events={events}
                 validRange={() => {
                     const now = new Date();

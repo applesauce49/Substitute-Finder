@@ -18,9 +18,9 @@ import Footer from "./components/Footer";
 import Home from "./pages/home";
 import Login from "./pages/Login";
 import NoMatch from "./pages/NoMatch";
-import SingleJob from "./pages/SingleJob";
 import Profile from "./pages/profile";
 import JobReport from "./pages/JobReport";
+import AdminPage from "./pages/admin";
 
 import Calendar from "./components/Calendar";
 
@@ -96,9 +96,9 @@ function App() {
                 <Route path=":username" element={<Profile />} />
                 <Route path="" element={<Profile />} />
               </Route>
-              <Route path="/job/:id" element={<SingleJob />} />
               <Route path="/my-calendar" element={<Calendar />} />
               <Route path="/job-report" element={<JobReport />} />
+              <Route path="/admin" element={<AdminPage />} />
               <Route path="*" element={<NoMatch />} />
             </Routes>
           </div>

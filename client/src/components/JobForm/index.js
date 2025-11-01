@@ -1,17 +1,21 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { ADD_JOB } from "../../utils/mutations";
-import { QUERY_EVENTS } from "../../utils/queries";
+import { QUERY_EVENTS, QUERY_ME } from "../../utils/queries";
+
 import CalendarListView from "../CalendarListView";
 
 const JobForm = ({ onRefetch }) => {
   const { data, loading: meetingsLoading } = useQuery(QUERY_EVENTS, {
     variables: { calendarId: "primary" },
   });
+  const { data: userData } = useQuery(QUERY_ME);
 
+  const admin = userData?.me.admin || "";
   const meetings = data || [];
   const events = data?.googleEvents || [];
 
+  console.log ("Events from JobForm: ", events);
   const [jobText, setText] = useState({
     active: true,
     description: "",
@@ -54,17 +58,6 @@ const JobForm = ({ onRefetch }) => {
     event.preventDefault();
     setFormError(false);
     const meetingsMap = new Map(events.map(e => [e.id, e]));
-
-    console.log(meetingsMap);
-
-    // if (!jobText.description.trim()) {
-    //   setFormError(true);
-    //   return;
-    // }
-    // else {
-    //   setFormError(false);
-    // }
-
     try {
       console.log("jobText.meetings at submit: ", jobText.meetings);
 
@@ -113,6 +106,21 @@ const JobForm = ({ onRefetch }) => {
             onEventClick={handleEventClick}
           />
         </div>
+        {(admin) && (
+          <>
+            <label className="text-dark pt-4">For:</label>
+            <select
+              name="createdBy"
+              id="createdBy"
+              className="form-input col-12 col-md-12"
+              onChange={handleChange}
+            >
+              <option value={userData?.me._id}>{userData?.me.username}</option>
+            </select>
+            <br/>
+          </>
+        )}
+
         <label className="text-dark pt-4">Notes:</label>
         <textarea
           placeholder="Any additional information you'd like to include."

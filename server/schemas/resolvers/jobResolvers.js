@@ -1,7 +1,9 @@
 import { GraphQLError } from 'graphql';
-import { Job } from "../../models/index.js";
+import { Job, User } from "../../models/index.js";
 import { pubsub } from '../../graphql/pubsub.js';
 import { getUserCalendarClient } from '../../services/googleClient.js';
+import { inviteUserToEvent } from '../../services/calendarServices.js';
+import { runMatchEngine } from '../../matchEngine/matchEngine.js';
 
 export default {
     Query: {
@@ -139,6 +141,8 @@ export default {
                 throw new Error("Job not found");
             }
 
+            console.log("Job found:", job);
+
             const acceptedApp =
                 job.applications.id(applicationId) ||
                 (job.applications || []).find(
@@ -149,6 +153,14 @@ export default {
                 throw new Error("Application not found.");
             }
 
+            // Get the user who applied
+            const user = await User.findById(acceptedApp.user);
+            if (!user) {
+                throw new Error("Applicant user not found.");
+            }
+
+            console.log("Accepted application from user:", user);
+
             // mark job as inactive and assign user
             job.active = false;
             job.assignedTo = acceptedApp.user._id;
@@ -156,16 +168,26 @@ export default {
             // TODO: optional: handle declining the rest of the apps here
             // job.applications = [acceptedApp];
 
+            // Invite the accepted user to the meeting
+            await inviteUserToEvent(
+                {
+                    calendarId: job.meetingSnapshot.calendarId,
+                    eventId: job.meetingSnapshot.eventId,
+                    email: user.email
+                },
+                context // this contains context.user
+            );
             await job.save();
 
             await pubsub.publish("JOB_ASSIGNED", { jobAssigned: job });
 
+
             // add job to the accepted user's profile
-            // await User.findByIdAndUpdate(
-            //     acceptedApp.user._id,
-            //     { $addToSet: { acceptedJobs: job._id } },
-            //     { new: true }
-            // );
+            await User.findByIdAndUpdate(
+                acceptedApp.user._id,
+                { $addToSet: { acceptedJobs: job._id } },
+                { new: true }
+            );
 
             return true;
         },

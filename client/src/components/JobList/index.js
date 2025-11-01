@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import SingleJob from '../../pages/SingleJob.js';
+import SingleJob from '../SingleJob.js';
 
 const JobList = ({ jobs, title, onRefetch, children }) => {
   const [selectedJob, setSelectedJob] = useState(null);

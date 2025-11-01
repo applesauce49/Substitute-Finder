@@ -2,28 +2,34 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 import Auth from "../../utils/auth";
-// import { FaReact } from "react-icons/fa";
-// import { Animated } from "react-animated-css";
 import { motion } from "framer-motion";
 
 import logo from "./logo.svg";
 import "./App.css";
-// import { useQuery } from "@apollo/client";
-// import { QUERY_ME } from "../../utils/queries";
+import { useQuery } from "@apollo/client";
+import { QUERY_ME } from "../../utils/queries";
+import HamburgerMenu from "../HamburgerMenu";
 
 const Header = () => {
-  const logout = (event) => {
-    event.preventDefault();
+  const logout = () => {
     Auth.logout();
   };
 
-  // const { data } = useQuery(QUERY_ME, {
-  //   skip: !Auth.loggedIn(),
-  // });
+  const { data } = useQuery(QUERY_ME, {
+    skip: !Auth.loggedIn(),
+  });
 
-  // const me = data?.me;
-  // const isAdmin = me?.admin === true;
+  const me = data?.me;
+  const isAdmin = me?.admin === true;
   const API_BASE = process.env.REACT_APP_API_URL || "https://localhost:3001"
+
+  const routes = [
+    { label: "Calendar", path: "/my-calendar" },
+    { label: "Profile", path: "/profile" },
+    { label: "Sub Report", path: "/job-report" },
+    isAdmin && { label: "Admin", path: "/admin" },
+    { label: "Logout", onClick: logout },
+  ];
 
   return (
     <header className="bg-dark mb-4 flex-row align-center text-white">
@@ -62,11 +68,14 @@ const Header = () => {
         <nav className="text-center">
           {Auth.loggedIn() ? (
             <>
-              <Link className="nav-bar-links" to="/">
-                Jobs
-              </Link>
+              <div className="right">
+                <Link className="nav-bar-links" to="/">
+                  Jobs
+                </Link>
+                <HamburgerMenu routes={routes} />
+              </div>
 
-              <Link className="nav-bar-links" to="/my-calendar">
+              {/* <Link className="nav-bar-links" to="/my-calendar">
                 Calendar
               </Link>
 
@@ -74,18 +83,24 @@ const Header = () => {
                 Sub Report
               </Link>
 
+              {isAdmin && (
+                <Link label="Admin" component={Link} to="/admin" className="nav-bar-links">
+                  Admin
+                </Link>
+              )}
+
               <Link className="nav-bar-links" to="/profile">
                 Profile
               </Link>
 
               <a className="nav-bar-links" href="/" onClick={logout}>
                 Logout
-              </a>
+              </a> */}
             </>
           ) : (
             <>
-              <Link 
-                className="nav-bar-links" 
+              <Link
+                className="nav-bar-links"
                 to={`${API_BASE}/auth/google`}
                 target="_self"
               >

@@ -1,7 +1,7 @@
 import React from "react";
 import { useParams } from "react-router-dom";
 
-import ApplicantList from "../components/ApplicantList";
+import ApplicantList from "./ApplicantList";
 
 import Auth from "../utils/auth";
 import { useQuery } from "@apollo/client";
@@ -131,6 +131,7 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
         </div>
       )}
       <div className="d-flex justify-content-end gap-2">
+        {(admin) && (
         <form onSubmit={handleRunMatchEngine}>
           <button 
           className="btn no-border-btn btn-info"
@@ -139,7 +140,8 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
             Run Match Engine
           </button>
         </form>
-        {Auth.loggedIn() && job.createdBy._id === Auth.getProfile().data._id && (
+        )}
+        {((Auth.loggedIn() && job.createdBy._id === Auth.getProfile().data._id) || admin) && (
           <form onSubmit={handleCancelJob}>
             <button
               className="no-border-btn btn btn-danger"
@@ -150,6 +152,7 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
           </form>
         )}
 
+        {((Auth.loggedIn() && job.createdBy._id !== Auth.getProfile().data._id) || admin) && (
         <form onSubmit={handleFormSubmit}>
           <button
             className="btn no-border-btn btn-success"
@@ -159,6 +162,7 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
             Apply
           </button>
         </form>
+        )}
       </div>
 
     </div>

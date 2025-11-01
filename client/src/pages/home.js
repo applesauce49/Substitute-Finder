@@ -52,7 +52,7 @@ const Home = () => {
             ) : (
               <JobList
                 jobs={myCreatedJobs}
-                title="My Jobs"
+                title="My Sub Requests"
                 onRefetch={refetch}
               >
                 <button
@@ -112,7 +112,7 @@ const Home = () => {
             ) : (
               <JobList
                 jobs={availableJobs}
-                title="Available Jobs"
+                title="Available Sub Jobs"
                 onRefetch={refetch}
               />
             )}
@@ -125,7 +125,7 @@ const Home = () => {
             ) : (
               <JobList
                 jobs={myAssignedJobs}
-                title="Assigned Jobs"
+                title="My Assigned Jobs"
               />
             )}
           </div>

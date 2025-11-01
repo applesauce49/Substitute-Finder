@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { getUserCalendarClient } from "../../services/googleClient.js";
+import { inviteUserToEvent } from '../../services/calendarServices.js';
 
 export default {
     Query: {
@@ -40,10 +41,21 @@ export default {
                 start: ev.start?.dateTime || ev.start?.date,
                 end: ev.end?.dateTime || ev.end?.date,
                 calendarId,
+                attendees: ev.attendees?.map(a => ({
+                    id: a.id,
+                    email: a.email,
+                    displayName: a.displayName,
+                    responseStatus: a.responseStatus,
+                    self: a.self || false,
+                    organizer: a.organizer || false,
+                })) || []
             }))
         }
     },
 
+    Mutation: {
+        inviteUserToEvent: (_, args, context) => inviteUserToEvent(args, context),
+    },
     Meeting: {
         startDateTime: (meeting) => meeting.start?.dateTime || null,
         endDateTime: (meeting) => meeting.end?.dateTime || null,

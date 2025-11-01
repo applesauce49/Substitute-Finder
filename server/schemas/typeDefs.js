@@ -7,6 +7,7 @@ scalar JSON
 type Query {
   me: User
   user(username: String!): User
+  users: [User!]!
   jobs(showAll: Boolean): [Job!]!
   job(_id: ID!): Job
   calendars: [Calendar!]!   # optional, if you want grouping
@@ -19,7 +20,6 @@ type User {
   phone: String
   admin: Boolean
   about: String
-  degree: String
   jobs: [Job!]!
 }
 
@@ -96,6 +96,15 @@ type CalendarListEntry {
   foregroundColor: String
 }
 
+type CalendarAtendee {
+  id: ID
+  email: String!
+  displayName: String
+  responseStatus: String
+  self: Boolean
+  organizer: Boolean
+}
+
 type CalendarEvent {
   id: String!
   summary: String
@@ -103,11 +112,16 @@ type CalendarEvent {
   start: String
   end: String
   calendarId: String
+  attendees: [CalendarAtendee]
 }
 
 extend type Query {
   googleCalendars: [CalendarListEntry!]!
   googleEvents(calendarId: String!): [CalendarEvent!]!
+}
+
+extend type Mutation {
+  inviteUserToEvent(eventId: String!, calendarId: String!, email: String!): CalendarEvent
 }
 
 type Subscription {

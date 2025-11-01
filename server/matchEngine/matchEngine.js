@@ -1,6 +1,6 @@
-import { connectDB } from "../config/connection.js";
+import { connectDB } from "../config/db.js";
 import Job from "../models/Job.js";
-import resolvers from "../schemas/resolvers.js";
+import resolvers from "../schemas/resolvers/index.js";
 
 
 // import Meeting from "../models/Meeting.js";

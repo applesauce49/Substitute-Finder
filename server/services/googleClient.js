@@ -20,6 +20,23 @@ export async function getCalendarClient() {
     return google.calendar({ version: 'v3', auth: oauth2Client });
 }
 
+export async function getImpersonatedCalendarClient(impersonatedEmail) {
+
+    const auth = new google.auth.JWT({
+        email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        key: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        scopes: ['https://www.googleapis.com/auth/calendar'],
+        subject: impersonatedEmail
+    });
+
+    const calendar = google.calendar({ version: 'v3', auth });
+    const { data } = await calendar.calendarList.list();
+    console.log("**** Calendars for", impersonatedEmail);
+    console.log(data.items.map(i => i.id));
+    console.log("***********************");
+    return calendar;
+}
+
 export async function getUserCalendarClient(userId) {
     const tokenDoc = await OAuthToken.findOne({
         userId,

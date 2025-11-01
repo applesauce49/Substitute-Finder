@@ -7,14 +7,20 @@ export default {
             if (!user) throw new GraphQLError('Not logged in');
 
             return User.findById(user._id)
-                .select('-__v -password')
+                .select('-__v')
                 .populate('jobs');
         },
 
         user: async (_, { username }) => {
             return User.findOne({ username })
-                .select('-__v -password')
+                .select('-__v')
                 .populate('jobs');
         },
+        
+        users: async () => {
+            return User.find()
+                .select('-__v')
+                .populate('jobs');
+        }
     },
 };

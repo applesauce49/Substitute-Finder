@@ -25,8 +25,17 @@ export function getUserFromReq(req) {
   }
 }
 
-
 export default function authMiddleware(req, res, next) {
-  req.user = getUserFromReq(req);
+  const user = getUserFromReq(req);
+
+  if (!user) {
+    return res.status(401).json({ error: "Unauthorized or expired token" });
+  }
+
+  req.user = user;
   next();
 }
+// export default function authMiddleware(req, res, next) {
+//   req.user = getUserFromReq(req);
+//   next();
+// }

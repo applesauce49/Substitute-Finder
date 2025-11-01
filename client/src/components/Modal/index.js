@@ -41,7 +41,6 @@ const ProfileModal = () => {
   const [userText, setText] = useState({
     email: userData.email,
     phone: userData.phone,
-    degree: userData.degree,
     about: userData.about,
   });
 
@@ -50,11 +49,9 @@ const ProfileModal = () => {
   // update state based on form input changes
   const handleChange = (event) => {
     const { name, value } = event.target;
-    const degree = document.getElementById("degree").checked;
     setText({
       ...userText,
       [name]: value,
-      degree: degree,
     });
   };
 
@@ -103,15 +100,6 @@ const ProfileModal = () => {
             type="text"
             name="phone"
             className="form-input col-12 col-md-12"
-            onChange={handleChange}
-          ></input>
-          <label>I have an associates or bachelor degree:</label>
-          <input
-            type={`checkbox`}
-            checked={userData?.degree}
-            name="degree"
-            id="degree"
-            className="ml-3 form-checkbox-input checkbox"
             onChange={handleChange}
           ></input>
           <div className="w-100">
