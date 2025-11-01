@@ -1,0 +1,18 @@
+{
+  "files": {
+    "main.css": "/substitute-finder/static/css/main.84b71bd8.css",
+    "main.js": "/substitute-finder/static/js/main.56a80188.js",
+    "static/js/453.0eb8abe8.chunk.js": "/substitute-finder/static/js/453.0eb8abe8.chunk.js",
+    "static/media/bootstrap-icons.woff?": "/substitute-finder/static/media/bootstrap-icons.1295669cd4e305c97f2c.woff",
+    "static/media/bootstrap-icons.woff2?": "/substitute-finder/static/media/bootstrap-icons.92ea18a81d737146ff04.woff2",
+    "static/media/logo.svg": "/substitute-finder/static/media/logo.6ce24c58023cc2f8fd88fe9d219db6c6.svg",
+    "index.html": "/substitute-finder/index.html",
+    "main.84b71bd8.css.map": "/substitute-finder/static/css/main.84b71bd8.css.map",
+    "main.56a80188.js.map": "/substitute-finder/static/js/main.56a80188.js.map",
+    "453.0eb8abe8.chunk.js.map": "/substitute-finder/static/js/453.0eb8abe8.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.84b71bd8.css",
+    "static/js/main.56a80188.js"
+  ]
+}
