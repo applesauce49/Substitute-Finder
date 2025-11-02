@@ -24,7 +24,7 @@ router.get(
 
 router.get(
     "/google/callback",
-    passport.authenticate("google", { failureRedirect: `${redirectBase}/login` }),
+    passport.authenticate("google", { failureRedirect: `${redirectBase}login` }),
     async (req, res) => {
         try {
             const refreshToken = req.authInfo?.refreshToken;
@@ -38,10 +38,10 @@ router.get(
             }
 
             const token = signToken(req.user);
-            res.redirect(`${redirectBase}/login#token=${token}`);
+            res.redirect(`${redirectBase}login#token=${token}`);
         } catch (err) {
             console.error("[Auth] Error during Google callback:", err);
-            res.redirect(`${redirectBase}/login#error=auth_failed`);
+            res.redirect(`${redirectBase}login#error=auth_failed`);
         }
     }
 );
