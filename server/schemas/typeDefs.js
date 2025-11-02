@@ -7,6 +7,7 @@ scalar JSON
 type Query {
   me: User
   user(username: String!): User
+  userById(id: ID!): User
   users: [User!]!
   jobs(showAll: Boolean): [Job!]!
   job(_id: ID!): Job
@@ -32,10 +33,12 @@ type AddJobPayload {
 type Mutation {
   addJob(
     description: String
+    createdBy: String!
     meeting: String!
+    calendarId: String!
   ): AddJobPayload!
   acceptJob(jobId: ID!): Job
-  applyForJob(jobId: ID!): Job   # optional, if you want applications
+  applyForJob(jobId: ID!, applicantId: ID!): Job   # optional, if you want applications
   cancelJob(jobId: ID!): Boolean!
   acceptApplication(jobId: ID!, applicationId: ID!): Boolean!
   declineApplication(jobId: ID!, applicationId: ID!): Boolean!

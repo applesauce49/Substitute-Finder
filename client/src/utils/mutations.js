@@ -35,8 +35,8 @@ export const ADD_USER = gql`
 `;
 
 export const ADD_JOB = gql`
-  mutation AddJob($description: String, $meeting: String!) {
-    addJob(description: $description, meeting: $meeting) {
+  mutation AddJob($description: String, $createdBy: String!, $meeting: String!, $calendarId: String!) {
+    addJob(description: $description, createdBy: $createdBy, meeting: $meeting, calendarId: $calendarId) {
       conflict
       message
       job {
@@ -62,8 +62,8 @@ export const ADD_JOB = gql`
 `;
 
 export const APPLY_FOR_JOB = gql`
-  mutation ApplyForJob($jobId: ID!) {
-    applyForJob(jobId: $jobId) {
+  mutation ApplyForJob($jobId: ID!, $applicantId: ID!) {
+    applyForJob(jobId: $jobId, applicantId: $applicantId) {
       _id
       applicationCount
       applications {

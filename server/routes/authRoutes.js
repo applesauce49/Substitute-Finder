@@ -6,6 +6,8 @@ import OAuthToken from "../models/OAuthToken.js";
 const router = express.Router();
 const redirectBase = process.env.CLIENT_URL;
 
+console.log(`redirectBase URL is ${redirectBase}`)
+
 router.get(
     "/google",
     passport.authenticate("google", {

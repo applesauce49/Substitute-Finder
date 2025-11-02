@@ -2,7 +2,7 @@ import { getImpersonatedCalendarClient } from "./googleClient.js";
 import { GraphQLError } from 'graphql';
 
 export async function inviteUserToEvent({ calendarId, eventId, email }) {
-    const calendar = await getImpersonatedCalendarClient(email);
+    let calendar = await getImpersonatedCalendarClient(email);
     console.log("Got Impersonated Calendar Client:", calendar);
 
     console.log("Fetching event to invite user:", email, eventId);

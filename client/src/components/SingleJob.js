@@ -1,18 +1,19 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 
 import ApplicantList from "./ApplicantList";
 
 import Auth from "../utils/auth";
 import { useQuery } from "@apollo/client";
-import { QUERY_JOB, QUERY_ME } from "../utils/queries";
+import { QUERY_JOB, QUERY_ME, GET_USERS } from "../utils/queries";
 import { useMutation } from "@apollo/client";
-import { ACCEPT_APPLICATION, 
-        APPLY_FOR_JOB, 
-        CANCEL_JOB, 
-        DECLINE_APPLICATION,
-        RUN_MATCH_ENGINE,
-      } from "../utils/mutations";
+import {
+  ACCEPT_APPLICATION,
+  APPLY_FOR_JOB,
+  CANCEL_JOB,
+  DECLINE_APPLICATION,
+  // RUN_MATCH_ENGINE,
+} from "../utils/mutations";
 import { isJobApplyDisabled } from "../utils/jobHelpers";
 
 const SingleJob = ({ jobId: propJobId, onClose }) => {
@@ -22,8 +23,17 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
   const [cancelJob] = useMutation(CANCEL_JOB);
   const [declineApplication] = useMutation(DECLINE_APPLICATION);
   const [acceptApplication] = useMutation(ACCEPT_APPLICATION);
-  const [runMatchEngine] = useMutation(RUN_MATCH_ENGINE);
+  // const [runMatchEngine] = useMutation(RUN_MATCH_ENGINE);
   const { data: userData } = useQuery(QUERY_ME);
+
+  const { data: usersData } = useQuery(GET_USERS);
+
+  const users = usersData?.users ?? [];
+  const userOptions = users?.map(u => ({
+    value: u._id.toString(),
+    label: u.username
+  }));
+
 
   const admin = userData?.me.admin || "";
 
@@ -31,6 +41,9 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
     variables: { id: jobId },
     skip: !jobId,
   });
+
+  const [selectedUserId, setSelectedUserId] = useState("");
+
 
   if (!jobId) return <p>No Job ID Provided</p>;
   if (error) return <p>Error loading job.</p>;
@@ -40,11 +53,21 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
 
   console.log("Loading job: ", job);
 
+
   const handleFormSubmit = async (event) => {
     event.preventDefault();
 
     try {
-      await applyForJob({ variables: { jobId } });
+      // Determine who the "applicant" is
+      const currentUser = userData?.me?._id;
+      const applicantId = admin ? selectedUserId || currentUser : currentUser;
+
+      await applyForJob({
+        variables: {
+          jobId,
+          applicantId: applicantId,
+        }
+      });
     } catch (e) {
       console.error(e);
     }
@@ -63,31 +86,19 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
     onClose();
   };
 
-  const handleRunMatchEngine = async (event) => {
-    event.preventDefault();
-
-    console.log("Running Match Engine");
-    try {
-      await runMatchEngine();
-    } catch (e) {
-      console.error(e);
-    }
-    onClose();
-  }
-
   const applied = job?.applications?.find((app) => app._id === userData?.me._id);
 
-  const accepted = async (appId, jobId) => { 
+  const accepted = async (appId, jobId) => {
     try {
       console.log(`Acception application ${appId} for job ${jobId}`);
-      acceptApplication({ variables: {jobId: jobId, applicationId: appId } });
+      acceptApplication({ variables: { jobId: jobId, applicationId: appId } });
       await refetch();
     }
     catch (e) {
       console.error(e);
     }
     console.log("Application Accepted");
-    onClose(); 
+    onClose();
   };
 
   const denied = async (appId, jobId) => {
@@ -130,38 +141,53 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
           />
         </div>
       )}
-      <div className="d-flex justify-content-end gap-2">
-        {(admin) && (
-        <form onSubmit={handleRunMatchEngine}>
-          <button 
-          className="btn no-border-btn btn-info"
-          type="submit"
-          >
-            Run Match Engine
-          </button>
-        </form>
-        )}
+      <div className="d-flex justify-content-between align-items-center gap-2">
         {((Auth.loggedIn() && job.createdBy._id === Auth.getProfile().data._id) || admin) && (
           <form onSubmit={handleCancelJob}>
-            <button
-              className="no-border-btn btn btn-danger"
-              type="submit"
-            >
-              Close Job
-            </button>
+            <div className="d-flex justify-content-front align-items-center gap-2">
+              <button
+                className="no-border-btn btn btn-danger"
+                type="submit"
+              >
+                Close Job
+              </button>
+            </div>
           </form>
         )}
 
         {((Auth.loggedIn() && job.createdBy._id !== Auth.getProfile().data._id) || admin) && (
-        <form onSubmit={handleFormSubmit}>
-          <button
-            className="btn no-border-btn btn-success"
-            type="submit"
-            disabled={isJobApplyDisabled(job, { admin, applied })}
-          >
-            Apply
-          </button>
-        </form>
+          <form onSubmit={(e) => handleFormSubmit(e, selectedUserId)}>
+            <div className="d-flex justify-content-end align-items-center gap-2">
+
+              {admin && (
+                <>
+                  <label htmlFor="applyFor" className="mb-0 text-nowrap">Apply on behalf of:</label>
+                  <select
+                    id="applyFor"
+                    name="applyFor"
+                    className="form-input"
+                    value={selectedUserId}
+                    onChange={(e) => setSelectedUserId(e.target.value)}
+                  >
+                    <option value="">-- Select user --</option>
+                    {userOptions.map((user) => (
+                      <option key={user.value} value={user.value}>
+                        {user.label}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
+
+              <button
+                className="btn no-border-btn btn-success"
+                type="submit"
+                disabled={isJobApplyDisabled(job, { admin, applied })}
+              >
+                Apply
+              </button>
+            </div>
+          </form>
         )}
       </div>
 

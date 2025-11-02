@@ -29,25 +29,30 @@ export async function runMatchEngine() {
     let totalEvaluated = 0;
 
     for (const job of jobs) {
-        // const meeting = job.meeting;
-        // const applicants = job.applications.map(a => a.user).filter(Boolean);
-        console.log(`${job}`);
-        const sorted = job.applications.sort(
-            (a, b) => new Date(a.appliedAt) - new Date(b.appliedAt)
-        );
-
-
-        const winner = sorted[0];
-
-        console.log(
-            `[Assign] Job "${job._id}" assigned to ${winner._id}`
-        );
-        await acceptApplication(
-            null,
-            { jobId: job._id, applicationId: winner._id },
-            null,
-        )
-        totalEvaluated++;
+        try {
+            // const meeting = job.meeting;
+            // const applicants = job.applications.map(a => a.user).filter(Boolean);
+            console.log(`${job}`);
+            const sorted = job.applications.sort(
+                (a, b) => new Date(a.appliedAt) - new Date(b.appliedAt)
+            );
+    
+    
+            const winner = sorted[0];
+    
+            console.log(
+                `[Assign] Job "${job._id}" assigned to ${winner._id}`
+            );
+            await acceptApplication(
+                null,
+                { jobId: job._id, applicationId: winner._id },
+                null,
+            )
+            totalEvaluated++;
+        }
+        catch (err) {
+            console.log(`[MatchEngine] - Error: Failed to process job "${job._id}":`, err.message);
+        }
     }
     console.log(`[MatchEngine] Cycle complete. ${totalEvaluated} applicant(s) evaluated`);
 }

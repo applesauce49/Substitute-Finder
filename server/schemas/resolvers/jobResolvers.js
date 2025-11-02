@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { Job, User } from "../../models/index.js";
 import { pubsub } from '../../graphql/pubsub.js';
-import { getUserCalendarClient } from '../../services/googleClient.js';
+import { getImpersonatedCalendarClient, getUserCalendarClient } from '../../services/googleClient.js';
 import { inviteUserToEvent } from '../../services/calendarServices.js';
 import { runMatchEngine } from '../../matchEngine/matchEngine.js';
 
@@ -32,14 +32,22 @@ export default {
         },
     },
     Mutation: {
-        addJob: async (_, { description, meeting }, context) => {
-            if (!context.user) {
-                throw new AuthenticationError('You need to be logged in!');
+        addJob: async (_, { description, createdBy, meeting, calendarId }, context) => {
+            // if (!context.user) {
+            //     throw new AuthenticationError('You need to be logged in!');
+            // }
+            const user = await User.findById(createdBy);
+            if (!user) {
+                return {
+                    conflict: true,
+                    message: "Unable to find createdBy user",
+                    job: null,
+                }
             }
 
             const existingJob = await Job.findOne({
                 "meetingSnapshot.eventId": meeting,
-                createdBy: context.user._id,
+                createdBy: createdBy,
                 active: true,
             });
             if (existingJob) {
@@ -50,10 +58,11 @@ export default {
                 }
             };
 
-            const calendar = await getUserCalendarClient(context.user);
+            // const calendar = await getUserCalendarClient(context.user);
+            const calendar = await getImpersonatedCalendarClient(user.email);
 
             const eventResponse = await calendar.events.get({
-                calendarId: "primary",
+                calendarId: calendarId,
                 eventId: meeting,
             })
 
@@ -61,7 +70,7 @@ export default {
 
             const meetingSnapshot = {
                 eventId: ev.id,
-                calendarId: ev.organizer?.email || "primary",
+                calendarId: calendarId || ev.organizer?.email,
                 title: ev.summary || "No Title",
                 description: ev.description || "",
                 startDateTime: ev.start?.dateTime || ev.start?.date,
@@ -72,7 +81,7 @@ export default {
                 active: true,
                 description,
                 meetingSnapshot,
-                createdBy: context.user._id,
+                createdBy: user._id,
             });
 
             await pubsub.publish("JOB_CREATED", { jobCreated: newJob });
@@ -84,7 +93,7 @@ export default {
             }
         },
 
-        applyForJob: async (_, { jobId }, context) => {
+        applyForJob: async (_, { jobId, applicantId }, context) => {
             if (!context.user) {
                 throw new AuthenticationError("You must be logged in");
             }
@@ -93,13 +102,13 @@ export default {
             if (!job) throw new Error("Job not found");
 
             // prevent duplicate applications
-            if (job.applications.includes(context.user._id)) {
+            if (job.applications.includes(applicantId)) {
                 throw new Error("Already applied");
             }
 
             // push properly shaped subdoc
             job.applications.push({
-                user: context.user._id,
+                user: applicantId,
                 appliedAt: new Date()
             });
 

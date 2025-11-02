@@ -16,7 +16,13 @@ export default {
                 .select('-__v')
                 .populate('jobs');
         },
-        
+
+        userById: async (_, { id }) => {
+            return User.findById(id)
+                .select('-__v')
+                .populate('jobs');
+        },
+
         users: async () => {
             return User.find()
                 .select('-__v')

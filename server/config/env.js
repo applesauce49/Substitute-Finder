@@ -9,18 +9,20 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
+console.log(`[Env] - MONGODB_URI: ${process.env.MONGODB_URI ? 'set' : 'not set'}`)
+
 console.log("[OAuth env]",
   "ID:", !!process.env.GOOGLE_CLIENT_ID,
   "SECRET:", !!process.env.GOOGLE_CLIENT_SECRET,
   "CB:", process.env.GOOGLE_CALLBACK_URL
 );
 
-if (process.env.HTTPS_PROXY) {
-    const proxyUrl = process.env.HTTPS_PROXY;
-    const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
-    https.globalAgent = agent;
-    console.log(`[Env] HTTPS_PROXY set to ${process.env.HTTPS_PROXY}`);
-}
+// if (process.env.HTTPS_PROXY) {
+//     const proxyUrl = process.env.HTTPS_PROXY;
+//     const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
+//     https.globalAgent = agent;
+//     console.log(`[Env] HTTPS_PROXY set to ${process.env.HTTPS_PROXY}`);
+// }
 
 export const CONFIG = {
     PORT: process.env.PORT || 3001,

@@ -1,21 +1,34 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { ADD_JOB } from "../../utils/mutations";
-import { QUERY_EVENTS, QUERY_ME } from "../../utils/queries";
+import { QUERY_EVENTS, QUERY_ME, GET_USERS } from "../../utils/queries";
 
 import CalendarListView from "../CalendarListView";
 
 const JobForm = ({ onRefetch }) => {
-  const { data, loading: meetingsLoading } = useQuery(QUERY_EVENTS, {
-    variables: { calendarId: "primary" },
-  });
   const { data: userData } = useQuery(QUERY_ME);
+
+  const calendarId = userData?.me?.admin ? "meetings@oplm.com" : "primary";
+
+  const { data, loading: meetingsLoading } = useQuery(QUERY_EVENTS, {
+    variables: { calendarId: calendarId },
+  });
+
+  const { data: usersData } = useQuery(GET_USERS);
+
+  const users = usersData?.users ?? [];
+  const userOptions = users?.map(u => ({
+    value: u._id.toString(),
+    label: u.username
+  }));
+
+  console.log(userOptions);
 
   const admin = userData?.me.admin || "";
   const meetings = data || [];
   const events = data?.googleEvents || [];
 
-  console.log ("Events from JobForm: ", events);
+  console.log("Events from JobForm: ", events);
   const [jobText, setText] = useState({
     active: true,
     description: "",
@@ -57,6 +70,21 @@ const JobForm = ({ onRefetch }) => {
   const handleFormSubmit = async (event) => {
     event.preventDefault();
     setFormError(false);
+    let creator = userData?.me?._id;
+
+    if (admin) {
+      const formData = new FormData(event.target);
+      // console.log(formData);
+      creator = formData.get("createdBy");
+
+      console.log(creator);
+
+      if (!creator) {
+        alert("You need to select a user before submitting the form.")
+        return;
+      }
+    }
+    
     const meetingsMap = new Map(events.map(e => [e.id, e]));
     try {
       console.log("jobText.meetings at submit: ", jobText.meetings);
@@ -68,7 +96,9 @@ const JobForm = ({ onRefetch }) => {
         const { data } = await addJob({
           variables: {
             description: jobText.description,
+            createdBy: creator,
             meeting: meeting.id,
+            calendarId: calendarId
           },
         });
 
@@ -115,9 +145,14 @@ const JobForm = ({ onRefetch }) => {
               className="form-input col-12 col-md-12"
               onChange={handleChange}
             >
-              <option value={userData?.me._id}>{userData?.me.username}</option>
+              <option value="">-- Select user --</option>
+              {userOptions.map((user) => (
+                <option key={user.value} value={user.value}>
+                  {user.label}
+                </option>
+              ))}
             </select>
-            <br/>
+            <br />
           </>
         )}
 

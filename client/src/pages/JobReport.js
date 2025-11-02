@@ -1,5 +1,9 @@
 import React from "react";
 import { useQuery } from "@apollo/client";
+import { useMutation } from "@apollo/client";
+import {
+  RUN_MATCH_ENGINE,
+} from "../utils/mutations";
 import { QUERY_ALL_JOBS } from "../utils/queries";
 import {
     useReactTable,
@@ -12,7 +16,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 
 function JobReport() {
     const { loading, data, error } = useQuery(QUERY_ALL_JOBS);
-
+    const [runMatchEngine] = useMutation(RUN_MATCH_ENGINE);
 
     const jobs = React.useMemo(() => {
         // Transform the data into a flat, table-friendly format
@@ -49,9 +53,9 @@ function JobReport() {
                 return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             },
         }),
-        columnHelper.accessor("createdBy", { header: "Created By" }),
+        columnHelper.accessor("createdBy", { header: "Peer Parent" }),
         columnHelper.accessor("assignedTo", { header: "Assigned To" }),
-        columnHelper.accessor("applicationCount", { header: "Applications" }),
+        // columnHelper.accessor("applicationCount", { header: "Applications" }),
         columnHelper.accessor("status", { header: "Status" }),
         // columnHelper.accessor("createdAt", { header: "Created At" }),
     ], [columnHelper]);
@@ -85,13 +89,25 @@ function JobReport() {
         getSortedRowModel: getSortedRowModel(),
     });
 
+    const handleRunMatchEngine = async (event) => {
+        event.preventDefault();
+
+        console.log("Running Match Engine");
+        try {
+          await runMatchEngine();
+        } catch (e) {
+          console.error(e);
+        }
+        // onClose();
+    }
+
     if (loading) return <div>Loading...</div>;
     if (error) return <div>Error loading job report.</div>;
 
     return (
         <div className="container my-4">
             <h2>Sub Report</h2>
-            <div className="d-flex gap-3 mb-3">
+            <div className="d-flex gap-3  justify-content-between align-items-bottom mb-3">
                 <div>
                     <label className="form-label">Meeting</label>
                     <select
@@ -117,6 +133,16 @@ function JobReport() {
                         <option value="open">Open</option>
                         <option value="closed">Closed</option>
                     </select>
+                </div>
+                <div>
+                    <form onSubmit={handleRunMatchEngine}>
+                        <button
+                            className="btn no-border-btn btn-info"
+                            type="submit"
+                        >
+                            Run Match Engine
+                        </button>
+                    </form>
                 </div>
             </div>
 
@@ -144,7 +170,7 @@ function JobReport() {
                                     {!header.column.getIsSorted() &&
                                         header.column.getCanSort() && (
                                             <i className="bi bi-caret-expand ms-2 text-muted"></i>
-                                    )}
+                                        )}
                                 </th>
                             ))}
                         </tr>
