@@ -2,9 +2,9 @@ import React from "react";
 import { useQuery } from "@apollo/client";
 import { useMutation } from "@apollo/client";
 import {
-  RUN_MATCH_ENGINE,
+    RUN_MATCH_ENGINE,
 } from "../utils/mutations";
-import { QUERY_ALL_JOBS } from "../utils/queries";
+import { QUERY_ME, QUERY_ALL_JOBS } from "../utils/queries";
 import {
     useReactTable,
     createColumnHelper,
@@ -15,7 +15,11 @@ import {
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 function JobReport() {
-    const { loading, data, error } = useQuery(QUERY_ALL_JOBS);
+    const { loading, data, error, refetch } = useQuery(QUERY_ALL_JOBS);
+    const { data: meData } = useQuery(QUERY_ME);
+    const me = meData?.me || {};
+    const isAdmin = me?.admin === true;
+
     const [runMatchEngine] = useMutation(RUN_MATCH_ENGINE);
 
     const jobs = React.useMemo(() => {
@@ -89,17 +93,30 @@ function JobReport() {
         getSortedRowModel: getSortedRowModel(),
     });
 
+    // const handleRunMatchEngine = async (event) => {
+    //     event.preventDefault();
+
+    //     console.log("Running Match Engine");
+    //     try {
+    //         await runMatchEngine();
+    //         await refetch();
+    //     } catch (e) {
+    //         console.error(e);
+    //     }
+    //     // onClose();
+    // }
+    const [reloading, setReloading] = React.useState(false);
+
     const handleRunMatchEngine = async (event) => {
         event.preventDefault();
-
-        console.log("Running Match Engine");
+        setReloading(true);
         try {
-          await runMatchEngine();
-        } catch (e) {
-          console.error(e);
+            await runMatchEngine();
+            await refetch();
+        } finally {
+            setReloading(false);
         }
-        // onClose();
-    }
+    };
 
     if (loading) return <div>Loading...</div>;
     if (error) return <div>Error loading job report.</div>;
@@ -134,16 +151,18 @@ function JobReport() {
                         <option value="closed">Closed</option>
                     </select>
                 </div>
-                <div>
-                    <form onSubmit={handleRunMatchEngine}>
-                        <button
-                            className="btn no-border-btn btn-info"
-                            type="submit"
-                        >
-                            Run Match Engine
-                        </button>
-                    </form>
-                </div>
+                {isAdmin && (
+                    <div>
+                        <form onSubmit={handleRunMatchEngine}>
+                            <button
+                                className="btn no-border-btn btn-info"
+                                type="submit"
+                            >
+                                Run Match Engine
+                            </button>
+                        </form>
+                    </div>
+                )}
             </div>
 
             {/* ✅ Table */}
