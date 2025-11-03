@@ -149,7 +149,7 @@ const SingleJob = ({ jobId: propJobId, onClose }) => {
                 className="no-border-btn btn btn-danger"
                 type="submit"
               >
-                Close Job
+                Cancel Job
               </button>
             </div>
           </form>
