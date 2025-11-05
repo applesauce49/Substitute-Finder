@@ -4,6 +4,7 @@ import { pubsub } from '../../graphql/pubsub.js';
 import { getImpersonatedCalendarClient, getUserCalendarClient } from '../../services/googleClient.js';
 import { inviteUserToEvent } from '../../services/calendarServices.js';
 import { runMatchEngine } from '../../matchEngine/matchEngine.js';
+import { postJobToGoogleChat, postJobCancelledToGoogleChat, postJobAssignedToGoogleChat } from "../../utils/chatJobNotifier.js";
 
 export default {
     Query: {
@@ -84,7 +85,15 @@ export default {
                 createdBy: user._id,
             });
 
+            // Package the info and publish to subscribers
+            console.log("Publishing JOB_CREATED event");
+
             await pubsub.publish("JOB_CREATED", { jobCreated: newJob });
+
+            // Gather info and post to Google Chat
+            const jobInfo = {...newJob._doc, createdBy: user, meetingSnapshot: meetingSnapshot};
+
+            await postJobToGoogleChat(jobInfo);
 
             return {
                 conflict: false,
@@ -123,19 +132,36 @@ export default {
         },
 
         cancelJob: async (_, { jobId }, context) => {
+            console.log("context.user:", context.user);
+            
             if (!context.user) throw new GraphQLError("Not logged in");
 
-            const job = await Job.findById(jobId);
+            const job = await Job.findById(jobId).lean();
             if (!job) throw new Error("Job not found");
 
-            // Optional: only allow creator or admin
-            if (job.createdBy.toString() !== context.user._id.toString()) {
-                throw new GraphQLError("Not authorized");
+            try {
+                // Optional: only allow creator or admin
+                if (job.createdBy.toString() !== context.user._id.toString() && !context.user.admin) {
+                    throw new GraphQLError("Not authorized");
+                }
+            } catch (err) {
+                console.error("Authorization error:", err);
+                throw new GraphQLError(err.message);
             }
+
+            const user = await User.findById(job.createdBy);
+
+            // Delete the job
 
             await Job.findByIdAndDelete(jobId);
 
             await pubsub.publish("JOB_CANCELED", { jobCanceled: jobId });
+
+            // Gather info and post to Google Chat
+            const jobInfo = {job, createdBy: user.username, meetingSnapshot: job.meetingSnapshot};
+
+            await postJobCancelledToGoogleChat(jobInfo);
+
             return true;   // ✅ GraphQL expects something back
         },
 

@@ -3,7 +3,7 @@ import Jobs from "../models/Job.js"
 
 export async function connectDB() {
   try {
-    const conn_string = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/substituteFinder";
+    const conn_string = process.env.MONGODB_URI;
     console.log(`Connecting to MongoDB at ${conn_string}`);
     
     await mongoose.connect(

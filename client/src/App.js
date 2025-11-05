@@ -20,6 +20,7 @@ import Login from "./pages/Login";
 import NoMatch from "./pages/NoMatch";
 import Profile from "./pages/profile";
 import JobReport from "./pages/JobReport";
+import JobPage from "./pages/JobPage";
 import AdminPage from "./pages/admin";
 
 import Calendar from "./components/Calendar";
@@ -46,6 +47,14 @@ const authLink = setContext((_, { headers }) => {
 const wsLink = new GraphQLWsLink(
   createClient({
     url: `${API_BASE.replace("http", "ws")}/graphql`.replace("https", "wss"),
+    connectionParams: () => {
+      const token = localStorage.getItem("id_token");
+      console.log("[WS] Using Token for WS Connection:", token);
+      return {
+        authorization: token ? `Bearer ${token}` : "",
+        Authorization: token ? `Bearer ${token}` : "",
+      };
+    },
   })
 );
 
@@ -98,6 +107,7 @@ function App() {
               </Route>
               <Route path="/my-calendar" element={<Calendar />} />
               <Route path="/job-report" element={<JobReport />} />
+              <Route path="/job/:jobId" element={<JobPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="*" element={<NoMatch />} />
             </Routes>

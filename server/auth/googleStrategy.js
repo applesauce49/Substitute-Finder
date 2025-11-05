@@ -1,14 +1,17 @@
 import {Strategy as GoogleStrategy} from 'passport-google-oauth20';
 import { upsertUserFromGoogle, saveTokens } from "./userHelpers.js";
 
+// Build the callback url dynamically
+const GOOGLE_CALLBACK_URL = `${process.env.USE_HTTPS ? "https" : "http"}://${process.env.HOST}:${process.env.PORT}/auth/google/callback`;
+
 export default new GoogleStrategy(
     {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3001/auth/google/callback",
+        callbackURL: GOOGLE_CALLBACK_URL,
         authorizationParams: {
             access_type: 'offline',
-            prompt: 'consent'
+            // prompt: 'consent'
         }
     },
 

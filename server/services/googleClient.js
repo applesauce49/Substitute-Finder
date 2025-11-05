@@ -1,11 +1,14 @@
 import { google } from 'googleapis';
 import OAuthToken from "../models/OAuthToken.js";
 
+// Build the callback url dynamically
+const GOOGLE_CALLBACK_URL = `${process.env.USE_HTTPS ? "https" : "http"}://${process.env.HOST}:${process.env.PORT}/auth/google/callback`;
+
 export async function getCalendarClient() {
     const oauth2Client = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET,
-        process.env.GOOGLE_CALLBACK_URL
+        GOOGLE_CALLBACK_URL
     );
 
     const saved = await OAuthToken.findOne({ provider: "google-calendar" });

@@ -3,7 +3,7 @@ import React from "react";
 const ApplicantList = ({ applications, onAccepted, onDenied }) => {
   return (
     <>
-      <h3 className="applicants">Applicants</h3>
+      <h4 className="applicants">Applicants</h4>
       <div className="application-cards">
         {applications.map((application) => (
           <div className="card mr-2 mb-2" key={application._id}>

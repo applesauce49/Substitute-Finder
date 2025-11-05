@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 
 export function getUserFromReq(req) {
-  const authHeader = req.headers?.authorization;
+  const authHeader = req.headers?.authorization || req.headers?.Authorization;
 
   if (!authHeader) {
     // Avoid noisy logs for all non-auth requests (static assets, etc.)

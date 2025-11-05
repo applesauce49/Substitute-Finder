@@ -30,7 +30,7 @@ const Login = () => {
     }
   }, [navigate]);
 
-  const API_BASE = process.env.REACT_APP_API_URL || "https://localhost:3001"
+  const API_BASE = process.env.REACT_APP_API_URL
 
   return (
     <main className="flex-row justify-center mb-4">

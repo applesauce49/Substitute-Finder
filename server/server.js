@@ -11,7 +11,6 @@ import https from "https";
 import path from "path";
 import bodyParser from "body-parser";
 import http from "http";
-import { CONFIG } from "./config/env.js";
 import { corsOptions } from "./config/corsOptions.js";
 import { connectDB } from "./config/db.js";
 import passport from "./auth/index.js";
@@ -19,6 +18,14 @@ import authMiddleware, { getUserFromReq } from "./auth/middleware.js";
 import { createApolloServer } from "./graphql/server.js";
 import routes from "./routes/index.js";
 import { Headers } from "node-fetch";
+import jwt from "jsonwebtoken";
+import User from "./models/User.js";
+import e from "express";
+
+const USE_HTTPS = String(process.env.USE_HTTPS).toLowerCase() === "true";
+const HOST = process.env.HOST || "localhost";
+const PORT = process.env.PORT || 3001;
+
 
 await connectDB();
 
@@ -29,13 +36,13 @@ app.use(cors(corsOptions));
 
 app.use(
   session({
-    secret: CONFIG.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
       sameSite: "lax",
-      secure: CONFIG.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production",
     },
   })
 );
@@ -47,7 +54,10 @@ app.use(routes);
 
 // ✅ Create HTTP or HTTPS server BEFORE starting Apollo
 let httpServer;
-if (CONFIG.USE_HTTPS) {
+
+console.log(process.env.USE_HTTPS)
+
+if (process.env.USE_HTTPS) {
   const keyPath = path.join("certs", "key.pem");
   const certPath = path.join("certs", "cert.pem");
 
@@ -69,7 +79,47 @@ const wsServer = new WebSocketServer({
   server: httpServer,
   path: "/graphql",
 })
-const serverCleanup = useServer({ schema }, wsServer);
+// const serverCleanup = useServer({ schema }, wsServer);
+
+const serverCleanup = useServer(
+  {
+    schema,
+    context: async(ctx) => {
+      try {
+        const authHeader = 
+          ctx.connectionParams?.Authorization ||
+          ctx.connectionParams?.authorization ||
+          ctx.connectionParams?.authToken;
+
+        if (!authHeader) {
+          console.warn("[WS AUTH] No Authorization header provided");
+          return { user: null };
+        } else {
+          console.log("[WS AUTH] Authorization header found");
+        }
+
+        const token = authHeader.replace("Bearer ", "");
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const payload = decoded?.data || decoded;
+
+        const user = await User.findById(payload._id).lean();
+        
+        if (!user) {
+          console.warn("[WS AUTH] No user found for ID: ", payload._id);
+          return { user: null };
+        }
+
+        // console.log("[WS AUTH] User found:", user);
+        return { user };
+      } catch (err) {
+        console.error("[WS AUTH] Auth Error:", err.message);
+        return { user: null };
+      }
+    },
+  },
+  wsServer
+);
+
 
 // ✅ Create and start Apollo v5
 const apolloServer = await createApolloServer(httpServer, serverCleanup);
@@ -86,9 +136,11 @@ app.use(
         method: req.method,
         search: req.url.split("?")[1] || "",
       },
-      context: async () => ({
-        user: req.user || getUserFromReq(req),
-      }),
+      context: async () => {
+        const user = await getUserFromReq(req);
+        console.log("[HTTP AUTH] User in HTTP request:", user?.email || "none");
+        return { user };
+      },
     });
 
     // ✅ Apply status code if Apollo provided one
@@ -111,7 +163,6 @@ app.use(
 );
 
 // ✅ Start listening
-const PORT = process.env.PORT || CONFIG.PORT || 3001;
 httpServer.listen(PORT, () => {
-  console.log(`🚀 Server ready at http${CONFIG.USE_HTTPS ? "s" : ""}://${CONFIG.HOST}:${PORT}/graphql`);
+  console.log(`🚀 Server ready at http${USE_HTTPS ? "s" : ""}://${HOST}:${PORT}/graphql`);
 });

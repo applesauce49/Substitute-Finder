@@ -21,7 +21,7 @@ const Header = () => {
 
   const me = data?.me;
   const isAdmin = me?.admin === true;
-  const API_BASE = process.env.REACT_APP_API_URL || "https://localhost:3001"
+  const API_BASE = process.env.REACT_APP_API_URL
 
   const routes = [
     { label: "Calendar", path: "/my-calendar" },
