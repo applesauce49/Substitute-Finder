@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { useParams } from "react-router-dom";
+import React from "react";
 import SingleJobCard from "./SingleJobCard";
 
 const SingleJob = ({ jobId: propJobId, onClose }) => {
