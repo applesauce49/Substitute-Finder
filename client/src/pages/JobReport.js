@@ -105,7 +105,7 @@ function JobReport() {
     //     }
     //     // onClose();
     // }
-    const [reloading, setReloading] = React.useState(false);
+    const [ setReloading] = React.useState(false);
 
     const handleRunMatchEngine = async (event) => {
         event.preventDefault();
