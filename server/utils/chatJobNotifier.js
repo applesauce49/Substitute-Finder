@@ -49,26 +49,20 @@ export async function postJobCancelledToGoogleChat(job) {
     }
 }
 
-export async function postJobAssignedToGoogleChat(job, assignedUser) {
+export async function postJobAssignedToGoogleChat(meetingName, createdBy, assignedUser, startDateTime) {
     try {
         const title = "Job Assigned";
-        const subtitle = `Job ID: ${job._id}`;
-        const imageUrl = "https://example.com/job-assigned-image.png"; // Replace with actual image URL if available
-        const text = `The job posted by ${job.createdBy.username} has been assigned to ${assignedUser.username}.\n\nDescription: ${job.description}\n\nMeeting Title: ${job.meetingSnapshot.title}\nStart Time: ${new Date(job.meetingSnapshot.startDateTime).toLocaleString()}`;
-
-        const buttons = [
-            {
-                text: "View Job",
-                url: `https://your-frontend-url.com/jobs/${job._id}`, // Replace with actual frontend URL
-            },
-        ];
+        const subtitle = `${meetingName}`;
+        const imageUrl = "https://ssl.gstatic.com/images/icons/material/system/1x/social_leaderboard_black_48dp.png";
+        const text = `The job posted by ${createdBy} has been assigned to ${assignedUser}.\n\n`
+        + `Meeting Title: ${meetingName}\n`
+        + `Start Time: ${new Date(startDateTime).toLocaleString()}\n`;
 
         await postToGoogleChat({
             title,
             subtitle,
             imageUrl,
             text,
-            buttons,
         });
     } catch (error) {
         console.error("Error posting job assignment to Google Chat:", error);
