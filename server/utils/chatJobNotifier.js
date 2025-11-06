@@ -53,7 +53,7 @@ export async function postJobAssignedToGoogleChat(meetingName, createdBy, assign
     try {
         const title = "Job Assigned";
         const subtitle = `${meetingName}`;
-        const imageUrl = "https://ssl.gstatic.com/images/icons/material/system/1x/social_leaderboard_black_48dp.png";
+        const imageUrl = "https://ssl.gstatic.com/images/icons/material/system/1x/task_alt_black_48dp.png";
         const text = `The job posted by ${createdBy} has been assigned to ${assignedUser}.\n\n`
         + `Meeting Title: ${meetingName}\n`
         + `Start Time: ${new Date(startDateTime).toLocaleString()}\n`;

@@ -47,10 +47,12 @@ function JobReport() {
     const columns = React.useMemo(() => [
         columnHelper.accessor("title", { header: "Meeting" }),
         columnHelper.accessor("start", {
+            id: "date",
             header: "Date",
             cell: info => new Date(info.getValue()).toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric' })
         }),
         columnHelper.accessor("start", {
+            id: "time",
             header: "Time",
             cell: info => {
                 const date = new Date(info.getValue());

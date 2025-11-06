@@ -27,7 +27,7 @@ const Header = () => {
     { label: "Calendar", path: "/my-calendar" },
     { label: "Profile", path: "/profile" },
     // { label: "Sub Report", path: "/job-report" },
-    isAdmin && { label: "Admin", path: "/admin" },
+    ...(isAdmin ? [{ path: "/admin", label: "Admin" }] : []),
     { label: "Logout", onClick: logout },
   ];
 
@@ -75,7 +75,7 @@ const Header = () => {
               <Link className="nav-bar-links" to="/job-report">
                 Master Sub List
               </Link>
-                <HamburgerMenu routes={routes} />
+              <HamburgerMenu routes={routes} />
               </div>
 
 

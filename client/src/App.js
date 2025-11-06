@@ -94,7 +94,10 @@ function App() {
   return (
     <ApolloProvider client={client}>
       <JobWatcher />
-      <Router>
+      <Router future={{ 
+        v7_startTransition: true ,
+        v7_relativeSplatPath: true
+      }}>
         <div className="flex-column justify-flex-start min-100-vh">
           <Header />
           <div className="container">

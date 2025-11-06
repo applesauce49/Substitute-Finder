@@ -91,7 +91,7 @@ export default {
             await pubsub.publish("JOB_CREATED", { jobCreated: newJob });
 
             // Gather info and post to Google Chat
-            const jobInfo = {...newJob._doc, createdBy: user, meetingSnapshot: meetingSnapshot};
+            const jobInfo = { ...newJob._doc, createdBy: user, meetingSnapshot: meetingSnapshot };
 
             await postJobToGoogleChat(jobInfo);
 
@@ -133,7 +133,7 @@ export default {
 
         cancelJob: async (_, { jobId }, context) => {
             console.log("context.user:", context.user);
-            
+
             if (!context.user) throw new GraphQLError("Not logged in");
 
             const job = await Job.findById(jobId).lean();
@@ -158,7 +158,7 @@ export default {
             await pubsub.publish("JOB_CANCELED", { jobCanceled: jobId });
 
             // Gather info and post to Google Chat
-            const jobInfo = {job, createdBy: user.username, meetingSnapshot: job.meetingSnapshot};
+            const jobInfo = { job, createdBy: user.username, meetingSnapshot: job.meetingSnapshot };
 
             await postJobCancelledToGoogleChat(jobInfo);
 
@@ -178,37 +178,36 @@ export default {
 
             console.log("Job found:", job);
 
-            const acceptedApp =
-                job.applications.id(applicationId) ||
-                (job.applications || []).find(
-                    (a) => String(a?._id) === String(applicationId)
-                );
+            const acceptedApp = (job.applications || []).find(
+                (a) => String(a?._id) === String(applicationId)
+            );
 
             if (!acceptedApp) {
                 throw new Error("Application not found.");
             }
 
             // Get the user who applied
-            const user = await User.findById(acceptedApp.user);
-            if (!user) {
+            const assignedTo = await User.findById(acceptedApp.user);
+            if (!assignedTo) {
                 throw new Error("Applicant user not found.");
             }
 
-            console.log("Accepted application from user:", user);
+            // get the user who created the job
+            const jobCreator = await User.findById(job.createdBy);
+            if (!jobCreator) {
+                throw new Error("Job creator user not found.");
+            }
 
             // mark job as inactive and assign user
             job.active = false;
             job.assignedTo = acceptedApp.user._id;
-
-            // TODO: optional: handle declining the rest of the apps here
-            // job.applications = [acceptedApp];
 
             // Invite the accepted user to the meeting
             await inviteUserToEvent(
                 {
                     calendarId: job.meetingSnapshot.calendarId,
                     eventId: job.meetingSnapshot.eventId,
-                    email: user.email
+                    email: assignedTo.email
                 },
                 context // this contains context.user
             );
@@ -216,6 +215,12 @@ export default {
 
             await pubsub.publish("JOB_ASSIGNED", { jobAssigned: job });
 
+            await postJobAssignedToGoogleChat(
+                job.meetingSnapshot.title,
+                jobCreator.username,
+                assignedTo.username,
+                job.meetingSnapshot.startDateTime
+            )
 
             // add job to the accepted user's profile
             await User.findByIdAndUpdate(
