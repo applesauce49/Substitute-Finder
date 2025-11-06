@@ -105,7 +105,7 @@ function JobReport() {
     //     }
     //     // onClose();
     // }
-    const [ setReloading] = React.useState(false);
+    const [ reloading, setReloading] = React.useState(false);
 
     const handleRunMatchEngine = async (event) => {
         event.preventDefault();
@@ -119,6 +119,7 @@ function JobReport() {
     };
 
     if (loading) return <div>Loading...</div>;
+    if (reloading) return <div>Loading...</div>
     if (error) return <div>Error loading job report.</div>;
 
     return (
