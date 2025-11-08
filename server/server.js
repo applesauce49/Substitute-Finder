@@ -23,8 +23,8 @@ import User from "./models/User.js";
 import e from "express";
 
 const USE_HTTPS = String(process.env.USE_HTTPS).toLowerCase() === "true";
-const HOST = process.env.HOST || "localhost";
-const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST;
+const PORT = process.env.PORT;
 
 
 await connectDB();
