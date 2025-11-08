@@ -55,9 +55,9 @@ app.use(routes);
 // ✅ Create HTTP or HTTPS server BEFORE starting Apollo
 let httpServer;
 
-console.log(process.env.USE_HTTPS)
+console.log(`process.env.USE_HTTPS: ${process.env.USE_HTTPS}`);
 
-if (process.env.USE_HTTPS) {
+if (process.env.USE_HTTPS === "true") {
   const keyPath = path.join("certs", "key.pem");
   const certPath = path.join("certs", "cert.pem");
 
