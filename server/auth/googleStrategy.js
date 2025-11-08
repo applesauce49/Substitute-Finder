@@ -1,8 +1,13 @@
 import {Strategy as GoogleStrategy} from 'passport-google-oauth20';
 import { upsertUserFromGoogle, saveTokens } from "./userHelpers.js";
 
-// Build the callback url dynamically
-const GOOGLE_CALLBACK_URL = `${process.env.USE_HTTPS ? "https" : "http"}://${process.env.HOST}:${process.env.PORT}/auth/google/callback`;
+// server config
+const publicBase = (process.env.PUBLIC_BASE_URL || "").replace(/\/+$/, "");
+const port = process.env.PORT || 3001;
+
+const GOOGLE_CALLBACK_URL = publicBase
+  ? `${publicBase}/auth/google/callback`            // prod: no port
+  : `http://localhost:${port}/auth/google/callback`; // dev: localhost ok
 
 export default new GoogleStrategy(
     {
