@@ -110,7 +110,7 @@ function App() {
               </Route>
               <Route path="/my-calendar" element={<Calendar />} />
               <Route path="/job-report" element={<JobReport />} />
-              <Route path="/job/:jobId" element={<JobPage />} />
+              <Route path="/jobs/:jobId" element={<JobPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="*" element={<NoMatch />} />
             </Routes>

@@ -93,10 +93,8 @@ const Home = () => {
                 </div>
                 <div className="modal-body">
                   <JobForm
-                    onRefetch={() => {
-                      refetch();
-                      setShowForm(false);
-                    }}
+                    onRefetch={refetch}
+                    onSuccess={() => setShowForm(false)}
                   />
                 </div>
               </div>

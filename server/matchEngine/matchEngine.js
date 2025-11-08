@@ -15,8 +15,7 @@ export async function runMatchEngine() {
     // Step 1: Get open jobs
     const jobs = await Job.find({
         active: true, 
-        assignedTo: null,
-        "applications.0": { $exists: true } 
+        assignedTo: null
     })
         .populate("createdBy")
         .populate("applications.user");
@@ -30,8 +29,22 @@ export async function runMatchEngine() {
 
     for (const job of jobs) {
         try {
-            // const meeting = job.meeting;
-            // const applicants = job.applications.map(a => a.user).filter(Boolean);
+            // First check if the date and time has passed.  Close the job if so.
+            const now = new Date();
+            const meetingStart = new Date(job.meetingSnapshot?.startDateTime);
+            if (meetingStart < now) {
+                console.log(`[MatchEngine] - Job "${job._id}" meeting time has passed. Closing job.`);
+                job.active = false;
+                await job.save();
+                totalEvaluated++;
+                continue;
+            }
+
+            if (!job.applications || job.applications.length === 0) {
+                console.log(`[MatchEngine] - Job "${job._id}" has no applications. Skipping.`);
+                continue;
+            }
+
             console.log(`${job}`);
             const sorted = job.applications.sort(
                 (a, b) => new Date(a.appliedAt) - new Date(b.appliedAt)

@@ -5,7 +5,9 @@ import { QUERY_EVENTS, QUERY_ME, GET_USERS } from "../../utils/queries";
 
 import CalendarListView from "../CalendarListView";
 
-const JobForm = ({ onRefetch }) => {
+const JobForm = ({ onRefetch, onSuccess }) => {
+
+  console.log("Rendering JobForm");
   const { data: userData } = useQuery(QUERY_ME);
 
   const calendarId = userData?.me?.admin ? "meetings@oplm.com" : "primary";
@@ -37,10 +39,21 @@ const JobForm = ({ onRefetch }) => {
   const [characterCount, setCharacterCount] = useState(0);
 
   const [addJob, { error }] = useMutation(ADD_JOB, {
-    update(cache, { data }) {
-      const payload = data?.addJob;
-      if (!payload || payload.conflict || !payload.job) return;
-    },
+    fetchPolicy: "no-cache",
+  });
+  
+  // const [addJob, { error }] = useMutation(ADD_JOB, {
+  //   update(cache, { data }) {
+  //     const payload = data?.addJob;
+  //     if (!payload || payload.conflict || !payload.job) return;
+  //   },
+  // });
+
+  const [formError, setFormError] = useState("");
+  const [selectedEvents, setSelectedEvents] = useState(new Set());
+
+  const [formData, setFormData] = useState({
+    createdBy: "",
   });
 
   // Update state for textarea
@@ -56,8 +69,15 @@ const JobForm = ({ onRefetch }) => {
     }
   };
 
-  const [formError, setFormError] = useState(false);
-  const [selectedEvents, setSelectedEvents] = useState(new Set());
+  // Update state for textarea
+  const handleSelectionChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
 
   const handleEventClick = (info) => {
     const id = info.event.id;
@@ -66,59 +86,54 @@ const JobForm = ({ onRefetch }) => {
     setSelectedEvents(newSet);
   };
 
-  // submit form
   const handleFormSubmit = async (event) => {
     event.preventDefault();
-    setFormError(false);
+    setFormError("");
+
+    // Default to current user
     let creator = userData?.me?._id;
 
+    // Admins choose a user from the dropdown
     if (admin) {
-      const formData = new FormData(event.target);
-      // console.log(formData);
-      creator = formData.get("createdBy");
-
-      console.log(creator);
+      creator = formData.createdBy;
 
       if (!creator) {
-        alert("You need to select a user before submitting the form.")
+        setFormError("You need to select a user before submitting the form.");
         return;
       }
     }
-    
-    const meetingsMap = new Map(events.map(e => [e.id, e]));
+
+    const meetingsMap = new Map(events.map((e) => [e.id, e]));
+
     try {
-      console.log("jobText.meetings at submit: ", jobText.meetings);
-
-      for (const event of selectedEvents) {
-        console.log("Adding job with meeting data ", meetingsMap.get(event));
-        const meeting = meetingsMap.get(event);
-
+      for (const eventId of selectedEvents) {
+        const meeting = meetingsMap.get(eventId);
         const { data } = await addJob({
           variables: {
             description: jobText.description,
             createdBy: creator,
             meeting: meeting.id,
-            calendarId: calendarId
+            calendarId: calendarId,
           },
         });
 
         if (data.addJob.conflict) {
-          alert("Meeting conflict");
-          return;
+          setFormError("This meeting conflicts with an existing one.");
+          return; // stop here but don't reset form
         }
       }
 
-      // reset
-      setText({
-        active: true,
-        description: "",
-        meetings: [], // stays an array of {id, date}, just emptied
-      });
+      // Only reset after successful submission
+      setText({ active: true, description: "", meetings: [] });
       setCharacterCount(0);
+      setFormData({ createdBy: "" }); // clear dropdown only on success
+
+      onSuccess?.();
+      // await onRefetch();
+      setTimeout(() => onRefetch(), 0);
     } catch (e) {
       console.error(e);
     }
-    onRefetch();
   };
 
   if (meetingsLoading) return <p>Loading meetings...</p>;
@@ -143,7 +158,8 @@ const JobForm = ({ onRefetch }) => {
               name="createdBy"
               id="createdBy"
               className="form-input col-12 col-md-12"
-              onChange={handleChange}
+              value={formData.createdBy}
+              onChange={handleSelectionChange}
             >
               <option value="">-- Select user --</option>
               {userOptions.map((user) => (
@@ -165,11 +181,11 @@ const JobForm = ({ onRefetch }) => {
           onChange={handleChange}
           value={jobText.description}
         ></textarea>
+        Character Count: {characterCount}/280<br />
         <p
           className={`m-0 ${formError ? "text-error" : ""}`}
         >
-          Character Count: {characterCount}/280<br />
-          {formError && <span className="ml-2">Reason is required...</span>}
+          {formError && <span className="ml-2">{formError}</span>}
           {error && <span className="ml-2">Something went wrong...</span>}
         </p>
         <div className="w-75 mr-auto ml-auto text-center">
