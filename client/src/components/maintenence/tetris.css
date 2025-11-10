@@ -1,0 +1,82 @@
+.tetris-layout {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 16px; /* space between held, board, and queue */
+}
+
+.tetris-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items:last baseline;
+  /* background-color: #b1b1b1; */
+  /* border: 8px solid #444444; */
+  color: #FFF;
+  position: relative;
+  display: inline-block;
+}
+
+.tetris-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #000000bf;
+  color: #fff;
+  padding: 20px 40px;
+  border: 2px solid #00ffff;
+  border-radius: 8px;
+  text-align: center;
+  z-index: 10;
+}
+
+.tetris-overlay ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.tetris-overlay li {
+  margin: 4px 0;
+}
+.tetris-stats {
+  /* display: flex;
+  flex-direction: row;    /* ← side-by-side layout */
+  font-family: monospace;
+  color: #fff !important;  /* ensure white text on dark backgrounds */
+}
+/* 
+.tetris-stats p {
+  margin: 4px 0;
+} */
+
+.game-block {
+  margin: 0;
+  padding: 0;
+  width: 1.5em;
+  height: 1.5em;
+  border: 1px solid #333;
+}
+.piece-i {
+  background-color: #00FFFF;
+}
+.piece-j {
+  background-color: #4c4cff;
+}
+.piece-l {
+  background-color: #ffa500;
+}
+.piece-o {
+  background-color: #ffff00;
+}
+.piece-s {
+  background-color: #00ff6d;
+}
+.piece-t {
+  background-color: #aa00ff;
+}
+.piece-z {
+  background-color: #ff4c4c;
+}
+.piece-preview {
+  background-color: #eee;
+}

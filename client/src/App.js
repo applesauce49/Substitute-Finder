@@ -11,6 +11,7 @@ import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { createClient } from 'graphql-ws';
 import { split } from "@apollo/client";
 import { getMainDefinition } from "@apollo/client/utilities";
+import MaintenenceTetris from "./components/maintenence";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -30,6 +31,7 @@ import { useSubscription } from "@apollo/client";
 import { JOB_UPDATED_SUB } from "./utils/queries";
 
 const API_BASE = process.env.REACT_APP_API_URL || "";
+const MAINTENENCE_MODE = process.env.MAINTENENCE_MODE === "true";
 
 const httpLink = createHttpLink({
   uri: `${API_BASE}/graphql`,
@@ -101,6 +103,9 @@ function App() {
         <div className="flex-column justify-flex-start min-100-vh">
           <Header />
           <div className="container">
+            { MAINTENENCE_MODE ? (
+              <MaintenenceTetris />
+            ) : (
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
@@ -114,6 +119,7 @@ function App() {
               <Route path="/admin" element={<AdminPage />} />
               <Route path="*" element={<NoMatch />} />
             </Routes>
+            )}
           </div>
           <Footer />
         </div>
