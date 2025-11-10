@@ -7,7 +7,7 @@ const port = process.env.PORT || 3001;
 
 const GOOGLE_CALLBACK_URL = publicBase
   ? `${publicBase}/auth/google/callback`            // prod: no port
-  : `http://localhost:${port}/auth/google/callback`; // dev: localhost ok
+  : `https://localhost:${port}/auth/google/callback`; // dev: localhost ok
 
 export default new GoogleStrategy(
     {
