@@ -5,9 +5,7 @@ import { upsertUserFromGoogle, saveTokens } from "./userHelpers.js";
 const publicBase = (process.env.PUBLIC_BASE_URL || "").replace(/\/+$/, "");
 const port = process.env.PORT || 3001;
 
-const GOOGLE_CALLBACK_URL = publicBase
-  ? `${publicBase}/auth/google/callback`            // prod: no port
-  : `https://localhost:${port}/auth/google/callback`; // dev: localhost ok
+const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL;
 
 export default new GoogleStrategy(
     {

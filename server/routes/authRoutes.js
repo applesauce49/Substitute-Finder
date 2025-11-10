@@ -5,10 +5,7 @@ import OAuthToken from "../models/OAuthToken.js";
 
 const router = express.Router();
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
-// const BACKEND_URL = process.env.BACKEND_URL || "https://localhost:3001";
-// const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || "http://localhost:3001/auth/google/callback";
-
+const FRONTEND_URL = process.env.FRONTEND_URL;
 
 router.get(
     "/google",
