@@ -10,7 +10,7 @@ import { useQuery } from "@apollo/client";
 import { QUERY_ME } from "../../utils/queries";
 import HamburgerMenu from "../HamburgerMenu";
 
-const Header = () => {
+const Header = ( { maintenance = false }) => {
   const logout = () => {
     Auth.logout();
   };
@@ -26,7 +26,6 @@ const Header = () => {
   const routes = [
     { label: "Calendar", path: "/my-calendar" },
     { label: "Profile", path: "/profile" },
-    // { label: "Sub Report", path: "/job-report" },
     ...(isAdmin ? [{ path: "/admin", label: "Admin" }] : []),
     { label: "Logout", onClick: logout },
   ];
@@ -52,7 +51,6 @@ const Header = () => {
               transition: { duration: 0.4 },
             }}
           >
-            {/* <h1 className='mb-1 mt-1 main-logo'>Sub At<span className='icon'><FaReact/></span>mic</h1> */}
             <h1 className="mb-1 mt-0 main-logo">
               Sub At
               <span>
@@ -65,7 +63,10 @@ const Header = () => {
           </motion.div>
         </Link>
 
-        <nav className="text-center">
+        {maintenance ? (
+          <h3 style={{ color: "red", fontWeight: "bold" }}> Maintenance Mode</h3>
+        ) : (
+          <nav className="text-center">
           {Auth.loggedIn() ? (
             <>
               <div className="right">
@@ -77,26 +78,6 @@ const Header = () => {
               </Link>
               <HamburgerMenu routes={routes} />
               </div>
-
-
-              {/* <Link className="nav-bar-links" to="/my-calendar">
-                Calendar
-              </Link>
-
-
-              {isAdmin && (
-                <Link label="Admin" component={Link} to="/admin" className="nav-bar-links">
-                  Admin
-                </Link>
-              )}
-
-              <Link className="nav-bar-links" to="/profile">
-                Profile
-              </Link>
-
-              <a className="nav-bar-links" href="/" onClick={logout}>
-                Logout
-              </a> */}
             </>
           ) : (
             <>
@@ -110,6 +91,7 @@ const Header = () => {
             </>
           )}
         </nav>
+        )}
       </div>
     </header>
   );

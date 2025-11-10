@@ -42,3 +42,31 @@ button {
   align-items: center;
   gap: 1rem; /* spacing between Jobs and hamburger */
 }
+
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  z-index: 1000; /* stay on top of page content */
+  background-color: #212529; /* matches .bg-dark */
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Only apply top padding to the page content area */
+/* body > .container,
+div.container:not(header .container) {
+  padding-top: 50px;
+} */
+ .container:not(header .container) {
+  padding-top: 80px; /* match header height */
+}
+
+/* Optional: let the header have a translucent "scroll-under" feel */
+header.transparent {
+  background-color: rgba(33, 37, 41, 0.85);
+  backdrop-filter: blur(6px);
+}

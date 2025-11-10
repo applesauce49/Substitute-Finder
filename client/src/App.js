@@ -11,7 +11,7 @@ import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { createClient } from 'graphql-ws';
 import { split } from "@apollo/client";
 import { getMainDefinition } from "@apollo/client/utilities";
-import MaintenenceTetris from "./components/maintenence";
+import MaintenanceTetris from "./components/maintenance";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -24,6 +24,8 @@ import JobReport from "./pages/JobReport";
 import JobPage from "./pages/JobPage";
 import AdminPage from "./pages/admin";
 
+import Auth from "./utils/auth";
+
 import Calendar from "./components/Calendar";
 
 import { useSubscription } from "@apollo/client";
@@ -31,7 +33,13 @@ import { useSubscription } from "@apollo/client";
 import { JOB_UPDATED_SUB } from "./utils/queries";
 
 const API_BASE = process.env.REACT_APP_API_URL || "";
-const MAINTENENCE_MODE = process.env.MAINTENENCE_MODE === "true";
+const MAINTENANCE_MODE = process.env.REACT_APP_MAINTENANCE_MODE === "true";
+const loggedIn = Auth.loggedIn();
+
+
+console.log("API_BASE is set to:", API_BASE);
+console.log("MAINTENANCE_MODE is set to:", MAINTENANCE_MODE);
+console.log("User logged in status:", loggedIn);
 
 const httpLink = createHttpLink({
   uri: `${API_BASE}/graphql`,
@@ -78,21 +86,27 @@ const client = new ApolloClient({
 });
 
 
-function JobWatcher() {
-  const { data } = useSubscription(JOB_UPDATED_SUB);
+function JobWatcher({ enabled }) {
+  // Don’t start the subscription unless enabled
+  const { data } = useSubscription(JOB_UPDATED_SUB, {
+    skip: !enabled,
+  });
+
 
   React.useEffect(() => {
+    if (!enabled) return;
     if (data) {
       console.log("Job updated:", data.jobUpdated);
     } else {
       console.log("No job update data received.");
     }
-  }, [data]);
+  }, [enabled, data]);
 
   return null;
 }
 
 function App() {
+
   return (
     <ApolloProvider client={client}>
       <JobWatcher />
@@ -101,11 +115,13 @@ function App() {
         v7_relativeSplatPath: true
       }}>
         <div className="flex-column justify-flex-start min-100-vh">
-          <Header />
+          <Header maintenance={MAINTENANCE_MODE} />
           <div className="container">
-            { MAINTENENCE_MODE ? (
-              <MaintenenceTetris />
+            { MAINTENANCE_MODE ? (
+              <MaintenanceTetris />
             ) : (
+              <>
+              { loggedIn && <JobWatcher />}
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
@@ -119,6 +135,7 @@ function App() {
               <Route path="/admin" element={<AdminPage />} />
               <Route path="*" element={<NoMatch />} />
             </Routes>
+              </>
             )}
           </div>
           <Footer />

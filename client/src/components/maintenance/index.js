@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Tetris from 'react-tetris';
 // import "react-tetris/dist/styles.css";  // ensure visuals load
 import "./tetris.css"; // your overrides
 
 export default function MaintenanceTetris() {
     const [showHelp, setShowHelp] = useState(false);
-    const [controllerRef, setControllerRef] = useState(null);
+    const controllerRef = useRef(null);
 
     const sendPauseKey = () => {
         window.dispatchEvent(new KeyboardEvent("keydown", { key: "p" }));
     };
 
-
-    React.useEffect(() => {
+    useEffect(() => {
         if (!controllerRef) return;
         if (showHelp) sendPauseKey();
         else sendPauseKey();
@@ -47,7 +46,9 @@ export default function MaintenanceTetris() {
                         state,
                         controller,
                     }) => {
-                        if (!controllerRef) setControllerRef(controller);
+                            if (controller && controllerRef.current !== controller) {
+                                controllerRef.current = controller;
+                            }
 
                         return (
                             <>
