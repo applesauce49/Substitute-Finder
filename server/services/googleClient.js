@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
 import OAuthToken from "../models/OAuthToken.js";
 
-const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || "https://localhost:3001/auth/google/callback";
+const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL;
 
 export async function getCalendarClient() {
     const oauth2Client = new google.auth.OAuth2(
