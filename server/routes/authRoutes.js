@@ -4,9 +4,8 @@ import { signToken } from "../utils/auth.js";
 import OAuthToken from "../models/OAuthToken.js";
 
 const router = express.Router();
-const redirectBase = process.env.CLIENT_URL;
 
-console.log(`redirectBase URL is ${redirectBase}`)
+const FRONTEND_URL = process.env.FRONTEND_URL;
 
 router.get(
     "/google",
@@ -24,7 +23,7 @@ router.get(
 
 router.get(
     "/google/callback",
-    passport.authenticate("google", { failureRedirect: `${redirectBase}/login` }),
+    passport.authenticate("google", { failureRedirect: `${FRONTEND_URL}/login` }),
     async (req, res) => {
         try {
             const refreshToken = req.authInfo?.refreshToken;
@@ -38,10 +37,10 @@ router.get(
             }
 
             const token = signToken(req.user);
-            res.redirect(`${redirectBase}/login#token=${token}`);
+            res.redirect(`${FRONTEND_URL}/login#token=${token}`);
         } catch (err) {
             console.error("[Auth] Error during Google callback:", err);
-            res.redirect(`${redirectBase}/login#error=auth_failed`);
+            res.redirect(`${FRONTEND_URL}/login#error=auth_failed`);
         }
     }
 );

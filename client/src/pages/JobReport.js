@@ -125,7 +125,7 @@ function JobReport() {
     if (error) return <div>Error loading job report.</div>;
 
     return (
-        <div className="container my-4">
+        <div className="my-4">
             <h2>Sub Report</h2>
             <div className="d-flex gap-3  justify-content-between align-items-bottom mb-3">
                 <div>

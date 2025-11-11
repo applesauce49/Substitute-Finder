@@ -8,7 +8,8 @@ const allowedOrigins = [
     'https://localhost:3001',
     'https://studio.apollographql.com',
     'https://substitute-finder.onrender.com',
-    'https://oplmsubatomic.netlify.app'
+    'https://oplmsubatomic.netlify.app',
+    'https://dev--oplmsubatomic.netlify.app',
 ];
 
 export const corsOptions = {

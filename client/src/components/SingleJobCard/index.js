@@ -126,7 +126,7 @@ const SingleJobCard = ({ jobId: propJobId, onClose }) => {
           <p>
             <b>Date: </b>{new Date(job.meetingSnapshot?.startDateTime).toLocaleString()}<br />
             <b>For: </b>{job?.createdBy?.username ?? "N/A"}<br />
-            <b>Posted: </b>{new Date(job.createdAt).toLocaleString()}<br />
+            {/* <b>Posted: </b>{new Date(job.createdAt).toLocaleString()}<br /> */}
             <b>Notes: </b> {job.description}<br />
           </p>
         </div>

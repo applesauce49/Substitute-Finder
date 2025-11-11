@@ -35,9 +35,15 @@ const Home = () => {
   const userId = Auth.getProfile()?.data?._id;
 
   const myCreatedJobs = jobs.filter(job => job.createdBy?._id === userId);
-  const myAssignedJobs = jobs.filter(job => job.assignedTo?._id === userId);
-  const availableJobs = jobs.filter(job => job.createdBy?._id !== userId && job.active && !job.assignedTo);
+  console.log('My Created Jobs:', myCreatedJobs)
 
+  const myAssignedJobs = jobs.filter(job => job.assignedTo?._id === userId);
+  console.log('My Assigned Jobs:', myAssignedJobs)
+
+  const availableJobs = jobs.filter(job => job.createdBy?._id !== userId && job.active && !job.assignedTo?._id)
+    .sort((a, b) => new Date(a.meetingSnapshot?.startDateTime) - new Date(b.meetingSnapshot?.startDateTime));
+  console.log('Available Jobs:', availableJobs)
+  
   const loggedIn = Auth.loggedIn();
 
   const [showForm, setShowForm] = useState(false);
@@ -70,36 +76,36 @@ const Home = () => {
 
         {showForm && (
           <>
-          <div
-            className="modal-backdrop fade show"
-            style={{ zIndex: 1040 }}
-            onClick={() => setShowForm(false)} // closes when clicking outside
-          />
-          <div 
-            className="modal show" 
-            style={{ display: "block", zIndex:1050 }}
-            tabIndex="-1"
-            role="dialog"
-          >
-            <div className="modal-dialog modal-md">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Request a Sub</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={() => setShowForm(false)}
-                  ></button>
-                </div>
-                <div className="modal-body">
-                  <JobForm
-                    onRefetch={refetch}
-                    onSuccess={() => setShowForm(false)}
-                  />
+            <div
+              className="modal-backdrop fade show"
+              style={{ zIndex: 1040 }}
+              onClick={() => setShowForm(false)} // closes when clicking outside
+            />
+            <div
+              className="modal show"
+              style={{ display: "block", zIndex: 1050 }}
+              tabIndex="-1"
+              role="dialog"
+            >
+              <div className="modal-dialog modal-md">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h5 className="modal-title">Request a Sub</h5>
+                    <button
+                      type="button"
+                      className="btn-close"
+                      onClick={() => setShowForm(false)}
+                    ></button>
+                  </div>
+                  <div className="modal-body">
+                    <JobForm
+                      onRefetch={refetch}
+                      onSuccess={() => setShowForm(false)}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
           </>
         )}
 
