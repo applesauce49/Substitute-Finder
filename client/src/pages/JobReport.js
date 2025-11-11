@@ -61,14 +61,16 @@ function JobReport() {
         }),
         columnHelper.accessor("createdBy", { header: "Peer Parent" }),
         columnHelper.accessor("assignedTo", { header: "Assigned To" }),
-        // columnHelper.accessor("applicationCount", { header: "Applications" }),
         columnHelper.accessor("status", { header: "Status" }),
-        // columnHelper.accessor("createdAt", { header: "Created At" }),
     ], [columnHelper]);
 
     const [statusFilter, setStatusFilter] = React.useState("all");
     const [meetingFilter, setMeetingFilter] = React.useState("all");
-    const [sorting, setSorting] = React.useState([]);
+    const [sorting, setSorting] = React.useState(
+        [
+            { id: "date", desc: false }, // 👈 sort by 'start' ascending
+        ]
+    );
 
 
     const filteredJobs = React.useMemo(() => {
@@ -95,19 +97,7 @@ function JobReport() {
         getSortedRowModel: getSortedRowModel(),
     });
 
-    // const handleRunMatchEngine = async (event) => {
-    //     event.preventDefault();
-
-    //     console.log("Running Match Engine");
-    //     try {
-    //         await runMatchEngine();
-    //         await refetch();
-    //     } catch (e) {
-    //         console.error(e);
-    //     }
-    //     // onClose();
-    // }
-    const [ reloading, setReloading] = React.useState(false);
+    const [reloading, setReloading] = React.useState(false);
 
     const handleRunMatchEngine = async (event) => {
         event.preventDefault();
@@ -120,9 +110,9 @@ function JobReport() {
         }
     };
 
-    if (loading) return <div>Loading...</div>;
-    if (reloading) return <div>Loading...</div>
-    if (error) return <div>Error loading job report.</div>;
+    if (loading) return <div><h1>Loading...</h1></div>;
+    if (reloading) return <div><h1>Loading...</h1></div>;
+    if (error) return <div><h1>Error loading job report.</h1></div>;
 
     return (
         <div className="my-4">

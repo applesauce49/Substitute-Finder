@@ -7,7 +7,7 @@ export async function postJobToGoogleChat(job) {
         const imageUrl = "https://ssl.gstatic.com/images/icons/material/system/1x/event_available_black_48dp.png"
         const text = `A new job has been posted by ${job.createdBy.username}.\n\n`
         + `Meeting Title: ${job.meetingSnapshot.title}\n`
-        + `Start Time: ${new Date(job.meetingSnapshot.startDateTime).toLocaleString()}\n`
+        + `Start Time: <time:${new Date(job.meetingSnapshot.startDateTime).toISOString()}|format=long>\n`
         + `Description: ${job.description}\n\n`;
 
         const buttons = [
@@ -36,7 +36,7 @@ export async function postJobCancelledToGoogleChat(job) {
         const imageUrl = "https://ssl.gstatic.com/images/icons/material/system/1x/event_busy_black_48dp.png";
         const text = `The job posted by ${job.createdBy} has been cancelled.\n\n`
         + `Meeting Title: ${job.meetingSnapshot.title}\n`
-        + `Start Time: ${new Date(job.meetingSnapshot.startDateTime).toLocaleString()}\n`;
+        + `Start Time: <time:${new Date(job.meetingSnapshot.startDateTime).toISOString()}|format=long>\n`;
         
         await postToGoogleChat({
             title,
@@ -56,7 +56,7 @@ export async function postJobAssignedToGoogleChat(meetingName, createdBy, assign
         const imageUrl = "https://ssl.gstatic.com/images/icons/material/system/1x/task_alt_black_48dp.png";
         const text = `The job posted by ${createdBy} has been assigned to ${assignedUser}.\n\n`
         + `Meeting Title: ${meetingName}\n`
-        + `Start Time: ${new Date(startDateTime).toLocaleString()}\n`;
+        + `Start Time: <time:${new Date(startDateTime).toISOString()}|format=long>\n`;
 
         await postToGoogleChat({
             title,
