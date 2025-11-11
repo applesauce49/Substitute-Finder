@@ -13,7 +13,7 @@ export async function postJobToGoogleChat(job) {
         const buttons = [
             {
                 text: "View Job",
-                url: `${process.env.CLIENT_URL}/jobs/${job._id}`, // Replace with actual frontend URL
+                url: `${process.env.FRONTEND_URL}/jobs/${job._id}`, // Replace with actual frontend URL
             },
         ];
 
