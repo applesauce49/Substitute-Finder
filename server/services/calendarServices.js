@@ -1,11 +1,11 @@
 import { getImpersonatedCalendarClient } from "./googleClient.js";
 import { GraphQLError } from 'graphql';
 
-export async function inviteUserToEvent({ calendarId, eventId, email }) {
-    let calendar = await getImpersonatedCalendarClient(email);
+export async function inviteUserToEvent({ calendarId, eventId, organizer, attendee }) {
+    let calendar = await getImpersonatedCalendarClient(organizer);
     console.log("Got Impersonated Calendar Client:", calendar);
 
-    console.log("Fetching event to invite user:", email, eventId);
+    console.log("Fetching event to invite user:", attendee, eventId);
 
     let event;
     try {
@@ -19,7 +19,7 @@ export async function inviteUserToEvent({ calendarId, eventId, email }) {
     }
 
     // check if the organizer matches, and get a new calendar client if needed
-    if (event.organizer?.email !== email) {
+    if (event.organizer?.email !== organizer) {
         console.log("Organizer email does not match. Getting new calendar client for organizer:", event.organizer?.email);
         const organizerCalendar = await getImpersonatedCalendarClient(event.organizer?.email);
         console.log("Got new Calendar Client for organizer:", organizerCalendar);
@@ -27,13 +27,15 @@ export async function inviteUserToEvent({ calendarId, eventId, email }) {
     }
 
     const existingAttendees = event.attendees || [];
-    const alreadyInvited = existingAttendees.some(a => a.email === email);
+    const alreadyInvited = existingAttendees.some(a => a.email === attendee);
 
     if (!alreadyInvited) {
-        existingAttendees.push({ email });
+        existingAttendees.push({ 
+            email: attendee,
+         });
     }
 
-    console.log("Inviting user to event:", email, eventId);
+    console.log("Inviting user to event:", attendee, eventId);
     console.log("Existing attendees:", existingAttendees);
     console.log("Event before update:", event);
     console.log("Calendar ID:", calendarId);

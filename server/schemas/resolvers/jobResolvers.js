@@ -207,7 +207,8 @@ export default {
                 {
                     calendarId: job.meetingSnapshot.calendarId,
                     eventId: job.meetingSnapshot.eventId,
-                    email: assignedTo.email
+                    attendee: assignedTo.email,
+                    organizer: jobCreator.email,
                 },
                 context // this contains context.user
             );
