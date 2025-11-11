@@ -11,7 +11,7 @@ import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { createClient } from 'graphql-ws';
 import { split } from "@apollo/client";
 import { getMainDefinition } from "@apollo/client/utilities";
-import MaintenanceTetris from "./components/maintenance";
+import { Maintenance, MyPacman, MyTetris } from "./components/maintenance/index";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -118,7 +118,7 @@ function App() {
           <Header maintenance={MAINTENANCE_MODE} />
           <div className="container">
             { MAINTENANCE_MODE ? (
-              <MaintenanceTetris />
+              <Maintenance />
             ) : (
               <>
               { loggedIn && <JobWatcher />}
@@ -133,6 +133,8 @@ function App() {
               <Route path="/job-report" element={<JobReport />} />
               <Route path="/jobs/:jobId" element={<JobPage />} />
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/tetris" element={<MyTetris />} />
+              <Route path="/pacman" element={<MyPacman />} />
               <Route path="*" element={<NoMatch />} />
             </Routes>
               </>

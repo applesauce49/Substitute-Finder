@@ -1,3 +1,5 @@
 .env
 node_modules
 server/certs
+settings.json
+launch.json
