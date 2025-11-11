@@ -1,6 +1,7 @@
 import { connectDB } from "../config/db.js";
 import Job from "../models/Job.js";
 import resolvers from "../schemas/resolvers/index.js";
+import { postJobToGoogleChat } from "../utils/chatJobNotifier.js";
 
 
 // import Meeting from "../models/Meeting.js";
@@ -14,7 +15,7 @@ export async function runMatchEngine() {
 
     // Step 1: Get open jobs
     const jobs = await Job.find({
-        active: true, 
+        active: true,
         assignedTo: null
     })
         .populate("createdBy")
@@ -41,18 +42,34 @@ export async function runMatchEngine() {
             }
 
             if (!job.applications || job.applications.length === 0) {
-                console.log(`[MatchEngine] - Job "${job._id}" has no applications. Skipping.`);
-                continue;
+
+                if (!job.firstNotificationSent) {
+                    console.log(`[MatchEngine] - Job "${job._id}" has no applications. Sending first notification.`);
+                    job.firstNotificationSent = true;
+                    await job.save();
+                    await postJobToGoogleChat(job);
+                    totalEvaluated++;
+                    continue;
+                // } else if(job.firstNotificationSent && !job.secondNotificationSent) {
+                //     console.log(`[MatchEngine] - Job "${job._id}" has no applications. Sending second notification.`);
+                //     job.secondNotificationSent = true;
+                //     await job.save();
+                //     totalEvaluated++;
+                //     continue;
+                } else {
+                    console.log(`[MatchEngine] - Job "${job._id}" has no applications. Skipping job.`);
+                    continue;
+                }
             }
 
             console.log(`${job}`);
             const sorted = job.applications.sort(
                 (a, b) => new Date(a.appliedAt) - new Date(b.appliedAt)
             );
-    
-    
+
+
             const winner = sorted[0];
-    
+
             console.log(
                 `[Assign] Job "${job._id}" assigned to ${winner._id}`
             );

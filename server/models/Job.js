@@ -37,6 +37,14 @@ const jobSchema = new Schema(
       ref: "User", 
       default: null
     },
+    firstNotificationSent: {
+      type: Boolean,
+      default: false
+    },
+    secondNotificationSent: {
+      type: Boolean,
+      default: false
+    }
   },
   {
     toJSON: {

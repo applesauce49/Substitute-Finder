@@ -94,6 +94,8 @@ export default {
             const jobInfo = { ...newJob._doc, createdBy: user, meetingSnapshot: meetingSnapshot };
 
             await postJobToGoogleChat(jobInfo);
+            newJob.firstNotificationSent = true;
+            await newJob.save();
 
             return {
                 conflict: false,

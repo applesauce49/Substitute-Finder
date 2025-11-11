@@ -69,6 +69,8 @@ type Job {
   applicationCount: Int!
   applications: [Application]   # if you want to support applications
   assignedTo: User        # optional for accepted subs
+  firstNotificationSent: Boolean
+  secondNotificationSent: Boolean
 }
 
 type Meeting {
