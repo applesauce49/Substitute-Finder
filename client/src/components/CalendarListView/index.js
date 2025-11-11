@@ -29,7 +29,9 @@ export default function FullCalendarList({
     }, [meetings]);
 
     return (
-        <div className="container mt-4 calendar-wrapper small-calendar">
+        <div className="container mt-4 calendar-wrapper small-calendar"
+            style="padding-top:0px"
+        >
             <FullCalendar
                 plugins={[listPlugin, interactionPlugin, bootstrap5Plugin]}
                 themeSystem="bootstrap5"
