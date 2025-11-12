@@ -43,6 +43,8 @@ type Mutation {
   acceptApplication(jobId: ID!, applicationId: ID!): Boolean!
   declineApplication(jobId: ID!, applicationId: ID!): Boolean!
   runMatchEngine: Boolean!
+  addUser(username: String!, email: String!, admin: Boolean): Boolean!
+  updateUser(_id: ID!, username: String, email: String, admin: Boolean): Boolean!
 }
 
 type Application {

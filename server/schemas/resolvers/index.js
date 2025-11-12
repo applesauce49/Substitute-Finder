@@ -13,6 +13,7 @@ export default {
     Mutation: {
         ...jobResolvers.Mutation,
         ...calendarResolvers.Mutation,
+        ...userResolvers.Mutation,
     },
     Subscription: {
         ...jobResolvers.Subscription,

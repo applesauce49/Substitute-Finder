@@ -29,4 +29,30 @@ export default {
                 .populate('jobs');
         }
     },
+    Mutation: {
+        addUser: async (_, { username, email, admin }) => {
+            const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+            if (existingUser) {
+                throw new GraphQLError('User with this username or email already exists');
+            }
+
+            const newUser = new User({ username, email, admin });
+            await newUser.save();
+            return true;
+        },
+
+        updateUser: async (_, { _id, username, email, admin }) => {
+            const user = await User.findById(_id);
+            if (!user) {
+                throw new GraphQLError('User not found');
+            }
+
+            if (username !== undefined) user.username = username;
+            if (email !== undefined) user.email = email;
+            if (admin !== undefined) user.admin = admin;
+
+            await user.save();
+            return true;
+        }
+    }
 };
