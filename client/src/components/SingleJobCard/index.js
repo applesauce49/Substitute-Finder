@@ -15,6 +15,7 @@ import {
   // RUN_MATCH_ENGINE,
 } from "../../utils/mutations";
 import { isJobApplyDisabled } from "../../utils/jobHelpers";
+import JobCard from "../JobCard/jobCard";
 
 const SingleJobCard = ({ jobId: propJobId, onClose }) => {
   const { id: routeJobId } = useParams();
@@ -23,7 +24,7 @@ const SingleJobCard = ({ jobId: propJobId, onClose }) => {
   const [cancelJob] = useMutation(CANCEL_JOB);
   const [declineApplication] = useMutation(DECLINE_APPLICATION);
   const [acceptApplication] = useMutation(ACCEPT_APPLICATION);
-  
+
   const { data: userData } = useQuery(QUERY_ME);
   const admin = userData?.me.admin || "";
 
@@ -86,7 +87,10 @@ const SingleJobCard = ({ jobId: propJobId, onClose }) => {
     onClose();
   };
 
-  const applied = job?.applications?.find((app) => app._id === userData?.me._id);
+  // Determine if the current user has already applied
+  const applied = job?.applications?.some(
+    (app) => app.user?._id === userData?.me?._id
+  );
 
   const accepted = async (appId, jobId) => {
     try {
@@ -118,26 +122,15 @@ const SingleJobCard = ({ jobId: propJobId, onClose }) => {
 
   return (
     <div>
-      <div className="card mb-3">
-        <p className="card-header single-job-header">
-          {job.meetingSnapshot?.title || "No Title Provided"}
-        </p>
-        <div className="card-body">
-          <p>
-            <b>Date: </b>{new Date(job.meetingSnapshot?.startDateTime).toLocaleString()}<br />
-            <b>For: </b>{job?.createdBy?.username ?? "N/A"}<br />
-            {/* <b>Posted: </b>{new Date(job.createdAt).toLocaleString()}<br /> */}
-            <b>Notes: </b> {job.description}<br />
-          </p>
-        </div>
-      </div>
+      {/* Job Details Card */}
+      <JobCard job={job} />
 
       {(job?.applicationCount ?? 0) > 0 && job?.applications && (
         <div>
           <ApplicantList
             applications={job?.applications}
-            onAccepted={(appId) => accepted(appId, job._id)}
             onDenied={(appId) => denied(appId, job._id)}
+            user={userData?.me}
           />
         </div>
       )}
@@ -154,6 +147,8 @@ const SingleJobCard = ({ jobId: propJobId, onClose }) => {
             </div>
           </form>
         )}
+
+        <div className="flex-grow-1"></div>
 
         {((Auth.loggedIn() && job.createdBy._id !== Auth.getProfile().data._id) || admin) && (
           <form onSubmit={(e) => handleFormSubmit(e, selectedUserId)}>
@@ -182,7 +177,7 @@ const SingleJobCard = ({ jobId: propJobId, onClose }) => {
               <button
                 className="btn no-border-btn btn-success"
                 type="submit"
-                disabled={isJobApplyDisabled(job, { admin, applied })}
+                disabled={isJobApplyDisabled(job, { admin, applied }) || applied}
               >
                 Apply
               </button>
