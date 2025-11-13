@@ -49,14 +49,25 @@ function JobReport() {
         columnHelper.accessor("start", {
             id: "date",
             header: "Date",
-            cell: info => new Date(info.getValue()).toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric' })
+            cell: info => new Date(info.getValue()).toLocaleString([], 
+                { 
+                    weekday: 'short',
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric' 
+                }
+            )
         }),
         columnHelper.accessor("start", {
             id: "time",
             header: "Time",
             cell: info => {
                 const date = new Date(info.getValue());
-                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return date.toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                });
             },
         }),
         columnHelper.accessor("createdBy", { header: "Peer Parent" }),

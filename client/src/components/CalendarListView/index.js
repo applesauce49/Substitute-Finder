@@ -37,6 +37,13 @@ export default function FullCalendarList({
                 themeSystem="bootstrap5"
                 selectable="true"
                 initialView="listMonth"
+                listDayFormat={
+                    { 
+                        weekday: 'long', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    }
+                }
                 height="400px"
                 events={events}
                 validRange={() => {
