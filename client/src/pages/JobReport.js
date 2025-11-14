@@ -126,8 +126,8 @@ function JobReport() {
 
                 return true; // no automatic filtering
             },
-            cell: info => new Date(info.getValue()).toLocaleString({
-                weekday: 'short',
+            cell: info => new Date(info.getValue()).toLocaleString([], {
+                weekday: 'long',
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric'
