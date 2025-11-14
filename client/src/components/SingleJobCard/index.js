@@ -92,14 +92,14 @@ const SingleJobCard = ({ jobId: propJobId, onClose }) => {
     if (onClose) onClose();
   };
 
-  const canCancelJob = Auth.loggedIn() && (createdById === Auth.getProfile()?.data?._id || admin);
-  const canApply = Auth.loggedIn() && (createdById !== Auth.getProfile()?.data?._id || admin);
+  const canCancelJob = Auth.loggedIn() && job.active === true && (createdById === Auth.getProfile()?.data?._id || admin);
+  const canApply = Auth.loggedIn() && job.active === true && (createdById !== Auth.getProfile()?.data?._id || admin);
 
   return (
     <div>
       <JobCard job={job} />
 
-      {job?.applications?.length > 0 && (
+      {job.active && job?.applications?.length > 0 && (
         <ApplicantList
           applications={job.applications}
           onDenied={(appId) => denied(appId, job._id)}

@@ -32,7 +32,7 @@ export default function JobCard({ job, onSelect }) {
   console.log("Rendering JobCard for job:", job._id, "Active:", isActive);
   const handleClick = (e) => {
     e.preventDefault();
-    if (onSelect && isActive) onSelect(job);
+    if ( onSelect ) onSelect(job);
   };
 
   return (
@@ -40,7 +40,14 @@ export default function JobCard({ job, onSelect }) {
       <p className={headerClass}>{job.meetingSnapshot?.title || "Untitled"}</p>
 
       <div className="card-body text-center">
-        {isActive ? (
+          <Link
+            to="#"
+            onClick={handleClick}
+            style={{ textDecoration: "none", color: "inherit" }}
+          >
+            <JobDetails job={job} active={isActive} />
+          </Link>
+        {/* {isActive ? (
           <Link
             to="#"
             onClick={handleClick}
@@ -50,7 +57,7 @@ export default function JobCard({ job, onSelect }) {
           </Link>
         ) : (
           <JobDetails job={job} />
-        )}
+        )} */}
       </div>
     </div>
   );

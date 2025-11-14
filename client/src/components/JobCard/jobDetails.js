@@ -5,6 +5,7 @@ export default function JobDetails({ job, active = false }) {
   const start = new Date(job.meetingSnapshot?.startDateTime);
 
   const dateStr = start.toLocaleDateString(undefined, {
+    weekday: "long",
     year: "numeric",
     month: "short",
     day: "numeric",
