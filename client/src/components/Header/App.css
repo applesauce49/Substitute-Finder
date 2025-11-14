@@ -16,7 +16,7 @@
 }
 
 button {
-  border: 1px solid black !important;
+  border: 1px solid black;
   max-width: 200px;
   display: flex;
   justify-content: center;

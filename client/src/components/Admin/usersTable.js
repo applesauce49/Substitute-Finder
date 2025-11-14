@@ -10,6 +10,8 @@ import {
   flexRender,
 } from "@tanstack/react-table";
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import FilterPill from "../FilterPill/index.js";
+import '../../css/google-toolbar.css';
 
 export default function UsersReport() {
   const { data, loading, error, refetch } = useQuery(GET_USERS);
@@ -68,6 +70,10 @@ export default function UsersReport() {
           onClose={() => setShowForm(false)}
         />
       )}
+      <div className="google-toolbar">
+        <FilterPill onClick={() => alert("Filter functionality to be implemented")} />
+      </div>
+
       <table className="table table-striped">
         <thead>
           {table.getHeaderGroups().map(headerGroup => (
