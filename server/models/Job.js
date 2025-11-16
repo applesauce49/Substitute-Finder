@@ -28,13 +28,16 @@ const jobSchema = new Schema(
         user: { type: Schema.Types.ObjectId, ref: "User" },
         appliedAt: {
           type: Date, 
-          default: Date.now ,
+          default: Date.now,
         }
       }
     ],
     assignedTo: { 
       type: Schema.Types.ObjectId, 
       ref: "User", 
+    },
+    assignedAt: {
+      type: Date,
       default: null
     },
     firstNotificationSent: {

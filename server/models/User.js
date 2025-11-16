@@ -34,10 +34,15 @@ const userSchema = new Schema(
     profileURL: {
       type: String
     },
-    jobs: [
+    assignedJobs: [
       {
-        type: Schema.Types.ObjectId,
-        ref: 'Job'
+        job: {
+          type: Schema.Types.ObjectId,
+          ref: 'Job'
+        },
+        assignedAt: {
+          type: Date
+        }
       }
     ],
     friends: [

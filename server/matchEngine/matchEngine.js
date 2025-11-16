@@ -1,6 +1,8 @@
 import { connectDB } from "../config/db.js";
 import Job from "../models/Job.js";
+import User from "../models/User.js";
 import resolvers from "../schemas/resolvers/index.js";
+import userResolvers from "../schemas/resolvers/userResolvers.js";
 import { postJobToGoogleChat } from "../utils/chatJobNotifier.js";
 
 
@@ -73,11 +75,29 @@ export async function runMatchEngine() {
             console.log(
                 `[Assign] Job "${job._id}" assigned to ${winner._id}`
             );
-            await acceptApplication(
+            const res = await acceptApplication(
                 null,
                 { jobId: job._id, applicationId: winner._id },
                 null,
             )
+
+            if (res.success) {
+                console.log(
+                    `[MatchEngine] - Job "${job._id}" successfully assigned to applicant "${winner._id}" at ${res.assignedAt}`
+                );
+
+                // Add the successful assignment to the user's history
+                await User.findByIdAndUpdate(
+                    winner?.user?._id,
+                    { $addToSet: { assignedJobs: { job: job._id, assignedAt: res.assignedAt } } },
+                    { new: true, runValidators: true }
+                );
+            } else {
+                console.log(
+                    `[MatchEngine] - Job "${job._id}" assignment to applicant "${winner._id}" failed.`
+                );
+            }
+
             totalEvaluated++;
         }
         catch (err) {
