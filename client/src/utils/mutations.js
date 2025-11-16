@@ -95,7 +95,11 @@ export const CANCEL_JOB = gql`
 
 export const ACCEPT_APPLICATION = gql`
   mutation AcceptApplication($jobId: ID!, $applicationId: ID!) {
-    acceptApplication(jobId: $jobId, applicationId: $applicationId)
+    acceptApplication(jobId: $jobId, applicationId: $applicationId) {
+      success
+      jobId
+      assignedAt
+    }
   }
 `;
 

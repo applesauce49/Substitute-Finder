@@ -19,11 +19,16 @@ export const QUERY_USER = gql`
       _id
       username
       email
+      admin
       about
-      jobs {
-        _id
-        description
-        createdAt
+      assignedJobs {
+        assignedAt
+        job {
+          _id
+          active
+          description
+          createdAt
+        }
       }
     }
   }
@@ -38,11 +43,14 @@ export const QUERY_ME = gql`
       phone
       admin
       about
-      jobs {
-        _id
-        active
-        description
-        createdAt
+      assignedJobs {
+        assignedAt
+        job {
+          _id
+          active
+          description
+          createdAt
+        }
       }
     }
   }
@@ -180,6 +188,39 @@ export const JOB_ASSIGNED_SUB = gql`
         username
       }
       active
+    }
+  }
+`;
+
+// 1) Data query for the stats
+export const QUERY_USER_JOB_STATS = gql`
+  query GetUserJobStats {
+    userJobStats {
+      _id
+      username
+      createdCount
+      assignedCount
+      appliedCount
+    }
+  }
+`;
+
+// 2) Generic schema introspection for the UserJobStats type
+export const QUERY_USER_JOB_STATS_SCHEMA = gql`
+  query GetUserJobStatsSchema {
+    __type(name: "UserJobStats") {
+      name
+      fields {
+        name
+        type {
+          name
+          kind
+          ofType {
+            name
+            kind
+          }
+        }
+      }
     }
   }
 `;

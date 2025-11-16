@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { User } from "../../models/index.js";
+import { User, Job } from "../../models/index.js";
 
 export default {
     Query: {
@@ -8,26 +8,83 @@ export default {
 
             return User.findById(user._id)
                 .select('-__v')
-                .populate('jobs');
+                .populate('assignedJobs.job');
         },
 
         user: async (_, { username }) => {
             return User.findOne({ username })
                 .select('-__v')
-                .populate('jobs');
+                .populate('assignedJobs.job');
         },
 
         userById: async (_, { id }) => {
             return User.findById(id)
                 .select('-__v')
-                .populate('jobs');
+                .populate('assignedJobs.job');
         },
 
         users: async () => {
             return User.find()
                 .select('-__v')
-                .populate('jobs');
-        }
+                .populate('assignedJobs.job');
+        },
+
+        
+        userJobStats: async () => {
+            return User.aggregate([
+                {
+                    $lookup: {
+                        from: "jobs",
+                        let: { userId: "$_id" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$createdBy", "$$userId"] } } },
+                            { $count: "count" }
+                        ],
+                        as: "createdJobs"
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "jobs",
+                        let: { userId: "$_id" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$assignedTo", "$$userId"] } } },
+                            { $count: "count" }
+                        ],
+                        as: "assignedJobs"
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "jobs",
+                        let: { userId: "$_id" },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: { $in: ["$$userId", "$applications.userId"] }
+                                }
+                            },
+                            { $count: "count" }
+                        ],
+                        as: "appliedJobs"
+                    }
+                },
+                {
+                    $addFields: {
+                        createdCount: { $ifNull: [{ $arrayElemAt: ["$createdJobs.count", 0] }, 0] },
+                        assignedCount: { $ifNull: [{ $arrayElemAt: ["$assignedJobs.count", 0] }, 0] },
+                        appliedCount: { $ifNull: [{ $arrayElemAt: ["$appliedJobs.count", 0] }, 0] }
+                    }
+                },
+                {
+                    $project: {
+                        createdJobs: 0,
+                        assignedJobs: 0,
+                        appliedJobs: 0
+                    }
+                }
+            ]).exec();
+        },
     },
     Mutation: {
         addUser: async (_, { username, email, admin }) => {
