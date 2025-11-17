@@ -1,11 +1,11 @@
 import React from "react";
 import SingleJobCard from "./SingleJobCard";
 
-const SingleJob = ({ jobId: propJobId, onClose }) => {
+const SingleJob = ({me, jobId: propJobId, onClose }) => {
  
   return (
     <div className="text-center single-job-close">
-      <SingleJobCard jobId={propJobId} onClose={onClose} />
+      <SingleJobCard me={me} jobId={propJobId} onClose={onClose} />
     </div>
   );
 };

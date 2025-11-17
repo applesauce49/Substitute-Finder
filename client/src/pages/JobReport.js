@@ -4,7 +4,7 @@ import { useMutation } from "@apollo/client";
 import {
     RUN_MATCH_ENGINE,
 } from "../utils/mutations";
-import { QUERY_ME, QUERY_ALL_JOBS } from "../utils/queries";
+import { QUERY_ALL_JOBS } from "../utils/queries";
 import {
     useReactTable,
     createColumnHelper,
@@ -18,10 +18,8 @@ import FilterPill from "../components/FilterPill";
 import FilterModal from "../components/FilterModal/FilterModal";
 import ActiveFilters from "../components/filters/ActiveFilters";
 
-function JobReport() {
+function JobReport( { me } ) {
     const { loading, data, error, refetch } = useQuery(QUERY_ALL_JOBS);
-    const { data: meData } = useQuery(QUERY_ME);
-    const me = meData?.me || {};
     const isAdmin = me?.admin === true;
 
     const [runMatchEngine] = useMutation(RUN_MATCH_ENGINE);
