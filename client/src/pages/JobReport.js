@@ -4,7 +4,7 @@ import { useMutation } from "@apollo/client";
 import {
     RUN_MATCH_ENGINE,
 } from "../utils/mutations";
-import { QUERY_ME, QUERY_ALL_JOBS } from "../utils/queries";
+import { QUERY_ALL_JOBS } from "../utils/queries";
 import {
     useReactTable,
     createColumnHelper,
@@ -17,11 +17,11 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import FilterPill from "../components/FilterPill";
 import FilterModal from "../components/FilterModal/FilterModal";
 import ActiveFilters from "../components/filters/ActiveFilters";
+import { ModalForm } from "../components/Modal/ModalForm";
+import SingleJobCard from "../components/SingleJobCard";
 
-function JobReport() {
+function JobReport({ me }) {
     const { loading, data, error, refetch } = useQuery(QUERY_ALL_JOBS);
-    const { data: meData } = useQuery(QUERY_ME);
-    const me = meData?.me || {};
     const isAdmin = me?.admin === true;
 
     const [runMatchEngine] = useMutation(RUN_MATCH_ENGINE);
@@ -194,6 +194,20 @@ function JobReport() {
         return [...new Set(values.filter(v => v != null))];
     };
 
+    const [showForm, setShowForm] = React.useState(false);
+    const [selectedJob, setSelectedJob] = React.useState(null);
+
+    const openJobModal = (job) => {
+        console.log("Opening job modal for job:", job);
+        setSelectedJob(job);
+        setShowForm(true);
+    };
+
+    const closeJobModal = () => {
+        setSelectedJob(null);
+        setShowForm(false);
+    };
+
     if (loading) return <div><h1>Loading...</h1></div>;
     if (reloading) return <div><h1>Loading...</h1></div>;
     if (error) return <div><h1>Error loading job report.</h1></div>;
@@ -203,15 +217,15 @@ function JobReport() {
             <h2>Master Sub List</h2>
             <div className="google-toolbar">
                 <div className="d-flex justify-content-start align-items-center gap-2">
-                <ActiveFilters
-                    filters={columnFilters}
-                    columns={table.getAllColumns()}
-                    onRemove={(id) => {
-                        const col = table.getColumn(id);
-                        if (col) col.setFilterValue(undefined); // clear filter
-                    }}
-                />
-                <FilterPill onClick={() => setFilterModalOpen(true)} />
+                    <ActiveFilters
+                        filters={columnFilters}
+                        columns={table.getAllColumns()}
+                        onRemove={(id) => {
+                            const col = table.getColumn(id);
+                            if (col) col.setFilterValue(undefined); // clear filter
+                        }}
+                    />
+                    <FilterPill onClick={() => setFilterModalOpen(true)} />
                 </div>
                 <div className="flex-grow-1" />
 
@@ -237,7 +251,10 @@ function JobReport() {
             />
 
             {/* ✅ Table */}
-            <table className="table table-striped" style={{ fontFamily: 'Roboto, sans-serif' }}>
+            <table
+                className="table table-striped"
+                style={{ fontFamily: 'Roboto, sans-serif' }}
+            >
                 <thead>
                     {table.getHeaderGroups().map((headerGroup) => (
                         <tr key={headerGroup.id}>
@@ -268,7 +285,11 @@ function JobReport() {
                 </thead>
                 <tbody>
                     {table.getRowModel().rows.map((row) => (
-                        <tr key={row.id}>
+                        <tr
+                            key={row.id}
+                            onClick={() => openJobModal(row.original)}
+                            style={{ cursor: "pointer" }}
+                        >
                             {row.getVisibleCells().map((cell) => (
                                 <td key={cell.id}>
                                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -278,6 +299,18 @@ function JobReport() {
                     ))}
                 </tbody>
             </table>
+
+            {showForm && selectedJob && (
+                <ModalForm
+                    title="Sub Request Details"
+                    onClose={closeJobModal}
+                >
+                    <SingleJobCard
+                        me={me}
+                        jobId={selectedJob.id}
+                    />
+                </ModalForm>
+            )}
         </div>
     );
 }

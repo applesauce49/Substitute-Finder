@@ -1,8 +1,7 @@
 import { React, useState } from "react";
 import Modal from "react-modal";
-import { useQuery, useMutation } from "@apollo/client";
+import { useMutation } from "@apollo/client";
 import { UPDATE_ME } from "../../utils/mutations";
-import { QUERY_ME } from "../../utils/queries";
 Modal.setAppElement('#root')
 // import { ProfileForm } from '../ProfileForm';
 
@@ -17,13 +16,11 @@ const customStyles = {
   },
 };
 
-const ProfileModal = () => {
+const ProfileModal = ( { me }) => {
   let subtitle;
   const [modalIsOpen, setIsOpen] = useState(false);
-  const { data } = useQuery(QUERY_ME);
 
-  const userData = data?.me || {};
-
+  const userData = me || {};
   function openModal() {
     setIsOpen(true);
   }

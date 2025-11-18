@@ -7,8 +7,7 @@ import { useQuery } from '@apollo/client';
 import { QUERY_JOBS, JOB_UPDATED_SUB, JOB_CREATED_SUB, JOB_CANCELLED_SUB, JOB_ASSIGNED_SUB } from '../utils/queries';
 import { useSubscription } from '@apollo/client';
 
-const Home = () => {
-  // const { data: userData } = useQuery(QUERY_ME);
+const Home = ({ me }) => {
   const { loading, data, refetch } = useQuery(QUERY_JOBS, {
     variables: { showAll: false },
   });
@@ -30,8 +29,6 @@ const Home = () => {
     }
   }, [jobUpdated, jobCreated, jobCancelled, jobAssigned, refetch]);
 
-  // // const admin = userData?.me.admin || "";
-  // const myJobs = userData?.me.jobs || [];
   const userId = Auth.getProfile()?.data?._id;
 
   const myCreatedJobs = jobs.filter(job => job.createdBy?._id === userId);
@@ -57,6 +54,7 @@ const Home = () => {
               <div>Loading...</div>
             ) : (
               <JobList
+                me={me}
                 jobs={myCreatedJobs}
                 title="My Sub Requests"
                 onRefetch={refetch}
@@ -99,6 +97,7 @@ const Home = () => {
                   </div>
                   <div className="modal-body">
                     <JobForm
+                      me={me}
                       onRefetch={refetch}
                       onSuccess={() => setShowForm(false)}
                     />
@@ -115,6 +114,7 @@ const Home = () => {
               <div>Loading...</div>
             ) : (
               <JobList
+                me={me}
                 jobs={availableJobs}
                 title="Available Sub Jobs"
                 onRefetch={refetch}
@@ -128,6 +128,7 @@ const Home = () => {
               <div>Loading...</div>
             ) : (
               <JobList
+                me={me}
                 jobs={myAssignedJobs}
                 title="My Assigned Jobs"
               />
