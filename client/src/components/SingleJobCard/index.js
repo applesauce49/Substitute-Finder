@@ -10,7 +10,6 @@ import {
   CANCEL_JOB,
   DECLINE_APPLICATION,
 } from "../../utils/mutations";
-import { isJobApplyDisabled } from "../../utils/jobHelpers";
 import JobCard from "../JobCard/jobCard";
 
 const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
@@ -145,9 +144,9 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
               <button
                 className="btn no-border-btn btn-success"
                 type="submit"
-                disabled={isJobApplyDisabled(job, { admin: userData.admin, applied }) || applied}
+                disabled={ !userData.admin && applied }
               >
-                {applied ? "Already Applied" : "Apply"}
+                {!userData.admin && applied ? "Already Applied" : "Apply"}
               </button>
             </div>
           </form>
