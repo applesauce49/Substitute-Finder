@@ -17,8 +17,10 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import FilterPill from "../components/FilterPill";
 import FilterModal from "../components/FilterModal/FilterModal";
 import ActiveFilters from "../components/filters/ActiveFilters";
+import { ModalForm } from "../components/Modal/ModalForm";
+import SingleJobCard from "../components/SingleJobCard";
 
-function JobReport( { me } ) {
+function JobReport({ me }) {
     const { loading, data, error, refetch } = useQuery(QUERY_ALL_JOBS);
     const isAdmin = me?.admin === true;
 
@@ -192,6 +194,20 @@ function JobReport( { me } ) {
         return [...new Set(values.filter(v => v != null))];
     };
 
+    const [showForm, setShowForm] = React.useState(false);
+    const [selectedJob, setSelectedJob] = React.useState(null);
+
+    const openJobModal = (job) => {
+        console.log("Opening job modal for job:", job);
+        setSelectedJob(job);
+        setShowForm(true);
+    };
+
+    const closeJobModal = () => {
+        setSelectedJob(null);
+        setShowForm(false);
+    };
+
     if (loading) return <div><h1>Loading...</h1></div>;
     if (reloading) return <div><h1>Loading...</h1></div>;
     if (error) return <div><h1>Error loading job report.</h1></div>;
@@ -201,15 +217,15 @@ function JobReport( { me } ) {
             <h2>Master Sub List</h2>
             <div className="google-toolbar">
                 <div className="d-flex justify-content-start align-items-center gap-2">
-                <ActiveFilters
-                    filters={columnFilters}
-                    columns={table.getAllColumns()}
-                    onRemove={(id) => {
-                        const col = table.getColumn(id);
-                        if (col) col.setFilterValue(undefined); // clear filter
-                    }}
-                />
-                <FilterPill onClick={() => setFilterModalOpen(true)} />
+                    <ActiveFilters
+                        filters={columnFilters}
+                        columns={table.getAllColumns()}
+                        onRemove={(id) => {
+                            const col = table.getColumn(id);
+                            if (col) col.setFilterValue(undefined); // clear filter
+                        }}
+                    />
+                    <FilterPill onClick={() => setFilterModalOpen(true)} />
                 </div>
                 <div className="flex-grow-1" />
 
@@ -235,7 +251,10 @@ function JobReport( { me } ) {
             />
 
             {/* ✅ Table */}
-            <table className="table table-striped" style={{ fontFamily: 'Roboto, sans-serif' }}>
+            <table
+                className="table table-striped"
+                style={{ fontFamily: 'Roboto, sans-serif' }}
+            >
                 <thead>
                     {table.getHeaderGroups().map((headerGroup) => (
                         <tr key={headerGroup.id}>
@@ -266,7 +285,11 @@ function JobReport( { me } ) {
                 </thead>
                 <tbody>
                     {table.getRowModel().rows.map((row) => (
-                        <tr key={row.id}>
+                        <tr
+                            key={row.id}
+                            onClick={() => openJobModal(row.original)}
+                            style={{ cursor: "pointer" }}
+                        >
                             {row.getVisibleCells().map((cell) => (
                                 <td key={cell.id}>
                                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -276,6 +299,18 @@ function JobReport( { me } ) {
                     ))}
                 </tbody>
             </table>
+
+            {showForm && selectedJob && (
+                <ModalForm
+                    title="Sub Request Details"
+                    onClose={closeJobModal}
+                >
+                    <SingleJobCard
+                        me={me}
+                        jobId={selectedJob.id}
+                    />
+                </ModalForm>
+            )}
         </div>
     );
 }
