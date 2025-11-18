@@ -13,7 +13,7 @@ import JobPage from "./pages/JobPage";
 import AdminPage from "./pages/admin";
 import PrivateRoute from "./components/PrivateRoute";
 import Calendar from "./components/Calendar";
-import UserJobStatsReport from "./pages/UserJobStatsReport";
+// import UserJobStatsReport from "./pages/UserJobStatsReport";
 
 import Auth from "./utils/auth";
 import { useQuery, useSubscription } from "@apollo/client";
@@ -88,7 +88,7 @@ export default function App() {
             <Route path="/job-report" element={<JobReport me={me} />} />
             <Route path="/jobs/:jobId" element={<JobPage />} />
             <Route path="/admin" element={<AdminPage />} />
-            <Route path="/user-job-stats-report" element={<UserJobStatsReport />} />
+            {/* <Route path="/user-job-stats-report" element={<UserJobStatsReport />} /> */}
             <Route path="*" element={<NoMatch />} />
           </Route>
         </Routes>
