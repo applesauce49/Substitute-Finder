@@ -28,15 +28,26 @@ const jobSchema = new Schema(
         user: { type: Schema.Types.ObjectId, ref: "User" },
         appliedAt: {
           type: Date, 
-          default: Date.now ,
+          default: Date.now,
         }
       }
     ],
     assignedTo: { 
       type: Schema.Types.ObjectId, 
       ref: "User", 
+    },
+    assignedAt: {
+      type: Date,
       default: null
     },
+    firstNotificationSent: {
+      type: Boolean,
+      default: false
+    },
+    secondNotificationSent: {
+      type: Boolean,
+      default: false
+    }
   },
   {
     toJSON: {

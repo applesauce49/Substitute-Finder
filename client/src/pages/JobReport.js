@@ -4,23 +4,68 @@ import { useMutation } from "@apollo/client";
 import {
     RUN_MATCH_ENGINE,
 } from "../utils/mutations";
-import { QUERY_ME, QUERY_ALL_JOBS } from "../utils/queries";
+import { QUERY_ALL_JOBS } from "../utils/queries";
 import {
     useReactTable,
     createColumnHelper,
     getCoreRowModel,
     getSortedRowModel,
     flexRender,
+    getFilteredRowModel,
 } from "@tanstack/react-table";
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import FilterPill from "../components/FilterPill";
+import FilterModal from "../components/FilterModal/FilterModal";
+import ActiveFilters from "../components/filters/ActiveFilters";
 
-function JobReport() {
+function JobReport( { me } ) {
     const { loading, data, error, refetch } = useQuery(QUERY_ALL_JOBS);
-    const { data: meData } = useQuery(QUERY_ME);
-    const me = meData?.me || {};
     const isAdmin = me?.admin === true;
 
     const [runMatchEngine] = useMutation(RUN_MATCH_ENGINE);
+
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const [columnFilters, setColumnFilters] = React.useState([
+        {
+            id: "date",
+            value: {
+                fn: "afterDate",
+                value: today
+            }
+        }
+    ]);
+    const [filterModalOpen, setFilterModalOpen] = React.useState(false);
+
+    const handleApplyFilter = (filter) => {
+        const col = table.getColumn(filter.id);
+        if (!col) return;
+
+        const columnDef = col.columnDef;
+        const isDateColumn = columnDef?.meta?.type === "date";
+
+        if (isDateColumn) {
+            if (filter.operator === "equals") {
+                col.setFilterValue({ fn: "equalsDate", value: filter.value });
+            }
+            if (filter.operator === "after") {
+                col.setFilterValue({ fn: "afterDate", value: filter.value });
+            }
+            if (filter.operator === "before") {
+                col.setFilterValue({ fn: "beforeDate", value: filter.value });
+            }
+            if (filter.operator === "between") {
+                col.setFilterValue({ fn: "betweenDate", value: filter.value });
+            }
+            return;
+        }
+
+        // Non-date fallback
+        if (filter.operator === "contains") {
+            col.setFilterValue(filter.value);
+        } else if (filter.operator === "equals") {
+            col.setFilterValue(filter.value);
+        }
+    };
 
     const jobs = React.useMemo(() => {
         // Transform the data into a flat, table-friendly format
@@ -37,77 +82,93 @@ function JobReport() {
         })) || [];
     }, [data]);
 
-    const meetings = React.useMemo(() => {
-        const titles = jobs.map((job) => job.title || "Untitled");
-        return ["all", ...new Set(titles)];
-    }, [jobs]);
-
     const columnHelper = React.useMemo(() => createColumnHelper(), []);
+    const filterFns = React.useMemo(() => ({
+        equalsString: (row, columnId, filterValue) => {
+            const rowValue = row.getValue(columnId);
+            return String(rowValue).toLowerCase() === String(filterValue).toLowerCase();
+        },
+        equalsDate: (row, columnId, value) => {
+            const rowDate = new Date(row.getValue(columnId)).setHours(0, 0, 0, 0);
+            const filterDate = new Date(value).setHours(0, 0, 0, 0);
+            return rowDate === filterDate;
+        },
+        beforeDate: (row, columnId, value) => {
+            return new Date(row.getValue(columnId)) < new Date(value);
+        },
+        afterDate: (row, columnId, value) => {
+            return new Date(row.getValue(columnId)) > new Date(value);
+        },
+        betweenDate: (row, columnId, range) => {
+            const d = new Date(row.getValue(columnId));
+            return d >= new Date(range.start) && d <= new Date(range.end);
+        }
+    }), []);
 
     const columns = React.useMemo(() => [
-        columnHelper.accessor("title", { header: "Meeting" }),
+        columnHelper.accessor("title", { header: "Meeting", filterFn: "includesString" }),
         columnHelper.accessor("start", {
             id: "date",
             header: "Date",
-            cell: info => new Date(info.getValue()).toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric' })
+            meta: { type: "date" },
+            filterFn: (row, columnId, filterValue, table) => {
+                if (!filterValue) return true;
+
+                if (filterValue.fn) {
+                    return filterFns[filterValue.fn](
+                        row,
+                        columnId,
+                        filterValue.value
+                    );
+                }
+
+                return true; // no automatic filtering
+            },
+            cell: info => new Date(info.getValue()).toLocaleString([], {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            })
         }),
         columnHelper.accessor("start", {
             id: "time",
             header: "Time",
+            enableColumnFilter: false,
+            disableFilters: true,
             cell: info => {
                 const date = new Date(info.getValue());
-                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return date.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                });
             },
         }),
-        columnHelper.accessor("createdBy", { header: "Peer Parent" }),
-        columnHelper.accessor("assignedTo", { header: "Assigned To" }),
-        // columnHelper.accessor("applicationCount", { header: "Applications" }),
-        columnHelper.accessor("status", { header: "Status" }),
-        // columnHelper.accessor("createdAt", { header: "Created At" }),
-    ], [columnHelper]);
+        columnHelper.accessor("createdBy", { header: "Peer Parent", filterFn: "includesString" }),
+        columnHelper.accessor("assignedTo", { header: "Assigned To", filterFn: "includesString" }),
+        columnHelper.accessor("status", { header: "Status", filterFn: "equalsString" }),
+    ], [columnHelper, filterFns]);
 
-    const [statusFilter, setStatusFilter] = React.useState("all");
-    const [meetingFilter, setMeetingFilter] = React.useState("all");
-    const [sorting, setSorting] = React.useState([]);
-
-
-    const filteredJobs = React.useMemo(() => {
-        return jobs.filter((job) => {
-            const matchesStatus =
-                statusFilter === "all" ||
-                (statusFilter === "open" && job.status === "Open") ||
-                (statusFilter === "closed" && job.status === "Closed");
-
-            const matchesMeeting =
-                meetingFilter === "all" ||
-                job.title === meetingFilter;
-
-            return matchesStatus && matchesMeeting; // && matchesSearch;
-        });
-    }, [jobs, statusFilter, meetingFilter]);
+    const [sorting, setSorting] = React.useState(
+        [
+            { id: "date", desc: false }, // 👈 sort by 'start' ascending
+        ]
+    );
 
     const table = useReactTable({
-        data: filteredJobs,
+        data: jobs,
         columns,
-        state: { sorting },
+        state: { sorting, columnFilters },
         onSortingChange: setSorting,
+        onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+        filterFns,
     });
 
-    // const handleRunMatchEngine = async (event) => {
-    //     event.preventDefault();
-
-    //     console.log("Running Match Engine");
-    //     try {
-    //         await runMatchEngine();
-    //         await refetch();
-    //     } catch (e) {
-    //         console.error(e);
-    //     }
-    //     // onClose();
-    // }
-    const [ reloading, setReloading] = React.useState(false);
+    const [reloading, setReloading] = React.useState(false);
 
     const handleRunMatchEngine = async (event) => {
         event.preventDefault();
@@ -120,42 +181,40 @@ function JobReport() {
         }
     };
 
-    if (loading) return <div>Loading...</div>;
-    if (reloading) return <div>Loading...</div>
-    if (error) return <div>Error loading job report.</div>;
+    const getUniqueValues = (columnId) => {
+        const col = table.getColumn(columnId);
+        if (!col) return [];
+
+        const values = table
+            .getPreFilteredRowModel()
+            .flatRows.map(row => row.getValue(columnId));
+
+        return [...new Set(values.filter(v => v != null))];
+    };
+
+    if (loading) return <div><h1>Loading...</h1></div>;
+    if (reloading) return <div><h1>Loading...</h1></div>;
+    if (error) return <div><h1>Error loading job report.</h1></div>;
 
     return (
         <div className="my-4">
-            <h2>Sub Report</h2>
-            <div className="d-flex gap-3  justify-content-between align-items-bottom mb-3">
-                <div>
-                    <label className="form-label">Meeting</label>
-                    <select
-                        className="form-select"
-                        value={meetingFilter}
-                        onChange={(e) => setMeetingFilter(e.target.value)}
-                    >
-                        {meetings.map((meeting) => (
-                            <option key={meeting} value={meeting}>
-                                {meeting === "all" ? "All" : meeting}
-                            </option>
-                        ))}
-                    </select>
+            <h2>Master Sub List</h2>
+            <div className="google-toolbar">
+                <div className="d-flex justify-content-start align-items-center gap-2">
+                <ActiveFilters
+                    filters={columnFilters}
+                    columns={table.getAllColumns()}
+                    onRemove={(id) => {
+                        const col = table.getColumn(id);
+                        if (col) col.setFilterValue(undefined); // clear filter
+                    }}
+                />
+                <FilterPill onClick={() => setFilterModalOpen(true)} />
                 </div>
-                <div>
-                    <label className="form-label">Status</label>
-                    <select
-                        className="form-select"
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                    >
-                        <option value="all">All</option>
-                        <option value="open">Open</option>
-                        <option value="closed">Closed</option>
-                    </select>
-                </div>
+                <div className="flex-grow-1" />
+
                 {isAdmin && (
-                    <div>
+                    <div className="d-flex justify-content-end align-items-center gap-2">
                         <form onSubmit={handleRunMatchEngine}>
                             <button
                                 className="btn no-border-btn btn-info"
@@ -167,9 +226,16 @@ function JobReport() {
                     </div>
                 )}
             </div>
+            <FilterModal
+                open={filterModalOpen}
+                onClose={() => setFilterModalOpen(false)}
+                onApply={handleApplyFilter}
+                columns={table.getAllColumns()}
+                getUniqueValues={getUniqueValues}
+            />
 
             {/* ✅ Table */}
-            <table className="table table-striped">
+            <table className="table table-striped" style={{ fontFamily: 'Roboto, sans-serif' }}>
                 <thead>
                     {table.getHeaderGroups().map((headerGroup) => (
                         <tr key={headerGroup.id}>

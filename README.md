@@ -1,5 +1,6 @@
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/4698e023-e040-4783-ab30-11d80f31c8ac/deploy-status)](https://app.netlify.com/projects/oplmsubatomic/deploys)
 
 ![Screenshot 2022-10-31 131642](https://user-images.githubusercontent.com/105617274/199068855-5d78e255-6a72-49a0-9750-87341929fae2.png)
 

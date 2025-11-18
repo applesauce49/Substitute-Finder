@@ -94,6 +94,8 @@ export default {
             const jobInfo = { ...newJob._doc, createdBy: user, meetingSnapshot: meetingSnapshot };
 
             await postJobToGoogleChat(jobInfo);
+            newJob.firstNotificationSent = true;
+            await newJob.save();
 
             return {
                 conflict: false,
@@ -201,6 +203,7 @@ export default {
             // mark job as inactive and assign user
             job.active = false;
             job.assignedTo = acceptedApp.user._id;
+            job.assignedAt = new Date();
 
             // Invite the accepted user to the meeting
             await inviteUserToEvent(
@@ -230,7 +233,11 @@ export default {
                 { new: true }
             );
 
-            return true;
+            return {
+                success: true,
+                jobId: job._id,
+                assignedAt: job.assignedAt
+            };
         },
 
         declineApplication: async (_, { jobId, applicationId }, context) => {

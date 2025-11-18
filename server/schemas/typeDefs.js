@@ -14,6 +14,23 @@ type Query {
   calendars: [Calendar!]!   # optional, if you want grouping
 }
 
+type UserJobStats {
+  _id: ID!
+  username: String!
+  createdCount: Int!
+  assignedCount: Int!
+  appliedCount: Int!
+}
+
+extend type Query {
+  userJobStats: [UserJobStats!]!
+}
+
+type AssignedJob {
+  job: Job!
+  assignedAt: DateTime!
+}
+
 type User {
   _id: ID!
   username: String
@@ -21,13 +38,19 @@ type User {
   phone: String
   admin: Boolean
   about: String
-  jobs: [Job!]!
+  assignedJobs: [AssignedJob!]!
 }
 
 type AddJobPayload {
   conflict: Boolean!
   message: String
   job: Job
+}
+
+type AcceptApplicationResult {
+  success: Boolean!
+  jobId: ID!
+  assignedAt: DateTime!
 }
 
 type Mutation {
@@ -37,12 +60,13 @@ type Mutation {
     meeting: String!
     calendarId: String!
   ): AddJobPayload!
-  acceptJob(jobId: ID!): Job
   applyForJob(jobId: ID!, applicantId: ID!): Job   # optional, if you want applications
   cancelJob(jobId: ID!): Boolean!
-  acceptApplication(jobId: ID!, applicationId: ID!): Boolean!
+  acceptApplication(jobId: ID!, applicationId: ID!): AcceptApplicationResult!
   declineApplication(jobId: ID!, applicationId: ID!): Boolean!
   runMatchEngine: Boolean!
+  addUser(username: String!, email: String!, admin: Boolean): Boolean!
+  updateUser(_id: ID!, username: String, email: String, admin: Boolean): Boolean!
 }
 
 type Application {
@@ -69,6 +93,9 @@ type Job {
   applicationCount: Int!
   applications: [Application]   # if you want to support applications
   assignedTo: User        # optional for accepted subs
+  assignedAt: DateTime
+  firstNotificationSent: Boolean
+  secondNotificationSent: Boolean
 }
 
 type Meeting {

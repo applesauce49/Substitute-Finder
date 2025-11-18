@@ -22,10 +22,8 @@ import jwt from "jsonwebtoken";
 import User from "./models/User.js";
 import e from "express";
 
+const PORT = process.env.PORT || 3001;
 const USE_HTTPS = String(process.env.USE_HTTPS).toLowerCase() === "true";
-const HOST = process.env.HOST;
-const PORT = process.env.PORT;
-
 
 await connectDB();
 
@@ -164,5 +162,5 @@ app.use(
 
 // ✅ Start listening
 httpServer.listen(PORT, () => {
-  console.log(`🚀 Server ready at http${USE_HTTPS ? "s" : ""}://${HOST}:${PORT}/graphql`);
+  console.log(`🚀 Server ready at ${process.env.BACKEND_URL}/graphql`);
 });

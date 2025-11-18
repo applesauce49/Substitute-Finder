@@ -22,15 +22,23 @@ export const ADD_USER = gql`
       username: $username
       email: $email
       admin: $admin
-    ) {
-      token
-      user {
-        _id
-        email
-        username
-        admin
-      }
-    }
+    ) 
+  }
+`;
+
+export const UPDATE_USER = gql`
+  mutation updateUser(
+    $_id: ID!
+    $username: String
+    $email: String
+    $admin: Boolean
+  ) {
+    updateUser(
+      _id: $_id
+      username: $username
+      email: $email
+      admin: $admin
+    )
   }
 `;
 
@@ -87,7 +95,11 @@ export const CANCEL_JOB = gql`
 
 export const ACCEPT_APPLICATION = gql`
   mutation AcceptApplication($jobId: ID!, $applicationId: ID!) {
-    acceptApplication(jobId: $jobId, applicationId: $applicationId)
+    acceptApplication(jobId: $jobId, applicationId: $applicationId) {
+      success
+      jobId
+      assignedAt
+    }
   }
 `;
 

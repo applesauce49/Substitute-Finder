@@ -1,0 +1,55 @@
+.google-toolbar {
+  display: flex;
+  /* justify-content: ; */
+  gap: 10px;
+  align-items: flex-start;
+
+  background: #fff;
+  padding: 16px 20px;
+  border-bottom: 1px solid #dadce0;
+
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+
+  font-family: "Roboto", sans-serif;
+}
+
+/* Left Section: Title + subtitle */
+.google-toolbar-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.google-toolbar-title {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #202124;
+  margin: 0;
+  padding: 0;
+}
+
+.google-toolbar-subtitle {
+  font-size: 0.875rem;
+  color: #5f6368;
+  margin: 2px 0 0 0;
+}
+
+/* Right Section: Action buttons */
+.google-toolbar-actions {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.google-toolbar-link {
+  color: #1a73e8;
+  font-size: 0.9rem;
+  text-decoration: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.google-toolbar-link:hover {
+  text-decoration: underline;
+}
