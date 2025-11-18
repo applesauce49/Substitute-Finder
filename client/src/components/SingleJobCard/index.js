@@ -20,6 +20,7 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
   const [cancelJob] = useMutation(CANCEL_JOB);
   const [declineApplication] = useMutation(DECLINE_APPLICATION);
 
+  const { data: userData, loading: userLoading } = useQuery(QUERY_ME);
   const { data: usersData } = useQuery(GET_USERS);
   const { loading, data, error, refetch } = useQuery(QUERY_JOB, {
     variables: { id: jobId },

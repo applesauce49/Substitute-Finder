@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Routes, Route } from "react-router-dom";
 
+import MaintenanceTetris from "./components/maintenance";
 import Header from "./components/Header";
 import MaintenanceTetris from "./components/maintenance";
 import Footer from "./components/Footer";
