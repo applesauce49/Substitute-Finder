@@ -3,84 +3,58 @@ import { Schema, model } from 'mongoose';
 const meetingSchema = new Schema(
   {
     source: {
-      type: String, 
+      type: String,
       enum: ["google", "internal"],
       default: "google",
     },
-    userID: {
-      type: Schema.Types.ObjectId, 
-      ref: "User"
-    },
+
     calendarId: String,
     gcalEventId: String,
     gcalRecurringEventId: String,
-    iCalUID: String,
-    etag: String,
-    syncToken: String,
-    lastSynced: { type: Date },
-
-    // Time
-    start: {dateTime: Date, timeZone: String},
-    end: { dateTime: Date, timeZone: String},
-    recurrence: [String],
-    allDay: { type: Boolean, default: false },
-
-    attendees: [{
-      email: String,
-      responseStatus: String,
-      self: Boolean
-    }],
-
-    host: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    coHost: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    firstAlternative: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-    },
-
-    // App metadata
-    title: String,
+    summary: String,
     description: String,
-    labels: [String],
-    extended: Schema.Types.Mixed,
+    start: Date,
+    end: Date,
+    timezone: String,
 
-    // Sub/assignment overlay (app-owned)
-    substitutions: [{
-      instanceStart: Date,
-      role: { type: String, enum: ["host", "coHost" ], required: true },
-      originalUser: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-      substituteUser: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-      status: { type: String, enum: ["pending", "approved", "declined"], default: "pending" },
-      note: String,
-      originalEmail: String,
-      substituteEmail: String,
-      updatedAt: {type: Date, default: Date.now }
-    }],
+    owner: String,
 
-    ownership: { type: String, enum: ["google", "app"], default: "google" },
+    recurrence: {
+      frequency: { type: String },        // e.g. "WEEKLY"
+      daysOfWeek: [{ type: String }],     // ["MO", "WE"]
+      startTime: { type: String },        // "19:00"
+      endTime: { type: String },          // "20:00"
+      until: { type: Date },              // recurrence end date (optional)
+      timezone: { type: String },         // "America/New_York"
+    },
 
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    constraints: [
+      {
+        key: { type: String, required: true },
+        type: { type: String, required: true },
+        value: { type: String, required: true },
+      }
+    ],
 
+    roles: {
+      primary: { type: Schema.Types.ObjectId, ref: 'User' },
+      secondary: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    },
+
+    createdAt: Date,
     updatedAt: { type: Date, default: Date.now },
-    createdAt: { type: Date, default: Date.now }
   },
   {
-    toJSON: {
-      getters: true,
-      virtuals: true
-    }
+    toJSON: { virtuals: true },
+    timestamps: true,
   }
 );
 
-meetingSchema.index ({ gcalEventId: 1, calendarId: 1 }, {unique: true, sparce: true })
+meetingSchema.index(
+  { gcalEventId: 1, calendarId: 1 },
+  { unique: true, sparse: true }
+)
 
 const Meeting = model('Meeting', meetingSchema);
 
+export default Meeting;

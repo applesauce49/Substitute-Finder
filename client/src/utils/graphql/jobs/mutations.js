@@ -1,47 +1,5 @@
 import { gql } from "@apollo/client";
 
-export const LOGIN_USER = gql`
-  mutation login($email: String!) {
-    login(email: $email) {
-      token
-      user {
-        _id
-        username
-      }
-    }
-  }
-`;
-
-export const ADD_USER = gql`
-  mutation addUser(
-    $username: String!
-    $email: String!
-    $admin: Boolean
-  ) {
-    addUser(
-      username: $username
-      email: $email
-      admin: $admin
-    ) 
-  }
-`;
-
-export const UPDATE_USER = gql`
-  mutation updateUser(
-    $_id: ID!
-    $username: String
-    $email: String
-    $admin: Boolean
-  ) {
-    updateUser(
-      _id: $_id
-      username: $username
-      email: $email
-      admin: $admin
-    )
-  }
-`;
-
 export const ADD_JOB = gql`
   mutation AddJob($description: String, $createdBy: String!, $meeting: String!, $calendarId: String!) {
     addJob(description: $description, createdBy: $createdBy, meeting: $meeting, calendarId: $calendarId) {
@@ -115,25 +73,3 @@ export const RUN_MATCH_ENGINE = gql`
   }
 `;
 
-export const UPDATE_ME = gql`
-  mutation updateMe(
-    $email: String
-    $phone: String
-    $about: String
-  ) {
-    updateMe(email: $email, phone: $phone, about: $about) {
-      _id
-      username
-      email
-      phone
-      about
-      admin
-      jobs {
-        _id
-        active
-        description
-        createdAt
-      }
-    }
-  }
-`;

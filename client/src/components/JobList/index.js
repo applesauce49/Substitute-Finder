@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import SingleJob from '../SingleJob.js';
 import JobCard from '../JobCard/jobCard.js';
 
-const JobList = ({ jobs, title, onRefetch, children }) => {
+const JobList = ({me, jobs, title, onRefetch, children }) => {
   const [selectedJob, setSelectedJob] = useState(null);
 
   return (
@@ -35,7 +35,7 @@ const JobList = ({ jobs, title, onRefetch, children }) => {
                 ></button>
               </div>
               <div className="modal-body">
-                <SingleJob jobId={selectedJob._id}
+                <SingleJob me={me} jobId={selectedJob._id}
                   onClose={() => {
                     setSelectedJob(null);
                     onRefetch(); // ✅ trigger refresh after closing modal

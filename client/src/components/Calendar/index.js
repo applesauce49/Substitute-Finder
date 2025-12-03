@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useLazyQuery } from "@apollo/client";
-import { QUERY_CALENDARS, QUERY_EVENTS } from "../../utils/queries";
+import { QUERY_CALENDARS, QUERY_EVENTS } from "../../utils/graphql/gcal/queries.js";
 
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";

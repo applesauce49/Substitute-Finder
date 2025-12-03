@@ -1,9 +1,9 @@
 // import react from "react";
 
-export default function ModalForm({ title, onClose, children }) {
+export default function ModalForm({ title, onClose, children, footer }) {
     return (
         <div
-            className="modal fade show"
+            className="modal modal-lg fade show"
             style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
             tabIndex="-1"
             role="dialog"
@@ -20,6 +20,9 @@ export default function ModalForm({ title, onClose, children }) {
                         />
                     </div>
                     <div className="modal-body">{children}</div>
+                    <div className="modal-footer">
+                        {footer}
+                    </div>
                 </div>
             </div>
         </div>
