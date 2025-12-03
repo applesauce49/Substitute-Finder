@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@apollo/client";
-import { ADD_JOB } from "../../utils/mutations";
-import { QUERY_EVENTS, GET_USERS } from "../../utils/queries";
+import { ADD_JOB } from "../../utils/graphql/jobs/mutations.js";
+import { QUERY_EVENTS } from "../../utils/graphql/gcal/queries.js";
+import { GET_USERS } from "../../utils/graphql/users/queries.js";
 
 import CalendarListView from "../CalendarListView";
 

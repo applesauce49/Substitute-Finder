@@ -1,7 +1,7 @@
 import React from 'react';
-import './filterpill.css';
+import './FilterPill.css';
 
-export default function FilterPill({ onClick }) {
+export function FilterPill({ onClick }) {
     return (
         <button
             type="button"

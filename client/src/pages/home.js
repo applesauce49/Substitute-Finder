@@ -4,7 +4,12 @@ import JobForm from '../components/JobForm';
 
 import Auth from '../utils/auth';
 import { useQuery } from '@apollo/client';
-import { QUERY_JOBS, JOB_UPDATED_SUB, JOB_CREATED_SUB, JOB_CANCELLED_SUB, JOB_ASSIGNED_SUB } from '../utils/queries';
+import { QUERY_JOBS } from '../utils/graphql/jobs/queries.js';
+import { 
+  JOB_UPDATED_SUB, 
+  JOB_CREATED_SUB, 
+  JOB_CANCELLED_SUB, 
+  JOB_ASSIGNED_SUB } from '../utils/graphql/jobs/subscriptions.js';
 import { useSubscription } from '@apollo/client';
 
 const Home = ({ me }) => {

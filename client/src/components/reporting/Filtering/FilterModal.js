@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./FilterModal.css";
 
-export default function FilterModal({
+export function FilterModal({
     open,
     onClose,
     onApply,

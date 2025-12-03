@@ -1,7 +1,7 @@
 import React from 'react';
-import "./filters.css";
+import "./activeFilters.css";
 
-export default function ActiveFilters({ filters, columns, onRemove }) {
+export function ActiveFilters({ filters, columns, onRemove }) {
     if (!filters.length) return null;
 
     const getLabel = (id) => {

@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Routes, Route } from "react-router-dom";
-
-import MaintenanceTetris from "./components/maintenance";
 import Header from "./components/Header";
 import MaintenanceTetris from "./components/maintenance";
 import Footer from "./components/Footer";
@@ -18,7 +16,8 @@ import Calendar from "./components/Calendar";
 
 import Auth from "./utils/auth";
 import { useQuery, useSubscription } from "@apollo/client";
-import { QUERY_ME, JOB_UPDATED_SUB } from "./utils/queries";
+import { QUERY_ME } from "./utils/graphql/users/queries";
+import { JOB_UPDATED_SUB } from "./utils/graphql/jobs/subscriptions";
 
 const MAINTENANCE_MODE = process.env.REACT_APP_MAINTENANCE_MODE === "true";
 

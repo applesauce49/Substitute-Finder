@@ -4,12 +4,13 @@ import ApplicantList from "../ApplicantList";
 
 import Auth from "../../utils/auth";
 import { useQuery, useMutation } from "@apollo/client";
-import { QUERY_JOB, GET_USERS } from "../../utils/queries";
+import { QUERY_JOB } from "../../utils/graphql/jobs/queries.js";
+import { GET_USERS } from "../../utils/graphql/users/queries.js";
 import {
   APPLY_FOR_JOB,
   CANCEL_JOB,
   DECLINE_APPLICATION,
-} from "../../utils/mutations";
+} from "../../utils/graphql/jobs/mutations.js";
 import JobCard from "../JobCard/jobCard";
 
 const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
@@ -20,7 +21,7 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
   const [cancelJob] = useMutation(CANCEL_JOB);
   const [declineApplication] = useMutation(DECLINE_APPLICATION);
 
-  const { data: userData, loading: userLoading } = useQuery(QUERY_ME);
+  // const { data: userData, loading: userLoading } = useQuery(QUERY_ME);
   const { data: usersData } = useQuery(GET_USERS);
   const { loading, data, error, refetch } = useQuery(QUERY_JOB, {
     variables: { id: jobId },

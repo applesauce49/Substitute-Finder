@@ -1,7 +1,7 @@
 import { React, useState } from "react";
 import Modal from "react-modal";
 import { useMutation } from "@apollo/client";
-import { UPDATE_ME } from "../../utils/mutations";
+// import { UPDATE_ME } from "../../utils/graphql/users/mutations.js";
 Modal.setAppElement('#root')
 // import { ProfileForm } from '../ProfileForm';
 
@@ -41,7 +41,7 @@ const ProfileModal = ( { me }) => {
     about: userData.about,
   });
 
-  const [ updateMe ] = useMutation(UPDATE_ME);
+  // const [ updateMe ] = useMutation(UPDATE_ME);
 
   // update state based on form input changes
   const handleChange = (event) => {
@@ -57,9 +57,9 @@ const ProfileModal = ( { me }) => {
     event.preventDefault();
 
     try {
-      await updateMe({
-        variables: { ...userText },
-      });
+      // await updateMe({
+      //   variables: { ...userText },
+      // });
       closeModal();
     } catch (e) {
       console.error(e);
