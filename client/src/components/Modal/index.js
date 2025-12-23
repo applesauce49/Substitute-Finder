@@ -1,10 +1,6 @@
 import { React, useState } from "react";
 import Modal from "react-modal";
-import { useQuery, useMutation } from "@apollo/client";
-import { UPDATE_ME } from "../../utils/mutations";
-import { QUERY_ME } from "../../utils/queries";
 Modal.setAppElement('#root')
-// import { ProfileForm } from '../ProfileForm';
 
 const customStyles = {
   content: {
@@ -17,13 +13,11 @@ const customStyles = {
   },
 };
 
-const ProfileModal = () => {
+const ProfileModal = ( { me }) => {
   let subtitle;
   const [modalIsOpen, setIsOpen] = useState(false);
-  const { data } = useQuery(QUERY_ME);
 
-  const userData = data?.me || {};
-
+  const userData = me || {};
   function openModal() {
     setIsOpen(true);
   }
@@ -44,7 +38,7 @@ const ProfileModal = () => {
     about: userData.about,
   });
 
-  const [ updateMe ] = useMutation(UPDATE_ME);
+  // const [ updateMe ] = useMutation(UPDATE_ME);
 
   // update state based on form input changes
   const handleChange = (event) => {
@@ -60,9 +54,9 @@ const ProfileModal = () => {
     event.preventDefault();
 
     try {
-      await updateMe({
-        variables: { ...userText },
-      });
+      // await updateMe({
+      //   variables: { ...userText },
+      // });
       closeModal();
     } catch (e) {
       console.error(e);

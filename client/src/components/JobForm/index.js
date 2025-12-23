@@ -1,16 +1,17 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@apollo/client";
-import { ADD_JOB } from "../../utils/mutations";
-import { QUERY_EVENTS, QUERY_ME, GET_USERS } from "../../utils/queries";
+import { ADD_JOB } from "../../utils/graphql/jobs/mutations.js";
+import { QUERY_EVENTS } from "../../utils/graphql/gcal/queries.js";
+import { GET_USERS } from "../../utils/graphql/users/queries.js";
 
 import CalendarListView from "../CalendarListView";
 
-const JobForm = ({ onRefetch, onSuccess }) => {
+const JobForm = ({ me, onRefetch, onSuccess }) => {
 
-  console.log("Rendering JobForm");
-  const { data: userData } = useQuery(QUERY_ME);
+  console.log("Rendering JobForm", me);
+  const isAdmin = me?.admin === true;
 
-  const calendarId = userData?.me?.admin ? "meetings@oplm.com" : "primary";
+  const calendarId = isAdmin ? "meetings@oplm.com" : "primary";
 
   const { data, loading: meetingsLoading } = useQuery(QUERY_EVENTS, {
     variables: { calendarId: calendarId },
@@ -25,8 +26,6 @@ const JobForm = ({ onRefetch, onSuccess }) => {
   }));
 
   console.log(userOptions);
-
-  const admin = userData?.me.admin || "";
   const meetings = data || [];
   const events = data?.googleEvents || [];
 
@@ -42,13 +41,6 @@ const JobForm = ({ onRefetch, onSuccess }) => {
     fetchPolicy: "no-cache",
   });
   
-  // const [addJob, { error }] = useMutation(ADD_JOB, {
-  //   update(cache, { data }) {
-  //     const payload = data?.addJob;
-  //     if (!payload || payload.conflict || !payload.job) return;
-  //   },
-  // });
-
   const [formError, setFormError] = useState("");
   const [selectedEvents, setSelectedEvents] = useState(new Set());
 
@@ -91,10 +83,10 @@ const JobForm = ({ onRefetch, onSuccess }) => {
     setFormError("");
 
     // Default to current user
-    let creator = userData?.me?._id;
+    let creator = me?._id;
 
     // Admins choose a user from the dropdown
-    if (admin) {
+    if (isAdmin) {
       creator = formData.createdBy;
 
       if (!creator) {
@@ -151,7 +143,7 @@ const JobForm = ({ onRefetch, onSuccess }) => {
             onEventClick={handleEventClick}
           />
         </div>
-        {(admin) && (
+        {(isAdmin) && (
           <>
             <label className="text-dark pt-4">For:</label>
             <select

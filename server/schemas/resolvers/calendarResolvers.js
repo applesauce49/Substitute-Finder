@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { getUserCalendarClient } from "../../services/googleClient.js";
-import { inviteUserToEvent } from '../../services/calendarServices.js';
+import { inviteUserToEvent, importGoogleMeetingParents } from '../../services/calendarServices.js';
 
 export default {
     Query: {
@@ -55,9 +55,6 @@ export default {
 
     Mutation: {
         inviteUserToEvent: (_, args, context) => inviteUserToEvent(args, context),
+        importGoogleMeetings: (_, args, context) => importGoogleMeetingParents(context.user),
     },
-    Meeting: {
-        startDateTime: (meeting) => meeting.start?.dateTime || null,
-        endDateTime: (meeting) => meeting.end?.dateTime || null,
-    }
-};
+}; 
