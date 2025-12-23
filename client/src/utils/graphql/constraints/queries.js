@@ -12,6 +12,8 @@ export const QUERY_USER_ATTRIBUTE_DEFINITIONS = gql`
     defaultValue
     description
     active
+    source
+    readOnly
     }
   }
 `;
@@ -27,6 +29,23 @@ export const QUERY_CONSTRAINTS = gql`
       operator
       value
       active
+    }
+  }
+`;
+
+export const QUERY_CONSTRAINTS_GROUPS = gql`
+  query ConstraintGroups {
+    constraintGroups {
+      _id
+      name
+      constraintIds
+      constraints {
+        _id
+        name
+        fieldKey
+        operator
+        value
+      }
     }
   }
 `;

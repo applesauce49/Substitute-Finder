@@ -13,12 +13,9 @@ export function UserSettings() {
 
   const users = React.useMemo(() => {
     return data?.users?.map((user) => ({
-      _id: user._id,
-      username: user.username,
-      email: user.email,
+      ...user,
       role: user.admin ? "Admin" : "Peer Parent",
-      admin: user.admin,
-    })) || [];
+    })) ?? [];
   }, [data]);
 
   const columnHelper = React.useMemo(() => createColumnHelper(), []);
@@ -31,11 +28,10 @@ export function UserSettings() {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => {
-        const user = row.original;
         return (
           <button
             className="btn btn-primary me-2"
-            onClick={() => handleEdit(user)}
+            onClick={() => handleEdit(users[row.index])}
           >
             Edit
           </button>
@@ -45,7 +41,7 @@ export function UserSettings() {
       enableColumnFilter: false,
     }
 
-  ], [columnHelper]);
+  ], [columnHelper, users]);
 
   const handleEdit = (user) => {
     setEditingUser(user);
@@ -69,7 +65,7 @@ export function UserSettings() {
         toolbarRight={
 
           <button className="btn btn-success" onClick={() => setShowForm((p) => !p)}>
-            "Add User"
+            Add User
           </button>
         }
       />

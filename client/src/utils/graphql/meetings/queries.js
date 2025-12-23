@@ -19,10 +19,16 @@ export const QUERY_MEETINGS = gql`
         endTime
         until
       }
-      constraints {
-        key
-        type
-        value
+      constraintGroupIds
+      constraintGroups {
+        _id
+        name
+        constraints {
+          _id
+          name
+          operator
+          value
+        }
       }
     }
   }

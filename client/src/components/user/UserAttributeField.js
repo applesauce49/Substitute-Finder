@@ -1,35 +1,24 @@
 import React from "react";
+import { SettingsRow } from "../settings/SettingsRow";
 import { TypeInputRegistry } from "../../utils/attributes/TypeInputRegistry";
 
 export function UserAttributeField({ attributeDef, value, setValue }) {
-    const { type } = attributeDef;
+  const { type } = attributeDef;
+  const Input = TypeInputRegistry[type];
+  const inputId = `attr-${attributeDef.key}`;
 
-    // Pick the correct input component
-    const Input = TypeInputRegistry[type];
-
-    if (!Input) {
-        return (
-            <input
-                className="form-control"
-                disabled
-                placeholder={`No renderer for type ${type}`}
-            />
-        );
-    }
-
-    return (
-        <div className="mb-3">
-            <label className="form-label">{attributeDef.label}</label>
-
-            <Input
-                value={value}
-                setValue={setValue}
-                attribute={attributeDef} // needed for ENUM
-            />
-
-            {attributeDef.description && (
-                <div className="form-text">{attributeDef.description}</div>
-            )}
-        </div>
-    );
+  return (
+    <SettingsRow
+      label={attributeDef.label}
+      description={attributeDef.description}
+    >
+      <Input
+        id={inputId}
+        value={value}
+        setValue={setValue}
+        attribute={attributeDef}
+        mode="user"
+      />
+    </SettingsRow>
+  );
 }

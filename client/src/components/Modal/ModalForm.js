@@ -3,7 +3,7 @@
 export default function ModalForm({ title, onClose, children, footer }) {
     return (
         <div
-            className="modal modal-lg fade show"
+            className="modal fade show"
             style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
             tabIndex="-1"
             role="dialog"

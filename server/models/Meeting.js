@@ -1,4 +1,5 @@
 import { Schema, model } from 'mongoose';
+import ConstraintGroup from '../matchEngine/Schemas/ConstraintGroup.js'
 
 const meetingSchema = new Schema(
   {
@@ -28,11 +29,11 @@ const meetingSchema = new Schema(
       timezone: { type: String },         // "America/New_York"
     },
 
-    constraints: [
+    constraintGroupIds: [
       {
-        key: { type: String, required: true },
-        type: { type: String, required: true },
-        value: { type: String, required: true },
+        type: Schema.Types.ObjectId,
+        ref: 'ConstraintGroup',
+        default: [],
       }
     ],
 

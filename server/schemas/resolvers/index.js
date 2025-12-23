@@ -19,6 +19,7 @@ export default {
         ...calendarResolvers.Mutation,
         ...userResolvers.Mutation,
         ...constraintResolvers.Mutation,
+        ...meetingResolvers.Mutation,
     },
     Subscription: {
         ...jobResolvers.Subscription,
@@ -28,8 +29,9 @@ export default {
     },
     Meeting: {
         ...calendarResolvers.Meeting,
+        ...meetingResolvers.Meeting,
     },
-      
+
     ConstraintGroup: constraintResolvers.ConstraintGroup,
     UserAttributeDefinition: constraintResolvers.UserAttributeDefinition,
     Constraint: constraintResolvers.Constraint,

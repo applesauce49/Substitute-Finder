@@ -26,6 +26,11 @@ enum ConstraintOperator {
   BETWEEN
 }
 
+enum AttributeSource {
+  SYSTEM
+  CUSTOM
+}
+
 # --- Types ---
 
 type UserAttributeDefinition {
@@ -38,6 +43,8 @@ type UserAttributeDefinition {
   defaultValue: String
   description: String
   active: Boolean!
+  source: AttributeSource!
+  readOnly: Boolean!    # derived field: !userEditable && source == SYSTEM
 }
 
 type Constraint {
@@ -54,7 +61,8 @@ type Constraint {
 type ConstraintGroup {
   _id: ID!
   name: String!
-  constraints: [Constraint!]!  # populated via ref
+  constraintIds: [ID!]!          # stored in Mongo
+  constraints: [Constraint!]!    # resolved field
 }
 
 # --- Inputs ---

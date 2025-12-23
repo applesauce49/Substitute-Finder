@@ -1,9 +1,6 @@
 import { React, useState } from "react";
 import Modal from "react-modal";
-import { useMutation } from "@apollo/client";
-// import { UPDATE_ME } from "../../utils/graphql/users/mutations.js";
 Modal.setAppElement('#root')
-// import { ProfileForm } from '../ProfileForm';
 
 const customStyles = {
   content: {

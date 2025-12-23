@@ -2,6 +2,7 @@ import React from "react";
 import  MeetingsSettings from "./settings/MeetingSettings";
 import { UserSettings } from "./settings/UserSettings";
 import  { ConstraintsSettings } from "./settings/constraintSettings";
+import { ConstraintGroupsSettings } from "./settings/ConstraintGroupSettings";
 import { AttributesSettings } from "./settings/attributeSettings";
 
 
@@ -29,7 +30,7 @@ export default function SettingsPanel({ section }) {
         case "constraints.rules":
             return <ConstraintsSettings />;
         case "constraints.groups":
-            return <ConstraintsSettings />;
+            return <ConstraintGroupsSettings />;
 
         case "settings":
             return <Settings />;

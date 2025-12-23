@@ -11,6 +11,7 @@ export function AttributeCreator({
     onSubmit,
     newAttr,
     setNewAttr,
+    mode = "create",
 }) {
 
 
@@ -27,7 +28,7 @@ export function AttributeCreator({
                         Cancel
                     </button>
                     <button type="submit" className="btn btn-primary" onClick={onSubmit}>
-                        Save
+                        {mode === "edit" ? "Save Changes" : "Save"}
                     </button>
                 </>
             }

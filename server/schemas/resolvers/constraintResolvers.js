@@ -3,6 +3,7 @@ import UserAttributeDefinition from "../../matchEngine/Schemas/UserAttributeDefi
 import Constraint from "../../matchEngine/Schemas/Constraint.js";
 import ConstraintGroup from "../../matchEngine/Schemas/ConstraintGroup.js";
 import { GraphQLError } from "graphql";
+import { SYSTEM_ATTRIBUTES } from "../../config/systemAttributes.js";
 
 const typeMap = {
     STRING: "string",
@@ -34,10 +35,40 @@ const reverseOperatorMap = Object.fromEntries(
     Object.entries(operatorMap).map(([gql, mongo]) => [mongo, gql])
 );
 
+function mapSystemAttrToGraphQL(attr) {
+  return {
+    _id: `system:${attr.key}`,
+    key: attr.key,
+    label: attr.label,
+    type: attr.type,                      // "date", "number", etc; handled by reverseTypeMap
+    options: attr.options ?? [],
+    userEditable: attr.userEditable ?? false,
+    defaultValue: attr.defaultValue ?? null,
+    description: attr.description ?? "",
+    active: attr.active ?? true,
+    source: "SYSTEM",
+    readOnly: true,
+  };
+}
+
+function isSystemAttributeKey(key) {
+    return SYSTEM_ATTRIBUTES.some(attr => attr.key === key);
+}
+
 export default {
     Query: {
         userAttributeDefinitions: async () => {
-            return UserAttributeDefinition.find({}).sort({ label: 1 });
+            const dbAttrs = await UserAttributeDefinition.find({}).sort({ label: 1 }).lean();
+
+            const customAttrs = dbAttrs.map(attr => ({
+                ...attr,
+                source: "CUSTOM",
+                readOnly: attr.userEditable === false
+            }));
+
+            const systemAttrs = SYSTEM_ATTRIBUTES.map(mapSystemAttrToGraphQL);
+
+            return [...systemAttrs, ...customAttrs];
         },
         constraints: async () => {
             return Constraint.find({}).sort({ name: 1 });
@@ -92,11 +123,10 @@ export default {
 
         createConstraint: async (_, { input }) => {
             const attrExists = await UserAttributeDefinition.exists({ key: input.fieldKey });
-            if (!attrExists) {
-                throw new GraphQLError("No UserAttributeDefinition found with the specified fieldKey.", {
-                    extensions: {
-                        code: "INVALID_FIELD_KEY"
-                    }
+
+            if (!attrExists && !isSystemAttributeKey(input.fieldKey)) {
+                throw new GraphQLError("No attribute (custom or system) exists with that fieldKey.", {
+                    extensions: { code: "INVALID_FIELD_KEY" }
                 });
             }
 

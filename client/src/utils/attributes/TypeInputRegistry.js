@@ -38,23 +38,47 @@ export const TypeInputRegistry = {
         />
     ),
 
-    BOOLEAN: ({ value, setValue }) => (
-        <select
-            className="form-select"
-            value={value ?? "true"}
-            onChange={e => setValue(e.target.value)}
-        >
-            <option value="true">True</option>
-            <option value="false">False</option>
-        </select>
-    ),
+    BOOLEAN: ({ value, setValue, mode = "user", id }) => {
+        const checked = value === true || value === "true";
+
+        if (mode === "user") {
+            return (
+                <div className="form-check form-switch m-0">
+                    <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id={id}
+                        role="switch"
+                        checked={checked}
+                        onChange={e => setValue(e.target.checked)}
+                        style={{ cursor: "pointer" }}
+                    />
+                </div>
+            );
+        }
+
+        // default admin/editor version:
+        return (
+            <select
+                className="form-select"
+                value={checked ? "true" : "false"}
+                onChange={e => setValue(e.target.value === "true")}
+            >
+                <option value="true">True</option>
+                <option value="false">False</option>
+            </select>
+        );
+    },
 
     ENUM: ({ value, setValue, attribute }) => (
         <select
             className="form-select"
             value={value ?? ""}
-            onChange={e => setValue(e.target.value)}
+            onChange={e => setValue(e.target.value || null)}
         >
+            {/* Add placeholder / empty value */}
+            <option value="">—</option>
+
             {attribute?.options?.map(opt => (
                 <option key={opt} value={opt}>
                     {opt}
@@ -103,11 +127,11 @@ export const TypeInputRegistry = {
         return (
             <div className="d-flex gap-2">
                 <input type="number" className="form-control"
-                       value={min}
-                       onChange={e => setValue([e.target.value, max])} />
+                    value={min}
+                    onChange={e => setValue([e.target.value, max])} />
                 <input type="number" className="form-control"
-                       value={max}
-                       onChange={e => setValue([min, e.target.value])} />
+                    value={max}
+                    onChange={e => setValue([min, e.target.value])} />
             </div>
         );
     },
@@ -117,11 +141,11 @@ export const TypeInputRegistry = {
         return (
             <div className="d-flex gap-2">
                 <input type="date" className="form-control"
-                       value={from}
-                       onChange={e => setValue([e.target.value, to])} />
+                    value={from}
+                    onChange={e => setValue([e.target.value, to])} />
                 <input type="date" className="form-control"
-                       value={to}
-                       onChange={e => setValue([from, e.target.value])} />
+                    value={to}
+                    onChange={e => setValue([from, e.target.value])} />
             </div>
         );
     },
@@ -131,11 +155,11 @@ export const TypeInputRegistry = {
         return (
             <div className="d-flex gap-2">
                 <input type="time" className="form-control"
-                       value={start}
-                       onChange={e => setValue([e.target.value, end])} />
+                    value={start}
+                    onChange={e => setValue([e.target.value, end])} />
                 <input type="time" className="form-control"
-                       value={end}
-                       onChange={e => setValue([start, e.target.value])} />
+                    value={end}
+                    onChange={e => setValue([start, e.target.value])} />
             </div>
         );
     }

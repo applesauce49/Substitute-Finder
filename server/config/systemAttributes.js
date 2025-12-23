@@ -1,0 +1,36 @@
+
+export const SYSTEM_ATTRIBUTES = [
+  {
+    key: "lastSubbedAt",
+    label: "Last Time User Subbed",
+    type: "date",
+    options: [],
+    userEditable: false,
+    defaultValue: null,
+    description: "Most recent date the user was assigned and completed a sub job.",
+    source: "system",
+    readOnly: true,
+  },
+  {
+    key: "assignedJobCount",
+    label: "Total Assigned Jobs",
+    type: "number",
+    options: [],
+    userEditable: false,
+    defaultValue: null,
+    description: "Total number of jobs this user has been assigned.",
+    source: "system",
+    readOnly: true,
+  },
+  {
+    key: "hasSubbedInLast30Days",
+    label: "Has Subbed in Last 30 Days",
+    type: "boolean",
+    description: "True if the user has subbed at least once in the last 30 days.",
+    options: [],
+    userEditable: false,
+    defaultValue: null,
+    source: "system",
+    readOnly: true,
+  },
+];

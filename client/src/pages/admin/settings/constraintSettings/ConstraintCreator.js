@@ -10,8 +10,10 @@ export function ConstraintCreator({
     attributes,
     newConstraint,
     setNewConstraint,
+    mode = "create",
 }) {
 
+    console.log (attributes);
     // Selected attribute and type
     const selectedAttr = attributes.find(a => a.key === newConstraint.fieldKey);
     const selectedType = selectedAttr?.type;
@@ -48,7 +50,7 @@ export function ConstraintCreator({
                         Cancel
                     </button>
                     <button type="submit" className="btn btn-primary" onClick={onSubmit}>
-                        Save
+                        {mode === "edit" ? "Save Changes" : "Save"}
                     </button>
                 </>
             }
@@ -65,8 +67,6 @@ export function ConstraintCreator({
                             setNewConstraint(prev => ({
                                 ...prev,
                                 name: e.target.value,
-                                operator: prev.operator,
-                                value: normalizeValueForOperator(prev.operator, selectedType, selectedAttr)
                             }))
                         }
                         placeholder="Descriptive name of rule"
@@ -75,9 +75,10 @@ export function ConstraintCreator({
 
                 <div className="row g-2">
 
-                    {/* FIELD SELECT */}
+                    {/* ATTRIBUTE SELECT */}
                     <div className="col-4 d-flex flex-column">
-                        <label className="form-label">Field</label>
+                        <label className="form-label">Attribute</label>
+
                         <select
                             className="form-select"
                             value={newConstraint.fieldKey}
@@ -99,11 +100,35 @@ export function ConstraintCreator({
                             }}
                         >
                             <option value="">Select attribute…</option>
-                            {attributes.map(attr => (
-                                <option key={attr._id} value={attr.key}>
-                                    {attr.label} ({attr.key})
-                                </option>
-                            ))}
+
+                            {/* System attributes first */}
+                            {attributes.some(a => a.source === "SYSTEM") && (
+                                <optgroup label="System Attributes">
+                                    {attributes
+                                        .filter(a => a.source === "SYSTEM")
+                                        .map(attr => (
+                                            <option key={attr._id} value={attr.key}>
+                                                {attr.label} ({attr.key}) ⚙️
+                                            </option>
+                                        ))
+                                    }
+                                </optgroup>
+                            )}
+
+                            {/* Custom user-defined attributes */}
+                            {attributes.some(a => a.source === "CUSTOM") && (
+                                <optgroup label="Custom Attributes">
+                                    {attributes
+                                        .filter(a => a.source === "CUSTOM")
+                                        .map(attr => (
+                                            <option key={attr._id} value={attr.key}>
+                                                {attr.label} ({attr.key})
+                                            </option>
+                                        ))
+                                    }
+                                </optgroup>
+                            )}
+
                         </select>
                     </div>
 
@@ -156,10 +181,10 @@ export function ConstraintCreator({
                                     setValue={(val) =>
                                         setNewConstraint(prev => ({
                                             ...prev,
-                                            operator: opDef,
-                                            value: normalizeValueForOperator(opDef, selectedType, selectedAttr)
+                                            value: val,
                                         }))
                                     }
+                                    mode={mode}
                                     attribute={selectedAttr}
                                 />
                             );

@@ -7,6 +7,7 @@ import {
 } from "../../../../utils/graphql/constraints/queries";
 import {
     CREATE_CONSTRAINT,
+    UPDATE_CONSTRAINT,
     DELETE_CONSTRAINT,
 } from "../../../../utils/graphql/constraints/mutations";
 import { GenericReportTable } from "../../../../components/reporting/GenericReportTable/GenericReportTable";
@@ -27,39 +28,49 @@ export function ConstraintsView() {
     } = useQuery(QUERY_CONSTRAINTS);
 
     // Mutations
-    const [createConstraint] =
-        useMutation(CREATE_CONSTRAINT, {
-            onCompleted: () => refetchConstraints(),
-        });
+    const [createConstraint] = useMutation(CREATE_CONSTRAINT, {
+        onCompleted: () => refetchConstraints(),
+    });
+
+    const [updateConstraint] = useMutation(UPDATE_CONSTRAINT, {
+        onCompleted: () => refetchConstraints(),
+    });
 
     const [deleteConstraint] = useMutation(DELETE_CONSTRAINT, {
         onCompleted: () => refetchConstraints(),
     });
 
+    const [editingConstraint, setEditingConstraint] = React.useState(null);
+
     // --- Handlers ---
-    const handleCreateConstraint = async (e) => {
+    const handleSubmitConstraint = async (e) => {
         e.preventDefault();
         console.log("Submitting constraint:", newConstraint);
         if (!newConstraint.name || !newConstraint.fieldKey || !newConstraint.operator) return;
 
         try {
-            console.log("Creating constraint with:", newConstraint);
-            await createConstraint({
-                variables: {
-                    input: {
-                        name: newConstraint.name.trim(),
-                        description: newConstraint.description || null,
-                        fieldSource: "user",
-                        fieldKey: newConstraint.fieldKey,
-                        operator: newConstraint.operator,
-                        value: newConstraint.value ?? "",
-                        active: true,
-                    },
-                },
-            });
+            const payload = {
+                name: newConstraint.name.trim(),
+                description: newConstraint.description || null,
+                fieldSource: "user",
+                fieldKey: newConstraint.fieldKey,
+                operator: newConstraint.operator,
+                value: newConstraint.value ?? "",
+                active: true,
+            };
+
+            if (editingConstraint?._id) {
+                await updateConstraint({
+                    variables: { id: editingConstraint._id, input: payload },
+                });
+            } else {
+                await createConstraint({
+                    variables: { input: payload },
+                });
+            }
             handleCloseCreateConstraintModal();
         } catch (err) {
-            console.error("Error creating constraint:", err);
+            console.error("Error saving constraint:", err);
         }
     };
 
@@ -74,8 +85,9 @@ export function ConstraintsView() {
     }, [deleteConstraint]);
 
 
-    const handleCloseCreateConstraintModal = () => {
+    const handleCloseCreateConstraintModal = React.useCallback(() => {
         setShowConstraintForm(false);
+        setEditingConstraint(null);
         setNewConstraint({
             name: "",
             description: "",
@@ -83,7 +95,19 @@ export function ConstraintsView() {
             operator: "",
             value: "",
         });
-    };
+    }, []);
+
+    const handleEditConstraint = React.useCallback((constraint) => {
+        setEditingConstraint(constraint);
+        setNewConstraint({
+            name: constraint.name ?? "",
+            description: constraint.description ?? "",
+            fieldKey: constraint.fieldKey ?? "",
+            operator: constraint.operator ?? "",
+            value: constraint.value ?? "",
+        });
+        setShowConstraintForm(true);
+    }, []);
 
     const columnHelper = createColumnHelper();
     const constraintColumns = React.useMemo(() => [
@@ -106,7 +130,14 @@ export function ConstraintsView() {
             cell: ({ row }) => {
                 const constraint = row.original;
                 return (
-                    <div className="text-end">
+                    <div className="d-flex justify-content-end gap-2">
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-outline-primary"
+                            onClick={() => handleEditConstraint(constraint)}
+                        >
+                            Edit
+                        </button>
                         <button
                             type="button"
                             className="btn btn-sm btn-outline-danger"
@@ -121,7 +152,7 @@ export function ConstraintsView() {
             enableColumnFilter: false,
         }
 
-    ], [columnHelper, handleDeleteConstraint]);
+    ], [columnHelper, handleDeleteConstraint, handleEditConstraint]);
 
 
     // --- Local form state ---
@@ -150,26 +181,40 @@ export function ConstraintsView() {
     return (
         <div className="mb-4">
             <GenericReportTable
-                title="User Constraints"
+                title="Rules"
                 data={constraints}
                 columns={constraintColumns}
                 filterFns={{}}
                 toolbarRight={
 
-                    <button className="btn btn-success" onClick={() => setShowConstraintForm((p) => !p)}>
-                        Add Constraint
+                    <button
+                        className="btn btn-success"
+                        onClick={() => {
+                            setEditingConstraint(null);
+                            setNewConstraint({
+                                name: "",
+                                description: "",
+                                fieldKey: "",
+                                operator: "",
+                                value: "",
+                            });
+                            setShowConstraintForm(true);
+                        }}
+                    >
+                        Add Rule
                     </button>
                 }
             />
 
             {showConstraintForm && (
                 <ConstraintCreator
-                    title="Add Constraint"
+                    title={editingConstraint ? "Edit Rule" : "Add Rule"}
                     onClose={handleCloseCreateConstraintModal}
-                    onSubmit={handleCreateConstraint}
+                    onSubmit={handleSubmitConstraint}
                     attributes={attributes}
                     newConstraint={newConstraint}
                     setNewConstraint={setNewConstraint}
+                    mode={editingConstraint ? "edit" : "create"}
                 />
             )}
         </div>

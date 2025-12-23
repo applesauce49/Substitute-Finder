@@ -3,6 +3,7 @@ import { meeetingTypeDefs } from "./TypeDefs/meetingTypeDefs.js";
 import { gcalTypeDefs } from "./TypeDefs/gcalTypeDefs.js";
 import { jobTypeDefs } from "./TypeDefs/jobTypeDefs.js";
 import { matchEngineTypeDefs } from "./TypeDefs/matchEngineTypeDefs.js";
+import meetingResolvers from "./resolvers/meetingResolvers.js";
 
 import resolvers from "./resolvers/index.js";
 

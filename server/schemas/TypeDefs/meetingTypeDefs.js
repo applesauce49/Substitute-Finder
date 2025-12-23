@@ -20,7 +20,30 @@ type Meeting {
   description: String
   updatedAt: DateTime!
   recurrence: RecurrenceRule
-  constraints: [ConstraintAttribute!]!
+  constraintGroupIds: [ID!]!
+  constraintGroups: [ConstraintGroup!]
+}
+
+input MeetingInput {
+  source: String
+  summary: String
+  description: String
+  start: DateTime
+  end: DateTime
+  timezone: String
+  owner: String
+  recurrence: RecurrenceInput
+  
+  constraintGroupIds: [ID!]
+}
+
+input RecurrenceInput {
+  frequency: String
+  daysOfWeek: [String!]
+  startTime: String
+  endTime: String
+  until: DateTime
+  timezone: String
 }
 
 type RecurrenceRule {
@@ -36,6 +59,11 @@ type ConstraintAttribute {
   key: String!
   type: String!
   value: String!
+}
+
+extend type Mutation {
+  createMeeting(input: MeetingInput!): Meeting!
+  updateMeeting(id: ID!, input: MeetingInput!): Meeting!
 }
 
 `;

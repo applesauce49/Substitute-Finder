@@ -8,6 +8,10 @@ export const GET_USERS = gql`
       username
       email
       admin
+      attributes {
+        key
+        value
+      }
     }
   }
 `;
@@ -29,6 +33,10 @@ export const QUERY_USER = gql`
           description
           createdAt
         }
+      }
+      attributes {
+        key
+        value
       }
     }
   }
