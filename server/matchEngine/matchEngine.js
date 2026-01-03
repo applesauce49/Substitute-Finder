@@ -2,18 +2,483 @@ import { connectDB } from "../config/db.js";
 import Job from "../models/Job.js";
 import User from "../models/User.js";
 import resolvers from "../schemas/resolvers/index.js";
-import userResolvers from "../schemas/resolvers/userResolvers.js";
 import { postJobToGoogleChat } from "../utils/chatJobNotifier.js";
+import Meeting from "../models/Meeting.js";
+import ConstraintGroup from "./Schemas/ConstraintGroup.js";
+import Constraint from "./Schemas/Constraint.js";
+import UserAttributeDefinition from "./Schemas/UserAttributeDefinition.js";
+import { SYSTEM_ATTRIBUTES } from "../config/systemAttributes.js";
 
 
 // import Meeting from "../models/Meeting.js";
 // import User from "../models/User.js";
+
+// --- Helpers for evaluating constraints ---
+
+const SYSTEM_ATTRIBUTE_GETTERS = {
+    lastSubbedAt: (user) => {
+        const mostRecent = (user?.assignedJobs || [])
+            .map(a => a?.assignedAt ? new Date(a.assignedAt).getTime() : null)
+            .filter(Boolean)
+            .sort((a, b) => b - a)[0];
+        return mostRecent ? new Date(mostRecent) : null;
+    },
+    assignedJobCount: (user) => Array.isArray(user?.assignedJobs) ? user.assignedJobs.length : 0,
+    hasSubbedInLast7Days: (user) => {
+        const last = SYSTEM_ATTRIBUTE_GETTERS.lastSubbedAt(user);
+        if (!last) return false;
+        const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+        return Date.now() - last.getTime() <= SEVEN_DAYS;
+    },
+};
+
+function parseListValue(raw) {
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === "string") {
+        try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return parsed;
+        } catch (_) { /* no-op */ }
+        return raw
+            .split(",")
+            .map(v => v.trim())
+            .filter(Boolean);
+    }
+    return [];
+}
+
+function parseRangeValue(raw) {
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === "string") {
+        try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return parsed;
+        } catch (_) { /* no-op */ }
+        const parts = raw.split(",").map(v => v.trim());
+        if (parts.length >= 2) return [parts[0], parts[1]];
+    }
+    return [];
+}
+
+function coerceValueByType(value, type) {
+    if (value === undefined || value === null) return null;
+
+    if (Array.isArray(value)) {
+        return value
+            .map(v => coerceValueByType(v, type))
+            .filter(v => v !== null);
+    }
+
+    switch (type) {
+        case "number": {
+            const num = Number(value);
+            return Number.isNaN(num) ? null : num;
+        }
+        case "boolean":
+            return value === true || value === "true" || value === "1";
+        case "date": {
+            const d = new Date(value);
+            return Number.isNaN(d.getTime()) ? null : d.getTime();
+        }
+        case "time": {
+            if (typeof value !== "string") return null;
+            const [hours, minutes] = value.split(":").map(Number);
+            if (
+                Number.isNaN(hours) ||
+                Number.isNaN(minutes) ||
+                hours < 0 ||
+                hours > 23 ||
+                minutes < 0 ||
+                minutes > 59
+            ) {
+                return null;
+            }
+            return hours * 60 + minutes;
+        }
+        default:
+            return String(value).toLowerCase();
+    }
+}
+
+function normalizeConstraintValue(constraint, attrType) {
+    const operator = constraint?.operator || "";
+    if (["in", "notIn"].includes(operator)) {
+        return coerceValueByType(parseListValue(constraint.value), attrType);
+    }
+    if (operator === "between") {
+        const [min, max] = parseRangeValue(constraint.value);
+        return [coerceValueByType(min, attrType), coerceValueByType(max, attrType)];
+    }
+    return coerceValueByType(constraint?.value, attrType);
+}
+
+function isEqual(a, b, type) {
+    if (Array.isArray(a) || Array.isArray(b)) return false;
+    if (type === "number" || type === "date" || type === "time") {
+        return a === b;
+    }
+    return String(a).toLowerCase() === String(b).toLowerCase();
+}
+
+function evaluateConstraint(constraint, userValue, attrType) {
+    const operator = constraint?.operator || "";
+    const targetValue = normalizeConstraintValue(constraint, attrType);
+
+    const lhs = coerceValueByType(userValue, attrType);
+
+    if (lhs === null || lhs === undefined) return false;
+
+    switch (operator) {
+        case "equals":
+            return isEqual(lhs, targetValue, attrType);
+        case "notEquals":
+            return !isEqual(lhs, targetValue, attrType);
+        case "gt":
+            return lhs > targetValue;
+        case "lt":
+            return lhs < targetValue;
+        case "gte":
+            return lhs >= targetValue;
+        case "lte":
+            return lhs <= targetValue;
+        case "contains":
+            return String(lhs).toLowerCase().includes(String(targetValue ?? "").toLowerCase());
+        case "notContains":
+            return !String(lhs).toLowerCase().includes(String(targetValue ?? "").toLowerCase());
+        case "in": {
+            const list = Array.isArray(targetValue) ? targetValue : [targetValue];
+            return list.some(v => isEqual(lhs, v, attrType));
+        }
+        case "notIn": {
+            const list = Array.isArray(targetValue) ? targetValue : [targetValue];
+            return !list.some(v => isEqual(lhs, v, attrType));
+        }
+        case "between": {
+            const [min, max] = targetValue || [];
+            if (min === null || max === null) return false;
+            return lhs >= min && lhs <= max;
+        }
+        default:
+            return false;
+    }
+}
+
+async function buildAttributeDefinitionMap() {
+    const customDefs = await UserAttributeDefinition.find({}).lean();
+    const allDefs = [
+        ...SYSTEM_ATTRIBUTES.map(attr => ({
+            ...attr,
+            type: typeof attr.type === "string" ? attr.type.toLowerCase() : attr.type
+        })),
+        ...customDefs.map(def => ({
+            ...def,
+            type: typeof def.type === "string" ? def.type.toLowerCase() : def.type
+        })),
+    ];
+
+    return new Map(allDefs.map(def => [def.key, def]));
+}
+
+function resolveAttributeValue(fieldSource, fieldKey, user, meetingContext) {
+    if (fieldSource === "meeting") {
+        return meetingContext?.[fieldKey];
+    }
+
+    if (SYSTEM_ATTRIBUTE_GETTERS[fieldKey]) {
+        return SYSTEM_ATTRIBUTE_GETTERS[fieldKey](user);
+    }
+
+    return user?.attributes?.find(attr => attr.key === fieldKey)?.value;
+}
+
+function scoreApplicant(application, constraints, attrDefMap, meetingContext) {
+    if (!constraints.length) {
+        return {
+            application,
+            score: 0,
+            matched: 0,
+            total: 0,
+            matchedConstraints: [],
+            disqualified: false,
+        };
+    }
+
+    let matched = 0;
+    const matchedConstraints = [];
+    let failedRequired = false;
+
+    for (const constraint of constraints) {
+        const attrDef = attrDefMap.get(constraint.fieldKey);
+        const attrType = attrDef?.type ?? "string";
+        const userValue = resolveAttributeValue(
+            constraint.fieldSource,
+            constraint.fieldKey,
+            application.user,
+            meetingContext
+        );
+
+        const passes = evaluateConstraint(constraint, userValue, attrType);
+        const isRequired = Boolean(constraint.required);
+
+        if (passes) {
+            matched++;
+            matchedConstraints.push(constraint.name || constraint.fieldKey);
+        } else if (isRequired) {
+            failedRequired = true;
+        }
+    }
+
+    const disqualified = failedRequired;
+
+    return {
+        application,
+        matched,
+        total: constraints.length,
+        score: disqualified
+            ? 0
+            : constraints.length
+                ? matched / constraints.length
+                : 0,
+        matchedConstraints,
+        disqualified,
+    };
+}
+
+async function getMeetingConstraints(job) {
+    const eventIds = [
+        job?.meetingSnapshot?.gcalEventId,
+        job?.meetingSnapshot?.gcalRecurringEventId,
+        job?.meetingSnapshot?.eventId,
+    ].filter(Boolean);
+
+    if (!eventIds.length) {
+        return { meeting: null, constraints: [] };
+    }
+
+    const meeting = await Meeting.findOne({
+        $or: [
+            { gcalEventId: { $in: eventIds } },
+            { gcalRecurringEventId: { $in: eventIds } },
+        ],
+    }).lean();
+    const groupIds = meeting?.constraintGroupIds || [];
+
+    if (!groupIds.length) {
+        return { meeting, constraints: [] };
+    }
+
+    const groups = await ConstraintGroup.find({ _id: { $in: groupIds } }).lean();
+    const constraintIds = [...new Set(groups.flatMap(g => g.constraintIds || []))];
+
+    if (!constraintIds.length) {
+        return { meeting, constraints: [] };
+    }
+
+    const constraints = await Constraint.find({
+        _id: { $in: constraintIds },
+        active: { $ne: false },
+    }).lean();
+
+    return { meeting, constraints };
+}
+
+async function loadConstraintsByGroupIds(groupIds) {
+    if (!Array.isArray(groupIds) || !groupIds.length) {
+        return [];
+    }
+
+    const groups = await ConstraintGroup.find({ _id: { $in: groupIds } }).lean();
+    const constraintIds = [...new Set(groups.flatMap(g => g.constraintIds || []))];
+
+    if (!constraintIds.length) return [];
+
+    return Constraint.find({
+        _id: { $in: constraintIds },
+        active: { $ne: false },
+    }).lean();
+}
+
+function buildCandidateApplications(job, users) {
+    const applicantMap = new Map();
+    (job.applications || []).forEach(app => {
+        const userId = String(app.user?._id || app.user);
+        if (!applicantMap.has(userId)) {
+            applicantMap.set(userId, app);
+        }
+    });
+
+    return users.map(user => {
+        const app = applicantMap.get(String(user._id)) || null;
+        return {
+            application: app
+                ? { ...app, user }
+                : { user, appliedAt: job.createdAt || new Date() },
+            isApplicant: Boolean(app),
+        };
+    });
+}
+
+function rankApplications(candidates, constraints, attrDefMap, meetingContext) {
+    const hasConstraints = Array.isArray(constraints) && constraints.length > 0;
+
+    const ranked = (candidates || [])
+        .map(candidate => {
+            const scored = hasConstraints
+                ? scoreApplicant(candidate.application, constraints, attrDefMap, meetingContext)
+                : {
+                    application: candidate.application,
+                    score: 0,
+                    matched: 0,
+                    total: 0,
+                    matchedConstraints: [],
+                    disqualified: false,
+                };
+
+            return {
+                ...scored,
+                isApplicant: candidate.isApplicant,
+            };
+        })
+        .sort((a, b) => {
+            if (a.disqualified !== b.disqualified) {
+                return a.disqualified ? 1 : -1;
+            }
+            if (b.score !== a.score) return b.score - a.score;
+            if (a.isApplicant !== b.isApplicant) return b.isApplicant - a.isApplicant;
+            if (b.matched !== a.matched) return b.matched - a.matched;
+            return new Date(a.application.appliedAt) - new Date(b.application.appliedAt);
+        });
+
+    return { ranked, hasConstraints };
+}
+
+export async function previewMatchEngineForMeeting(meetingId) {
+    await connectDB();
+    const attributeDefinitionMap = await buildAttributeDefinitionMap();
+    const allUsers = await User.find({}).lean();
+
+    const meeting = meetingId ? await Meeting.findById(meetingId).lean() : null;
+    const eventIds = [
+        meeting?.gcalEventId,
+        meeting?.gcalRecurringEventId,
+    ].filter(Boolean);
+
+    let job = null;
+    if (eventIds.length) {
+        job = await Job.findOne({
+            $or: [
+                { "meetingSnapshot.gcalEventId": { $in: eventIds } },
+                { "meetingSnapshot.gcalRecurringEventId": { $in: eventIds } },
+                { "meetingSnapshot.eventId": { $in: eventIds } },
+            ],
+            active: true
+        })
+            .populate("applications.user")
+            .populate("createdBy")
+            .lean();
+
+        if (!job) {
+            job = await Job.findOne({
+                $or: [
+                    { "meetingSnapshot.gcalEventId": { $in: eventIds } },
+                    { "meetingSnapshot.gcalRecurringEventId": { $in: eventIds } },
+                    { "meetingSnapshot.eventId": { $in: eventIds } },
+                ],
+            })
+                .populate("applications.user")
+                .populate("createdBy")
+                .lean();
+        }
+    }
+
+    if (!job && !meeting) {
+        return {
+            meetingId: meetingId ?? null,
+            jobId: null,
+            meetingTitle: "",
+            constraintCount: 0,
+            constraints: [],
+            applicants: [],
+            message: "No job or meeting found for this request.",
+        };
+    }
+
+    // If no job exists, create a temporary shell for scoring purposes
+    if (!job) {
+        job = {
+            _id: null,
+            meetingSnapshot: {
+                eventId: meeting?.gcalEventId || meeting?.gcalRecurringEventId,
+                gcalEventId: meeting?.gcalEventId,
+                gcalRecurringEventId: meeting?.gcalRecurringEventId,
+                calendarId: meeting?.calendarId,
+                title: meeting?.summary || "(Untitled)",
+                description: meeting?.description || "",
+                startDateTime: meeting?.start || null,
+                endDateTime: meeting?.end || null,
+            },
+            applications: [],
+            createdAt: meeting?.createdAt || new Date(),
+        };
+    }
+
+    let constraintMeeting = null;
+    let constraints = [];
+
+    if (job?._id) {
+        const result = await getMeetingConstraints(job);
+        constraintMeeting = result.meeting;
+        constraints = result.constraints;
+    } else if (meeting) {
+        constraintMeeting = meeting;
+        constraints = await loadConstraintsByGroupIds(meeting.constraintGroupIds);
+    }
+
+    const meetingContext = constraintMeeting || meeting || job.meetingSnapshot || {};
+
+    const candidates = buildCandidateApplications(job, allUsers);
+
+    const { ranked, hasConstraints } = rankApplications(
+        candidates,
+        constraints,
+        attributeDefinitionMap,
+        meetingContext
+    );
+
+    return {
+        meetingId: meeting?._id?.toString() ?? null,
+        jobId: job._id?.toString() ?? null,
+        meetingTitle: job.meetingSnapshot?.title || meeting?.summary || "",
+        constraintCount: constraints.length,
+        constraints,
+        applicants: ranked.map(r => ({
+            applicationId: r.isApplicant ? (r.application?._id?.toString() ?? null) : null,
+            userId: r.application?.user?._id?.toString() ?? null,
+            userName: r.application?.user?.username || r.application?.user?.email || "Unknown",
+            isApplicant: r.isApplicant,
+            eligible: !r.disqualified,
+            matched: r.matched,
+            total: r.total,
+            score: r.score,
+            appliedAt: r.isApplicant ? (r.application?.appliedAt || null) : null,
+            matchedConstraints: r.matchedConstraints || [],
+        })),
+        message: (!job.applications?.length && !ranked.some(r => r.isApplicant))
+            ? "No applicants yet; showing all users."
+            : hasConstraints
+                ? null
+                : "No constraints found for this meeting.",
+    };
+}
 
 export async function runMatchEngine() {
     console.log(`[MatchEngine] Cycle started at ${new Date().toISOString()}`);
     const { acceptApplication } = resolvers.Mutation;
 
     await connectDB();
+
+    const attributeDefinitionMap = await buildAttributeDefinitionMap();
+    const allUsers = await User.find({}).lean();
 
     // Step 1: Get open jobs
     const jobs = await Job.find({
@@ -64,13 +529,49 @@ export async function runMatchEngine() {
                 }
             }
 
-            console.log(`${job}`);
-            const sorted = job.applications.sort(
-                (a, b) => new Date(a.appliedAt) - new Date(b.appliedAt)
+            const { meeting, constraints } = await getMeetingConstraints(job);
+            const meetingContext = meeting || job.meetingSnapshot || {};
+            const candidates = buildCandidateApplications(job, allUsers);
+
+            const { ranked: rankedApplications, hasConstraints } = rankApplications(
+                candidates,
+                constraints,
+                attributeDefinitionMap,
+                meetingContext
             );
 
+            if (hasConstraints) {
+                console.log(
+                    `[MatchEngine] - Evaluated ${rankedApplications.length} applicant(s) against ${constraints.length} constraint(s) for meeting "${meeting?._id || job.meetingSnapshot?.eventId}".`
+                );
+                rankedApplications.forEach(({ application, score, matched, total, disqualified }) => {
+                    console.log(
+                        `  applicant=${application?.user?._id || "unknown"} score=${score.toFixed(2)} (${matched}/${total}) appliedAt=${application?.appliedAt}${disqualified ? " [failed required rule]" : ""}`
+                    );
+                });
+            } else {
+                console.log(`[MatchEngine] - No constraints for meeting "${job.meetingSnapshot?.eventId}". Falling back to FIFO order.`);
+            }
 
-            const winner = sorted[0];
+            const winnerRecord = rankedApplications?.find(r => !r.disqualified);
+            const winner = winnerRecord?.application;
+
+            if (!winner || !winner.user?._id) {
+                console.log(`[MatchEngine] - No eligible applicants available for job "${job._id}".`);
+                totalEvaluated++;
+                continue;
+            }
+
+            if (!winnerRecord.isApplicant) {
+                job.applications.push({
+                    user: winner.user._id,
+                    appliedAt: new Date(),
+                });
+                await job.save();
+
+                const inserted = job.applications.find(app => String(app.user) === String(winner.user._id) && app.appliedAt);
+                winner._id = inserted?._id || winner._id;
+            }
 
             console.log(
                 `[Assign] Job "${job._id}" assigned to ${winner._id}`

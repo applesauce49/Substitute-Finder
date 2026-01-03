@@ -56,6 +56,7 @@ export function ConstraintsView() {
                 fieldKey: newConstraint.fieldKey,
                 operator: newConstraint.operator,
                 value: newConstraint.value ?? "",
+                required: Boolean(newConstraint.required),
                 active: true,
             };
 
@@ -94,6 +95,7 @@ export function ConstraintsView() {
             fieldKey: "",
             operator: "",
             value: "",
+            required: false,
         });
     }, []);
 
@@ -105,6 +107,7 @@ export function ConstraintsView() {
             fieldKey: constraint.fieldKey ?? "",
             operator: constraint.operator ?? "",
             value: constraint.value ?? "",
+            required: constraint.required ?? false,
         });
         setShowConstraintForm(true);
     }, []);
@@ -122,6 +125,10 @@ export function ConstraintsView() {
         }),
         columnHelper.accessor("value", {
             header: "Value",
+        }),
+        columnHelper.accessor("required", {
+            header: "Required",
+            cell: ({ getValue }) => getValue() ? "Yes" : "No",
         }),
         // Actions column
         {
@@ -162,6 +169,7 @@ export function ConstraintsView() {
         fieldKey: "",
         operator: "EQUALS",
         value: "",
+        required: false,
     });
 
     const constraints = constraintsData?.constraints ?? [];
@@ -197,6 +205,7 @@ export function ConstraintsView() {
                                 fieldKey: "",
                                 operator: "",
                                 value: "",
+                                required: false,
                             });
                             setShowConstraintForm(true);
                         }}

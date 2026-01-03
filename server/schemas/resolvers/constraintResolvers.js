@@ -133,6 +133,7 @@ export default {
             const constraint = new Constraint({
                 ...input,
                 operator: operatorMap[input.operator],
+                required: input.required ?? false,
                 active: input.active ?? true,
             });
             return constraint.save();
@@ -141,7 +142,13 @@ export default {
         updateConstraint: async (_, { id, input }) => {
             return Constraint.findByIdAndUpdate(
                 id,
-                { $set: { ...input, operator: operatorMap[input.operator] } },
+                {
+                    $set: {
+                        ...input,
+                        operator: operatorMap[input.operator],
+                        required: input.required ?? false,
+                    }
+                },
                 { new: true }
             );
         },
@@ -186,7 +193,8 @@ export default {
     },
 
     Constraint: {
-        operator: (obj) => reverseOperatorMap[obj.operator]
+        operator: (obj) => reverseOperatorMap[obj.operator],
+        required: (obj) => obj.required ?? false,
     },
 
     ConstraintGroup: {

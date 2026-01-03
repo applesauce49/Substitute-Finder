@@ -14,10 +14,11 @@ type Query {
 
 type Mutation {
   addUser(
-    _id: ID!
     username: String!
     email: String!
     admin: Boolean
+    phone: String
+    about: String
     attributes: [UserAttributeValueInput]
   ): User
 
@@ -26,6 +27,8 @@ type Mutation {
     username: String
     email: String
     admin: Boolean
+    phone: String
+    about: String
     attributes: [UserAttributeValueInput]
   ): User
 }

@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { useQuery, useMutation } from "@apollo/client";
-import { QUERY_USER_ATTRIBUTE_DEFINITIONS } from "../../../../utils/graphql/constraints/queries";
-import { UserAttributeField } from "../../../../components/user/UserAttributeField";
+import { useMutation } from "@apollo/client";
 import { ADD_USER, UPDATE_USER } from "../../../../utils/graphql/users/mutations";
 import { ModalForm } from "../../../../components/Modal/ModalForm";
+import { UserAttributeEditor } from "../../../../components/user/UserAttributeEditor";
 
 function UserForm({
   mutation,
@@ -18,12 +17,6 @@ function UserForm({
     email: initialData.email ?? "",
     admin: initialData.admin ?? false,
   });
-
-  // LOAD DYNAMIC ATTRIBUTE DEFINITIONS
-  const { data: attrDefData } = useQuery(QUERY_USER_ATTRIBUTE_DEFINITIONS);
-  console.log("Attribute Definitions Data:", attrDefData);
-  const attributeDefs = attrDefData?.userAttributeDefinitions ?? [];
-  const editableAttributes = attributeDefs.filter(def => def.userEditable);
 
   // HYDRATE EXISTING ATTRIBUTE VALUES
   const [values, setValues] = useState(() => {
@@ -117,27 +110,11 @@ function UserForm({
       </div>
 
       {/* DYNAMIC USER ATTRIBUTES */}
-      {editableAttributes.length > 0 ? (
-        <div className="mb-3">
-          <h5>Additional Attributes</h5>
-
-          {editableAttributes.map(def => (
-            <UserAttributeField
-              key={def.key}
-              attributeDef={def}
-              value={values[def.key]}
-              setValue={v =>
-                setValues(prev => ({
-                  ...prev,
-                  [def.key]: v,
-                }))
-              }
-            />
-          ))}
-        </div>
-      ) : (
-        <p>No additional user attributes to edit.</p>
-      )}
+      <UserAttributeEditor
+        initialValues={values}
+        onChange={setValues}
+        onlyEditable
+      />
 
       <button type="submit" className="btn btn-primary" disabled={loading}>
         {loading ? "Saving..." : buttonLabel}

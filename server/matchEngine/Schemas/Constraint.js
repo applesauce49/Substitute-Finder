@@ -41,6 +41,12 @@ const constraintSchema = new Schema({
     required: true,
   },
 
+  // whether an applicant must satisfy this rule to remain eligible
+  required: {
+    type: Boolean,
+    default: false,
+  },
+
   active: {
     type: Boolean,
     default: true,

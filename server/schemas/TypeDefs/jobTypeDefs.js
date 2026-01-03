@@ -7,6 +7,7 @@ scalar JSON
 extend type Query {
   jobs(showAll: Boolean): [Job!]!
   job(_id: ID!): Job
+  matchEngineDryRun(meetingId: ID!): MatchEngineDryRunResult!
 }
 
 extend type Mutation {
@@ -48,8 +49,33 @@ type Application {
   user: User!
 }
 
+type MatchEngineApplicantScore {
+  applicationId: ID
+  userId: ID
+  userName: String
+  isApplicant: Boolean!
+  eligible: Boolean!
+  matched: Int!
+  total: Int!
+  score: Float!
+  appliedAt: DateTime
+  matchedConstraints: [String!]!
+}
+
+type MatchEngineDryRunResult {
+  meetingId: ID
+  jobId: ID
+  meetingTitle: String
+  constraintCount: Int!
+  constraints: [Constraint!]!
+  applicants: [MatchEngineApplicantScore!]!
+  message: String
+}
+
 type MeetingSnapshotSchema {
   eventId: String!
+  gcalEventId: String
+  gcalRecurringEventId: String
   title: String
   description: String
   startDateTime: DateTime
@@ -71,4 +97,3 @@ type Job {
   secondNotificationSent: Boolean
 }
 `;
-

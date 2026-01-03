@@ -54,7 +54,8 @@ type Constraint {
   fieldSource: String!       # "user" | "meeting" (v1: "user")
   fieldKey: String!          # references UserAttributeDefinition.key
   operator: ConstraintOperator!
-  value: String!             # we can store JSON-ish as string for now; can evolve later
+  value: JSON!               # mixed: string, number, boolean, list
+  required: Boolean!
   active: Boolean!
 }
 
@@ -84,7 +85,8 @@ input ConstraintInput {
   fieldSource: String!        # v1: "user"
   fieldKey: String!
   operator: ConstraintOperator!
-  value: String!
+  value: JSON!
+  required: Boolean
   active: Boolean
 }
 

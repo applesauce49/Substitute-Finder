@@ -17,17 +17,23 @@ export const ADD_USER = gql`
     $username: String!
     $email: String!
     $admin: Boolean
+    $phone: String
+    $about: String
     $attributes: [UserAttributeValueInput!]
   ) {
     addUser(
       username: $username
       email: $email
       admin: $admin
+      phone: $phone
+      about: $about
       attributes: $attributes
     ) {
       _id
       username
       email
+      phone
+      about
       admin
       attributes { key value }
     }
@@ -41,6 +47,8 @@ export const UPDATE_USER = gql`
     $username: String
     $email: String
     $admin: Boolean
+    $phone: String
+    $about: String
     $attributes: [UserAttributeValueInput!]
   ) {
     updateUser(
@@ -48,11 +56,15 @@ export const UPDATE_USER = gql`
       username: $username
       email: $email
       admin: $admin
+      phone: $phone
+      about: $about
       attributes: $attributes
     ) {
       _id
       username
       email
+      phone
+      about
       admin
       attributes { key value }
     }

@@ -28,6 +28,7 @@ export const QUERY_CONSTRAINTS = gql`
       fieldKey
       operator
       value
+      required
       active
     }
   }
@@ -45,6 +46,7 @@ export const QUERY_CONSTRAINTS_GROUPS = gql`
         fieldKey
         operator
         value
+        required
       }
     }
   }

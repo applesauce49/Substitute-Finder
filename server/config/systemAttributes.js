@@ -23,10 +23,10 @@ export const SYSTEM_ATTRIBUTES = [
     readOnly: true,
   },
   {
-    key: "hasSubbedInLast30Days",
-    label: "Has Subbed in Last 30 Days",
+    key: "hasSubbedInLast7Days",
+    label: "Has Subbed in Last 7 Days",
     type: "boolean",
-    description: "True if the user has subbed at least once in the last 30 days.",
+    description: "True if the user has subbed at least once in the last 7 days.",
     options: [],
     userEditable: false,
     defaultValue: null,

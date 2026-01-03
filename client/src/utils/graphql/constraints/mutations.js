@@ -44,6 +44,7 @@ export const CREATE_CONSTRAINT = gql`
       fieldKey
       operator
       value
+      required
       active
     }
   }
@@ -65,6 +66,7 @@ export const UPDATE_CONSTRAINT = gql`
       fieldKey
       operator
       value
+      required
       active
     }
   }

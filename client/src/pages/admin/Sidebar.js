@@ -14,6 +14,7 @@ const NAV_ITEMS = [
             { id: 'constraints.attributes', label: 'Attributes' },
             { id: 'constraints.rules', label: 'Rules' },
             { id: 'constraints.groups', label: 'Groups' },
+            { id: 'constraints.dryrun', label: 'Dry Run' },
         ]
     },
     { id: 'settings', icon: 'bi-gear', label: 'Settings' },

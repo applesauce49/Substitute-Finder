@@ -41,7 +41,8 @@ export const AttributeTypes = {
   },
 
   DATE: {
-    operators: ["BEFORE", "AFTER", "BETWEEN"],
+    // Use numeric-style comparison operators for dates so they align with backend operators
+    operators: ["LT", "GT", "GTE", "LTE", "BETWEEN", "EQUALS", "NOT_EQUALS"],
   },
 
   DURATION: {

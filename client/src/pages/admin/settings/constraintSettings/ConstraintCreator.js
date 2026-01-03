@@ -39,6 +39,23 @@ export function ConstraintCreator({
         return "";
     };
 
+    // Ensure operator stays in sync with selected attribute/type
+    React.useEffect(() => {
+        if (!selectedAttr) return;
+
+        const firstAllowed = availableOperators[0] || "";
+        const current = newConstraint.operator;
+
+        // If the current operator is missing or not allowed for this type, reset to the first allowed operator
+        if (!current || !availableOperators.includes(current)) {
+            setNewConstraint(prev => ({
+                ...prev,
+                operator: firstAllowed,
+                value: normalizeValueForOperator(firstAllowed, selectedType, selectedAttr),
+            }));
+        }
+    }, [selectedAttr, selectedType, availableOperators, newConstraint.operator, setNewConstraint]);
+
     return (
         <ModalForm
             title={title}
@@ -71,6 +88,30 @@ export function ConstraintCreator({
                         }
                         placeholder="Descriptive name of rule"
                     />
+                </div>
+
+                {/* REQUIRED TOGGLE */}
+                <div className="col-12 mt-3">
+                    <div className="form-check">
+                        <input
+                            id="requiredRule"
+                            className="form-check-input"
+                            type="checkbox"
+                            checked={Boolean(newConstraint.required)}
+                            onChange={(e) =>
+                                setNewConstraint(prev => ({
+                                    ...prev,
+                                    required: e.target.checked,
+                                }))
+                            }
+                        />
+                        <label className="form-check-label" htmlFor="requiredRule">
+                            Required rule
+                        </label>
+                    </div>
+                    <div className="form-text">
+                        Applicants must satisfy required rules to remain eligible.
+                    </div>
                 </div>
 
                 <div className="row g-2">
@@ -149,11 +190,13 @@ export function ConstraintCreator({
                             }}
                             disabled={!selectedAttr}
                         >
-                            {availableOperators.map(opKey => (
+                            {availableOperators
+                                .filter(opKey => OperatorRegistry[opKey])
+                                .map(opKey => (
                                 <option key={opKey} value={opKey}>
                                     {OperatorRegistry[opKey].label}
                                 </option>
-                            ))}
+                                ))}
                         </select>
                     </div>
 

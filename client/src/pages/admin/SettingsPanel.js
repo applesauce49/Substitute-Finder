@@ -4,6 +4,7 @@ import { UserSettings } from "./settings/UserSettings";
 import  { ConstraintsSettings } from "./settings/constraintSettings";
 import { ConstraintGroupsSettings } from "./settings/ConstraintGroupSettings";
 import { AttributesSettings } from "./settings/attributeSettings";
+import { MatchEngineDryRun } from "./settings/MatchEngineDryRun";
 
 
 // Placeholder pages (we’ll build them later)
@@ -31,6 +32,8 @@ export default function SettingsPanel({ section }) {
             return <ConstraintsSettings />;
         case "constraints.groups":
             return <ConstraintGroupsSettings />;
+        case "constraints.dryrun":
+            return <MatchEngineDryRun />;
 
         case "settings":
             return <Settings />;
