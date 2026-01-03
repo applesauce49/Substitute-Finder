@@ -1,3 +1,7 @@
+.app-font {
+  font-family: "Roboto", sans-serif;
+}
+
 .google-toolbar {
   display: flex;
   /* justify-content: ; */
@@ -10,8 +14,6 @@
 
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
-
-  font-family: "Roboto", sans-serif;
 }
 
 /* Left Section: Title + subtitle */

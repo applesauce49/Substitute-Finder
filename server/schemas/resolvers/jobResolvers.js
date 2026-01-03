@@ -3,7 +3,7 @@ import { Job, User } from "../../models/index.js";
 import { pubsub } from '../../graphql/pubsub.js';
 import { getImpersonatedCalendarClient, getUserCalendarClient } from '../../services/googleClient.js';
 import { inviteUserToEvent } from '../../services/calendarServices.js';
-import { runMatchEngine } from '../../matchEngine/matchEngine.js';
+import { runMatchEngine, previewMatchEngineForMeeting } from '../../matchEngine/matchEngine.js';
 import { postJobToGoogleChat, postJobCancelledToGoogleChat, postJobAssignedToGoogleChat } from "../../utils/chatJobNotifier.js";
 
 export default {
@@ -30,6 +30,9 @@ export default {
 
             if (!job) throw new Error("Job not found");
             return job;
+        },
+        matchEngineDryRun: async (_, { meetingId }) => {
+            return previewMatchEngineForMeeting(meetingId);
         },
     },
     Mutation: {
@@ -71,6 +74,8 @@ export default {
 
             const meetingSnapshot = {
                 eventId: ev.id,
+                gcalEventId: ev.id,
+                gcalRecurringEventId: ev.recurringEventId,
                 calendarId: calendarId || ev.organizer?.email,
                 title: ev.summary || "No Title",
                 description: ev.description || "",
