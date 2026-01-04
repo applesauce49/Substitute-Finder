@@ -2,6 +2,7 @@ import React from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { QUERY_MEETINGS } from "../../../utils/graphql/meetings/queries.js";
 import { QUERY_CONSTRAINTS_GROUPS } from "../../../utils/graphql/constraints/queries.js";
+import { GET_USERS } from "../../../utils/graphql/users/queries.js";
 import { UPDATE_MEETING, CREATE_MEETING, DELETE_MEETING } from "../../../utils/graphql/meetings/mutations.js";
 import { GenericReportTable } from "../../../components/reporting/GenericReportTable/GenericReportTable.js";
 import { createColumnHelper } from "@tanstack/react-table";
@@ -13,6 +14,9 @@ export default function MeetingsSettings() {
   const {
     data: groupsData,
   } = useQuery(QUERY_CONSTRAINTS_GROUPS);
+  const {
+    data: usersData,
+  } = useQuery(GET_USERS);
 
   const [updateMeeting] = useMutation(UPDATE_MEETING, { onCompleted: () => refetch() });
   const [createMeeting] = useMutation(CREATE_MEETING, { onCompleted: () => refetch() });
@@ -28,6 +32,7 @@ export default function MeetingsSettings() {
 
   const meetings = data?.meetings || [];
   const constraintGroups = groupsData?.constraintGroups ?? [];
+  const users = usersData?.users ?? [];
   const columnHelper = createColumnHelper();
 
   const resetForm = React.useCallback(() => {
@@ -35,6 +40,10 @@ export default function MeetingsSettings() {
       summary: "",
       description: "",
       constraintGroupIds: [],
+      zoomMeetingUrl: "",
+      hostId: "",
+      coHostId: "",
+      alternateHostId: "",
     });
     setEditingMeeting(null);
   }, []);
@@ -45,6 +54,10 @@ export default function MeetingsSettings() {
       summary: meeting.summary ?? "",
       description: meeting.description ?? "",
       constraintGroupIds: meeting.constraintGroupIds ?? [],
+      zoomMeetingUrl: meeting.zoomMeetingUrl ?? "",
+      hostId: meeting.host?._id ?? "",
+      coHostId: meeting.coHost?._id ?? "",
+      alternateHostId: meeting.alternateHost?._id ?? "",
     });
     setShowForm(true);
   }, []);
@@ -55,6 +68,10 @@ export default function MeetingsSettings() {
       summary: formState.summary.trim(),
       description: formState.description,
       constraintGroupIds: formState.constraintGroupIds,
+      zoomMeetingUrl: formState.zoomMeetingUrl.trim(),
+      hostId: formState.hostId || null,
+      coHostId: formState.coHostId || null,
+      alternateHostId: formState.alternateHostId || null,
     };
 
     try {
@@ -95,17 +112,46 @@ export default function MeetingsSettings() {
         );
       },
     }),
-    columnHelper.accessor("gcalRecurringEventId", {
-      header: "Series ID",
-      cell: (info) => info.getValue() || "—"
+    columnHelper.accessor(row => {
+      const daysOfWeek = row.recurrence?.daysOfWeek;
+      if (!daysOfWeek || daysOfWeek.length === 0) return "—";
+      
+      // Map day codes to readable names
+      const dayCodeMap = {
+        'MO': 'Monday',
+        'TU': 'Tuesday',
+        'WE': 'Wednesday',
+        'TH': 'Thursday',
+        'FR': 'Friday',
+        'SA': 'Saturday',
+        'SU': 'Sunday'
+      };
+      
+      // Map day numbers to readable names (Monday = 0)
+      const dayNumberMap = {
+        0: 'Monday',
+        1: 'Tuesday',
+        2: 'Wednesday',
+        3: 'Thursday',
+        4: 'Friday',
+        5: 'Saturday',
+        6: 'Sunday'
+      };
+      
+      return daysOfWeek.map(d => {
+        // Check if it's a number or string
+        if (typeof d === 'number' || !isNaN(d)) {
+          return dayNumberMap[Number(d)] || d;
+        }
+        return dayCodeMap[d] || d;
+      }).join(', ');
+    }, {
+      id: "daysOfWeek",
+      header: "Days of Week",
     }),
     columnHelper.accessor(row => (row.constraintGroups ? row.constraintGroups.length : 0), {
       id: "constraintGroupCount",
       header: "Rule Groups",
-    }),
-    columnHelper.accessor("updatedAt", {
-      header: "Updated",
-      cell: (info) => new Date(info.getValue()).toLocaleString(),
     }),
     {
       id: "actions",
@@ -196,6 +242,65 @@ export default function MeetingsSettings() {
                 value={formState.description}
                 onChange={(e) => setFormState((prev) => ({ ...prev, description: e.target.value }))}
               />
+            </div>
+
+            <div className="mb-2">
+              <label className="form-label">Zoom Meeting URL</label>
+              <input
+                className="form-control"
+                type="url"
+                value={formState.zoomMeetingUrl}
+                onChange={(e) => setFormState((prev) => ({ ...prev, zoomMeetingUrl: e.target.value }))}
+                placeholder="https://zoom.us/j/..."
+              />
+            </div>
+
+            <div className="mb-2">
+              <label className="form-label">Host</label>
+              <select
+                className="form-select"
+                value={formState.hostId}
+                onChange={(e) => setFormState((prev) => ({ ...prev, hostId: e.target.value }))}
+              >
+                <option value="">-- Select Host --</option>
+                {users.map((user) => (
+                  <option key={user._id} value={user._id}>
+                    {user.username} ({user.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-2">
+              <label className="form-label">Co-Host</label>
+              <select
+                className="form-select"
+                value={formState.coHostId}
+                onChange={(e) => setFormState((prev) => ({ ...prev, coHostId: e.target.value }))}
+              >
+                <option value="">-- Select Co-Host --</option>
+                {users.map((user) => (
+                  <option key={user._id} value={user._id}>
+                    {user.username} ({user.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-2">
+              <label className="form-label">Alternate Host</label>
+              <select
+                className="form-select"
+                value={formState.alternateHostId}
+                onChange={(e) => setFormState((prev) => ({ ...prev, alternateHostId: e.target.value }))}
+              >
+                <option value="">-- Select Alternate Host --</option>
+                {users.map((user) => (
+                  <option key={user._id} value={user._id}>
+                    {user.username} ({user.email})
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="mb-2">

@@ -22,6 +22,10 @@ type Meeting {
   recurrence: RecurrenceRule
   constraintGroupIds: [ID!]!
   constraintGroups: [ConstraintGroup!]
+  zoomMeetingUrl: String
+  host: User
+  coHost: User
+  alternateHost: User
 }
 
 input MeetingInput {
@@ -35,6 +39,10 @@ input MeetingInput {
   recurrence: RecurrenceInput
   
   constraintGroupIds: [ID!]
+  zoomMeetingUrl: String
+  hostId: ID
+  coHostId: ID
+  alternateHostId: ID
 }
 
 input RecurrenceInput {

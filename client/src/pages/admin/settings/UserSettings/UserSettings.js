@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useMutation, useQuery } from "@apollo/client";
 import { GET_USERS } from "../../../../utils/graphql/users/queries.js";
 import { AddUserForm, EditUserForm } from "./UserForms.js";
+import ImportUsersCSV from "./ImportUsersCSV.js";
 import { createColumnHelper } from "@tanstack/react-table";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { GenericReportTable } from "../../../../components/reporting/GenericReportTable/GenericReportTable.js";
@@ -51,6 +52,7 @@ export function UserSettings() {
 
   const [showForm, setShowForm] = React.useState(false);
   const [showImport, setShowImport] = React.useState(false);
+  const [showCSVImport, setShowCSVImport] = React.useState(false);
   const [importText, setImportText] = React.useState("");
   const [importStatus, setImportStatus] = React.useState("");
 
@@ -124,8 +126,11 @@ export function UserSettings() {
         onRowClick={(user) => setEditingUser(user)}
         toolbarRight={
           <div className="d-flex gap-2">
+            <button className="btn btn-outline-secondary" onClick={() => setShowCSVImport(true)}>
+              Import CSV
+            </button>
             <button className="btn btn-outline-secondary" onClick={() => setShowImport(true)}>
-              Import Users
+              Import JSON
             </button>
             <button className="btn btn-success" onClick={() => setShowForm((p) => !p)}>
               Add User
@@ -152,6 +157,15 @@ export function UserSettings() {
             setEditingUser(null);
           }}
           onClose={() => setEditingUser(null)}
+        />
+      )}
+
+      {showCSVImport && (
+        <ImportUsersCSV
+          onClose={() => setShowCSVImport(false)}
+          onSuccess={() => {
+            refetch();
+          }}
         />
       )}
 

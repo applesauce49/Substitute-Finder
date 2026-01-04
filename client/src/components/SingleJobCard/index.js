@@ -10,6 +10,7 @@ import {
   APPLY_FOR_JOB,
   CANCEL_JOB,
   DECLINE_APPLICATION,
+  ACCEPT_APPLICATION
 } from "../../utils/graphql/jobs/mutations.js";
 import JobCard from "../JobCard/jobCard";
 
@@ -20,6 +21,7 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
   const [applyForJob] = useMutation(APPLY_FOR_JOB);
   const [cancelJob] = useMutation(CANCEL_JOB);
   const [declineApplication] = useMutation(DECLINE_APPLICATION);
+  const [acceptApplication] = useMutation(ACCEPT_APPLICATION);
 
   // const { data: userData, loading: userLoading } = useQuery(QUERY_ME);
   const { data: usersData } = useQuery(GET_USERS);
@@ -90,6 +92,17 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
     if (onClose) onClose();
   };
 
+  const accepted = async (appId) => {
+    try {
+      console.log(`Accepting application ${appId} for job ${jobId}`);
+      await acceptApplication({ variables: { jobId, applicationId: appId } });
+      await refetch();
+    } catch (e) {
+      console.error(e);
+    }
+    if (onClose) onClose();
+  };
+
   const canCancelJob = Auth.loggedIn() && job.active === true && (createdById === Auth.getProfile()?.data?._id || userData?.admin);
   const canApply = Auth.loggedIn() && job.active === true && (createdById !== Auth.getProfile()?.data?._id || userData?.admin);
 
@@ -101,6 +114,7 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
         <ApplicantList
           applications={job.applications}
           onDenied={(appId) => denied(appId, job._id)}
+          onAssigned={(appId) => accepted(appId, job._id)}
           user={userData}
         />
       )}

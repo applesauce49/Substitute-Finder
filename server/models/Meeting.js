@@ -42,6 +42,26 @@ const meetingSchema = new Schema(
       secondary: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     },
 
+    zoomMeetingUrl: {
+      type: String,
+      trim: true,
+    },
+
+    host: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+
+    coHost: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+
+    alternateHost: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+
     createdAt: Date,
     updatedAt: { type: Date, default: Date.now },
   },

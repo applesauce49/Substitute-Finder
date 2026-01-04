@@ -30,6 +30,22 @@ export const QUERY_MEETINGS = gql`
           value
         }
       }
+      zoomMeetingUrl
+      host {
+        _id
+        username
+        email
+      }
+      coHost {
+        _id
+        username
+        email
+      }
+      alternateHost {
+        _id
+        username
+        email
+      }
     }
   }
 `;

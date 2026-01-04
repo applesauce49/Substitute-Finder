@@ -59,6 +59,26 @@ The nodemon package - Simplifies your development environment by automatically r
   ## Installation
   Git clone this repository. Install the node packages with the command 'npm i'. Then start the application with the command 'npm start'
 
+  ### Environment Variables
+
+  The application requires several environment variables to be configured. Create a `.env` file in the `server` directory with the following variables:
+
+  #### Database Configuration
+  - `MONGODB_URI` - MongoDB connection string
+
+  #### Authentication
+  - `SESSION_SECRET` - Secret key for session management
+  - `JWT_SECRET` - Secret key for JWT token generation
+
+  #### Bootstrap Admin User (Optional)
+  When starting with an empty database, the application will automatically create an initial admin user. You can customize this user with the following environment variables:
+  
+  - `ADMIN_EMAIL` - Email for the initial admin user (default: `admin@substitute-finder.local`)
+  - `ADMIN_USERNAME` - Username for the initial admin user (default: `Admin`)
+  - `ADMIN_PHONE` - Phone number for the initial admin user (optional)
+
+  **Note:** The initial admin user is created only when the database is completely empty. This user will need to authenticate via Google OAuth to access the system.
+
 
   ## Usage
   Used by teachers, Admins and substitute teachers to help find suitable candidates or apply for job openings. 
