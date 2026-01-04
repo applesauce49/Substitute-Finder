@@ -87,18 +87,27 @@ export default {
         },
     },
     Mutation: {
-        addUser: async (_, { username, email, admin }) => {
+        addUser: async (_, { username, email, admin, attributes, phone, about }) => {
+            console.log("[addUser] request:", { username, email, admin, phone, about, attrCount: attributes?.length });
             const existingUser = await User.findOne({ $or: [{ username }, { email }] });
             if (existingUser) {
                 throw new GraphQLError('User with this username or email already exists');
             }
 
-            const newUser = new User({ username, email, admin });
+            const newUser = new User({ 
+                username, 
+                email, 
+                admin,
+                phone,
+                about,
+                attributes
+            });
             await newUser.save();
-            return true;
+            return newUser;
         },
 
-        updateUser: async (_, { _id, username, email, admin }) => {
+        updateUser: async (_, { _id, username, email, admin, attributes, phone, about }) => {
+            console.log("[updateUser] request:", { _id, username, email, admin, phone, about, attrCount: attributes?.length });
             const user = await User.findById(_id);
             if (!user) {
                 throw new GraphQLError('User not found');
@@ -107,9 +116,12 @@ export default {
             if (username !== undefined) user.username = username;
             if (email !== undefined) user.email = email;
             if (admin !== undefined) user.admin = admin;
+            if (attributes !== undefined) user.attributes = attributes;
+            if (phone !== undefined) user.phone = phone;
+            if (about !== undefined) user.about = about;
 
             await user.save();
-            return true;
+            return user;
         }
     }
 };

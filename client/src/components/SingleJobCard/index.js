@@ -4,24 +4,26 @@ import ApplicantList from "../ApplicantList";
 
 import Auth from "../../utils/auth";
 import { useQuery, useMutation } from "@apollo/client";
-import { QUERY_JOB, QUERY_ME, GET_USERS } from "../../utils/queries";
+import { QUERY_JOB } from "../../utils/graphql/jobs/queries.js";
+import { GET_USERS } from "../../utils/graphql/users/queries.js";
 import {
   APPLY_FOR_JOB,
   CANCEL_JOB,
   DECLINE_APPLICATION,
-} from "../../utils/mutations";
-import { isJobApplyDisabled } from "../../utils/jobHelpers";
+  ACCEPT_APPLICATION
+} from "../../utils/graphql/jobs/mutations.js";
 import JobCard from "../JobCard/jobCard";
 
-const SingleJobCard = ({ jobId: propJobId, onClose }) => {
+const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
   const { id: routeJobId } = useParams();
   const jobId = propJobId || routeJobId;
 
   const [applyForJob] = useMutation(APPLY_FOR_JOB);
   const [cancelJob] = useMutation(CANCEL_JOB);
   const [declineApplication] = useMutation(DECLINE_APPLICATION);
+  const [acceptApplication] = useMutation(ACCEPT_APPLICATION);
 
-  const { data: userData, loading: userLoading } = useQuery(QUERY_ME);
+  // const { data: userData, loading: userLoading } = useQuery(QUERY_ME);
   const { data: usersData } = useQuery(GET_USERS);
   const { loading, data, error, refetch } = useQuery(QUERY_JOB, {
     variables: { id: jobId },
@@ -32,18 +34,16 @@ const SingleJobCard = ({ jobId: propJobId, onClose }) => {
 
   if (!jobId) return <p>No Job ID Provided</p>;
   if (error) return <p>Error loading job.</p>;
-  if (loading || userLoading) return <div>Loading...</div>;
+  if (loading ) return <div>Loading...</div>;
 
   const job = data?.job || {};
-  const me = userData?.me;
-  const admin = me?.admin === true;
   const users = usersData?.users ?? [];
   const userOptions = users.map((u) => ({
     value: u._id.toString(),
     label: u.username,
   }));
 
-  const currentUserId = me?._id;
+  const currentUserId = userData?._id;
   const createdById = job?.createdBy?._id;
 
   const applied = job?.applications?.some(
@@ -54,7 +54,7 @@ const SingleJobCard = ({ jobId: propJobId, onClose }) => {
     event.preventDefault();
 
     try {
-      const applicantId = admin ? selectedUserId || currentUserId : currentUserId;
+      const applicantId = userData.admin ? selectedUserId || currentUserId : currentUserId;
 
       await applyForJob({
         variables: { jobId, applicantId },
@@ -92,8 +92,19 @@ const SingleJobCard = ({ jobId: propJobId, onClose }) => {
     if (onClose) onClose();
   };
 
-  const canCancelJob = Auth.loggedIn() && job.active === true && (createdById === Auth.getProfile()?.data?._id || admin);
-  const canApply = Auth.loggedIn() && job.active === true && (createdById !== Auth.getProfile()?.data?._id || admin);
+  const accepted = async (appId) => {
+    try {
+      console.log(`Accepting application ${appId} for job ${jobId}`);
+      await acceptApplication({ variables: { jobId, applicationId: appId } });
+      await refetch();
+    } catch (e) {
+      console.error(e);
+    }
+    if (onClose) onClose();
+  };
+
+  const canCancelJob = Auth.loggedIn() && job.active === true && (createdById === Auth.getProfile()?.data?._id || userData?.admin);
+  const canApply = Auth.loggedIn() && job.active === true && (createdById !== Auth.getProfile()?.data?._id || userData?.admin);
 
   return (
     <div>
@@ -103,7 +114,8 @@ const SingleJobCard = ({ jobId: propJobId, onClose }) => {
         <ApplicantList
           applications={job.applications}
           onDenied={(appId) => denied(appId, job._id)}
-          user={me}
+          onAssigned={(appId) => accepted(appId, job._id)}
+          user={userData}
         />
       )}
 
@@ -123,7 +135,7 @@ const SingleJobCard = ({ jobId: propJobId, onClose }) => {
         {canApply && (
           <form onSubmit={handleFormSubmit}>
             <div className="d-flex justify-content-end align-items-center gap-2">
-              {admin && (
+              {userData.admin && (
                 <>
                   <label htmlFor="applyFor" className="mb-0 text-nowrap">
                     Apply on behalf of:
@@ -148,9 +160,9 @@ const SingleJobCard = ({ jobId: propJobId, onClose }) => {
               <button
                 className="btn no-border-btn btn-success"
                 type="submit"
-                disabled={isJobApplyDisabled(job, { admin, applied }) || applied}
+                disabled={ !userData.admin && applied }
               >
-                {applied ? "Already Applied" : "Apply"}
+                {!userData.admin && applied ? "Already Applied" : "Apply"}
               </button>
             </div>
           </form>

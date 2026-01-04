@@ -31,6 +31,12 @@ const userSchema = new Schema(
       type: Boolean,
       default: false
     },
+    attributes: [
+      {
+        key: String,
+        value: Schema.Types.Mixed,
+      }
+    ],
     profileURL: {
       type: String
     },
@@ -55,7 +61,7 @@ const userSchema = new Schema(
       refreshToken: String,
       accessToken: String,
       expiryDate: Date
-    }
+    },
   },
   {
     toJSON: {
@@ -65,11 +71,11 @@ const userSchema = new Schema(
   }
 );
 
-userSchema.virtual('jobCount').get(function() {
+userSchema.virtual('jobCount').get(function () {
   return this.jobs.length;
 });
 
-userSchema.virtual('meetingCount').get(function() {
+userSchema.virtual('meetingCount').get(function () {
   return this.meetings.length;
 });
 

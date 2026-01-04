@@ -1,16 +1,13 @@
 import React from "react";
-import UsersTable from "../components/Admin/usersTable";
+// import UsersTable from "../components/Admin/usersTable";
+// import MeetingsPage from "./admin/meetings.js";
+import AdminLayout from "./admin/AdminLayout";
 
 export default function AdminPage() {
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>Admin Dashboard</h1>
-      <p>Welcome to the admin area. Add stats, controls, or logs here.</p>
-      {/* Add your admin components here */}
-      <div style={{ padding: "2rem" }}>
-        <UsersTable attributes={["name", "email", "role"]} />
-      </div>
-    </div>
-
+    <AdminLayout>
+      <h1>Admin Settings</h1>
+      <p>Content will load into this panel.</p>
+    </AdminLayout>
   );
 }

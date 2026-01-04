@@ -21,11 +21,15 @@ import { Headers } from "node-fetch";
 import jwt from "jsonwebtoken";
 import User from "./models/User.js";
 import e from "express";
+import { bootstrapAdminUser } from "./utils/bootstrap.js";
 
 const PORT = process.env.PORT || 3001;
 const USE_HTTPS = String(process.env.USE_HTTPS).toLowerCase() === "true";
 
 await connectDB();
+
+// Bootstrap the first admin user if database is empty
+await bootstrapAdminUser();
 
 const app = express();
 app.use(express.json());
