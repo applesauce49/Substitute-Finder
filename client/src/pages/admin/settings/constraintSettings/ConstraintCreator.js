@@ -18,9 +18,11 @@ export function ConstraintCreator({
     const selectedAttr = attributes.find(a => a.key === newConstraint.fieldKey);
     const selectedType = selectedAttr?.type;
 
-    const availableOperators = selectedAttr
-        ? AttributeTypes[selectedType].operators
-        : [];
+    const availableOperators = React.useMemo(() => {
+        return selectedAttr
+            ? AttributeTypes[selectedType].operators
+            : [];
+    }, [selectedAttr, selectedType]);
 
     // Normalize per operator + type
     const normalizeValueForOperator = (opKey, attrType, attribute) => {
