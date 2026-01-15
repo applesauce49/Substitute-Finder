@@ -61,6 +61,14 @@ export function MetricsPage() {
             header: "User",
             filterFn: "includesString"
         }),
+        columnHelper.accessor("createdCount", {
+            header: "Jobs Posted",
+            meta: { type: "number" }
+        }),
+        columnHelper.accessor("appliedCount", {
+            header: "Applications Submitted",
+            meta: { type: "number" }
+        }),
         columnHelper.accessor("assignedCount", {
             header: "Jobs Filled",
             meta: { type: "number" },
@@ -94,14 +102,6 @@ export function MetricsPage() {
                     </div>
                 );
             }
-        }),
-        columnHelper.accessor("appliedCount", {
-            header: "Applications Submitted",
-            meta: { type: "number" }
-        }),
-        columnHelper.accessor("createdCount", {
-            header: "Jobs Created",
-            meta: { type: "number" }
         }),
         columnHelper.accessor("efficiency", {
             header: "Success Rate",
@@ -146,57 +146,57 @@ export function MetricsPage() {
     return (
         <div className="metrics-page">
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2><i className="bi bi-graph-up me-2"></i>Job Fulfillment Metrics</h2>
-                <small className="text-muted">Real-time substitute job statistics</small>
-            </div>
+                    <h2><i className="bi bi-graph-up me-2 oplm-icon"></i>Job Fulfillment Metrics</h2>
+                    <small className="text-muted">Real-time substitute job statistics</small>
+                </div>
 
-            {/* Summary Cards */}
-            <div className="row mb-4">
-                <div className="col-md-3">
-                    <div className="card metrics-card">
-                        <div className="card-body text-center">
-                            <div className="metrics-icon text-primary mb-2">
-                                <i className="bi bi-briefcase-fill fs-2"></i>
+                {/* Summary Cards */}
+                <div className="row mb-4">
+                    <div className="col-md-3">
+                        <div className="card metrics-card oplm-feature-card">
+                            <div className="card-body text-center">
+                                <div className="metrics-icon text-primary mb-2">
+                                    <i className="bi bi-briefcase-fill fs-2 oplm-icon"></i>
+                                </div>
+                                <h3 className="card-title">{metrics.totalJobsAssigned}</h3>
+                                <p className="card-text text-muted">Total Jobs Filled</p>
                             </div>
-                            <h3 className="card-title">{metrics.totalJobsAssigned}</h3>
-                            <p className="card-text text-muted">Total Jobs Filled</p>
+                        </div>
+                    </div>
+                    <div className="col-md-3">
+                        <div className="card metrics-card oplm-feature-card">
+                            <div className="card-body text-center">
+                                <div className="metrics-icon text-success mb-2">
+                                    <i className="bi bi-people-fill fs-2 oplm-icon"></i>
+                                </div>
+                                <h3 className="card-title">{metrics.activeUsers}</h3>
+                                <p className="card-text text-muted">Active Substitutes</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-md-3">
+                        <div className="card metrics-card oplm-feature-card">
+                            <div className="card-body text-center">
+                                <div className="metrics-icon text-info mb-2">
+                                    <i className="bi bi-hand-index-fill fs-2 oplm-icon"></i>
+                                </div>
+                                <h3 className="card-title">{metrics.totalApplications}</h3>
+                                <p className="card-text text-muted">Total Applications</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-md-3">
+                        <div className="card metrics-card oplm-feature-card">
+                            <div className="card-body text-center">
+                                <div className="metrics-icon text-warning mb-2">
+                                    <i className="bi bi-plus-circle-fill fs-2 oplm-icon"></i>
+                                </div>
+                                <h3 className="card-title">{metrics.totalJobsCreated}</h3>
+                                <p className="card-text text-muted">Jobs Posted</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div className="col-md-3">
-                    <div className="card metrics-card">
-                        <div className="card-body text-center">
-                            <div className="metrics-icon text-success mb-2">
-                                <i className="bi bi-people-fill fs-2"></i>
-                            </div>
-                            <h3 className="card-title">{metrics.activeUsers}</h3>
-                            <p className="card-text text-muted">Active Substitutes</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-md-3">
-                    <div className="card metrics-card">
-                        <div className="card-body text-center">
-                            <div className="metrics-icon text-info mb-2">
-                                <i className="bi bi-hand-index-fill fs-2"></i>
-                            </div>
-                            <h3 className="card-title">{metrics.totalApplications}</h3>
-                            <p className="card-text text-muted">Total Applications</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-md-3">
-                    <div className="card metrics-card">
-                        <div className="card-body text-center">
-                            <div className="metrics-icon text-warning mb-2">
-                                <i className="bi bi-plus-circle-fill fs-2"></i>
-                            </div>
-                            <h3 className="card-title">{metrics.totalJobsCreated}</h3>
-                            <p className="card-text text-muted">Jobs Posted</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             {/* Top Performers Chart */}
             <div className="row mb-4">

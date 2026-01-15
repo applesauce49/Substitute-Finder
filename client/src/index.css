@@ -27,25 +27,16 @@ body {
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Poppins', sans-serif !important;
+  font-family: 'Libre Franklin', sans-serif, 'Poppins', sans-serif !important;
   font-weight: 400;
   line-height: 1.5;
-  font-size: 20px;
-  /* color: var(--dark); */
-  /* background-color: #61dafb; */
+  font-size: 18px;
+  color: var(--theme-font-color, var(--dark));
+  /* Light blue background gradient */
   background-image: linear-gradient(135deg, hsl(204, 72%, 74%, 0.5) 0%, hsl(237, 57%, 74%, 0.65) 100%) !important;
 
-  /* React logo blue
-  background-color: hsl(193, 95%, 68%, 0.5) !important; */
-
-
-  /* background-color: #4158D0;
-background-image: linear-gradient(43deg, hsl(230, 60%, 54%, 0.4) 0%, hsl(304, 52%, 55%, 0.4) 46%, hsl(39, 100%, 72%, 0.4) 100%); */
-
-  /* background-color: #21D4FD;
-background-image: linear-gradient(19deg, hsl(191, 98%, 56%, 0.6) 0%, hsl(281, 100%, 56%, 0.6) 100%); */
-
-
+  /* Previous OPLM Theme Background - replaced with light blue
+  background: var(--theme-subtle-gradient, linear-gradient(135deg, var(--theme-mint-color) 0%, var(--theme-lime-color) 100%)) !important; */
 }
 
 
