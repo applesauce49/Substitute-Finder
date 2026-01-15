@@ -34,6 +34,64 @@ export default {
         matchEngineDryRun: async (_, { meetingId }) => {
             return previewMatchEngineForMeeting(meetingId);
         },
+        jobMetricsOverTime: async (_, { days = 30 }) => {
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - days);
+            
+            const metrics = await Job.aggregate([
+                {
+                    $match: {
+                        createdAt: { $gte: startDate }
+                    }
+                },
+                {
+                    $addFields: {
+                        dateOnly: {
+                            $dateToString: {
+                                format: "%Y-%m-%d",
+                                date: "$createdAt"
+                            }
+                        },
+                        assignedDateOnly: {
+                            $cond: {
+                                if: { $ne: ["$assignedAt", null] },
+                                then: {
+                                    $dateToString: {
+                                        format: "%Y-%m-%d",
+                                        date: "$assignedAt"
+                                    }
+                                },
+                                else: null
+                            }
+                        }
+                    }
+                },
+                {
+                    $group: {
+                        _id: "$dateOnly",
+                        jobsPosted: { $sum: 1 },
+                        jobsAssigned: {
+                            $sum: {
+                                $cond: [{ $ne: ["$assignedTo", null] }, 1, 0]
+                            }
+                        },
+                        totalApplications: {
+                            $sum: { $size: { $ifNull: ["$applications", []] } }
+                        }
+                    }
+                },
+                {
+                    $sort: { "_id": 1 }
+                }
+            ]);
+            
+            return metrics.map(m => ({
+                date: m._id,
+                jobsPosted: m.jobsPosted,
+                jobsAssigned: m.jobsAssigned,
+                totalApplications: m.totalApplications
+            }));
+        },
     },
     Mutation: {
         addJob: async (_, { description, createdBy, meeting, calendarId }, context) => {

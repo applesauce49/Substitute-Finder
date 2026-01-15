@@ -95,6 +95,17 @@ export const QUERY_USER_JOB_STATS_SCHEMA = gql`
   }
 `;
 
+export const QUERY_JOB_METRICS_OVER_TIME = gql`
+  query GetJobMetricsOverTime($days: Int) {
+    jobMetricsOverTime(days: $days) {
+      date
+      jobsPosted
+      jobsAssigned
+      totalApplications
+    }
+  }
+`;
+
 export const QUERY_MATCH_ENGINE_DRY_RUN = gql`
   query MatchEngineDryRun($meetingId: ID!) {
     matchEngineDryRun(meetingId: $meetingId) {

@@ -8,6 +8,7 @@ extend type Query {
   jobs(showAll: Boolean): [Job!]!
   job(_id: ID!): Job
   matchEngineDryRun(meetingId: ID!): MatchEngineDryRunResult!
+  jobMetricsOverTime(days: Int): [JobMetricsData!]!
 }
 
 extend type Mutation {
@@ -80,6 +81,13 @@ type MeetingSnapshotSchema {
   description: String
   startDateTime: DateTime
   endDateTime: DateTime
+}
+
+type JobMetricsData {
+  date: String!
+  jobsPosted: Int!
+  jobsAssigned: Int!
+  totalApplications: Int!
 }
 
 type Job {

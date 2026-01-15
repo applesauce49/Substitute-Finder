@@ -3,6 +3,7 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 
 const NAV_ITEMS = [
     { id: 'dashboard', icon: 'bi-speedometer2', label: 'Dashboard' },
+    { id: 'metrics', icon: 'bi-graph-up', label: 'Metrics' },
     { id: 'users', icon: 'bi-people', label: 'Users' },
     // { id: "jobs", icon: "bi-briefcase", label: "Jobs" },
     { id: "meetings", icon: "bi-calendar-event", label: "Meetings" },

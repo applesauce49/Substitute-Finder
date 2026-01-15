@@ -5,6 +5,7 @@ import  { ConstraintsSettings } from "./settings/constraintSettings";
 import { ConstraintGroupsSettings } from "./settings/ConstraintGroupSettings";
 import { AttributesSettings } from "./settings/attributeSettings";
 import { MatchEngineDryRun } from "./settings/MatchEngineDryRun";
+import { MetricsPage } from "./settings/MetricsPage";
 
 
 // Placeholder pages (we’ll build them later)
@@ -20,6 +21,8 @@ export default function SettingsPanel({ section }) {
     switch (section) {
         case "dashboard":
             return <Dashboard />;
+        case "metrics":
+            return <MetricsPage />;
         case "users":
             return <UserSettings />;
         case "meetings":
