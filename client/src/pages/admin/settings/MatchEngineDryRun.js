@@ -13,8 +13,8 @@ export function MatchEngineDryRun() {
     { data: dryRunData, loading: dryRunLoading, error: dryRunError }
   ] = useLazyQuery(QUERY_MATCH_ENGINE_DRY_RUN, { fetchPolicy: "no-cache" });
 
-  const meetings = meetingsData?.meetings ?? [];
-  const jobs = jobsData?.jobs ?? [];
+  const meetings = React.useMemo(() => meetingsData?.meetings ?? [], [meetingsData]);
+  const jobs = React.useMemo(() => jobsData?.jobs ?? [], [jobsData]);
   
   // Filter jobs that have applications
   const jobsWithApplications = React.useMemo(() => {
