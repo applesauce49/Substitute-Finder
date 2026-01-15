@@ -108,6 +108,23 @@ export function MetricsPage() {
         window.URL.revokeObjectURL(url);
     }, [tableData]);
 
+    // Calculate totals for the summary row
+    const totals = React.useMemo(() => {
+        if (!tableData.length) return null;
+        
+        const totalJobsPosted = tableData.reduce((sum, user) => sum + user.createdCount, 0);
+        const totalApplications = tableData.reduce((sum, user) => sum + user.appliedCount, 0);
+        const totalJobsFilled = tableData.reduce((sum, user) => sum + user.assignedCount, 0);
+        const overallSuccessRate = totalApplications > 0 ? ((totalJobsFilled / totalApplications) * 100).toFixed(1) : '0.0';
+        
+        return {
+            totalJobsPosted,
+            totalApplications,
+            totalJobsFilled,
+            overallSuccessRate
+        };
+    }, [tableData]);
+
     if (loading || timeLoading) return <div className="d-flex justify-content-center p-4"><div className="spinner-border" role="status"></div></div>;
     if (error || timeError) return <div className="alert alert-danger">Error loading metrics: {(error || timeError)?.message}</div>;
     if (!metrics) return <div className="alert alert-info">No data available</div>;
@@ -338,6 +355,22 @@ export function MetricsPage() {
                                     </div>
                                 }
                             />
+                            {/* Totals Row */}
+                            {totals && (
+                                <div className="table-responsive">
+                                    <table className="table table-sm mb-0">
+                                        <tfoot>
+                                            <tr className="table-secondary fw-bold border-top-2">
+                                                <td className="text-start ps-3">TOTALS</td>
+                                                <td className="text-center">{totals.totalJobsPosted}</td>
+                                                <td className="text-center">{totals.totalApplications}</td>
+                                                <td className="text-center">{totals.totalJobsFilled}</td>
+                                                <td className="text-center">{totals.overallSuccessRate}%</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
