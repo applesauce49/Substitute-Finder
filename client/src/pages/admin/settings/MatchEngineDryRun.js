@@ -1,16 +1,42 @@
 import React from "react";
 import { useQuery, useLazyQuery } from "@apollo/client";
 import { QUERY_MEETINGS } from "../../../utils/graphql/meetings/queries.js";
-import { QUERY_MATCH_ENGINE_DRY_RUN } from "../../../utils/graphql/jobs/queries.js";
+import { QUERY_MATCH_ENGINE_DRY_RUN, QUERY_JOBS } from "../../../utils/graphql/jobs/queries.js";
 
 export function MatchEngineDryRun() {
   const { data: meetingsData, loading: meetingsLoading } = useQuery(QUERY_MEETINGS);
+  const { data: jobsData, loading: jobsLoading } = useQuery(QUERY_JOBS, { 
+    variables: { showAll: true } 
+  });
   const [
     runDryRun,
     { data: dryRunData, loading: dryRunLoading, error: dryRunError }
   ] = useLazyQuery(QUERY_MATCH_ENGINE_DRY_RUN, { fetchPolicy: "no-cache" });
 
   const meetings = meetingsData?.meetings ?? [];
+  const jobs = jobsData?.jobs ?? [];
+  
+  // Filter jobs that have applications
+  const jobsWithApplications = React.useMemo(() => {
+    return jobs.filter(job => job.applications && job.applications.length > 0);
+  }, [jobs]);
+  
+  // Combine meetings and jobs with applications
+  const meetingOptions = React.useMemo(() => {
+    const meetingItems = meetings.map(meeting => ({
+      id: meeting._id,
+      label: `${meeting.summary || "(Untitled)"} — ${meeting.updatedAt ? new Date(meeting.updatedAt).toLocaleString() : "Unknown date"}`,
+      type: 'meeting'
+    }));
+    
+    const jobItems = jobsWithApplications.map(job => ({
+      id: job.meetingSnapshot?._id || job._id,
+      label: `${job.meetingSnapshot?.title || "(Untitled)"} — ${job.applications.length} application(s) — ${new Date(job.createdAt).toLocaleString()}`,
+      type: 'job'
+    }));
+    
+    return [...meetingItems, ...jobItems];
+  }, [meetings, jobsWithApplications]);
   const [selectedMeetingId, setSelectedMeetingId] = React.useState("");
 
   const handleRun = React.useCallback(() => {
@@ -33,24 +59,19 @@ export function MatchEngineDryRun() {
 
       <div className="row g-2 align-items-end mb-3">
         <div className="col-12 col-md-7">
-          <label className="form-label">Meeting</label>
+          <label className="form-label">Meeting or Job</label>
           <select
             className="form-select"
             value={selectedMeetingId}
             onChange={(e) => setSelectedMeetingId(e.target.value)}
-            disabled={meetingsLoading || dryRunLoading}
+            disabled={meetingsLoading || jobsLoading || dryRunLoading}
           >
-            <option value="">Select a meeting…</option>
-            {meetings.map((meeting) => {
-              const updated = meeting.updatedAt
-                ? new Date(meeting.updatedAt).toLocaleString()
-                : "Unknown date";
-              return (
-                <option key={meeting._id} value={meeting._id}>
-                  {meeting.summary || "(Untitled)"} — {updated}
-                </option>
-              );
-            })}
+            <option value="">Select a meeting or job…</option>
+            {meetingOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </div>
         <div className="col-12 col-md-3">
