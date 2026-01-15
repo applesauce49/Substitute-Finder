@@ -49,7 +49,6 @@ export function MetricsPage() {
     const tableData = React.useMemo(() => {
         return userStats.map(user => ({
             ...user,
-            totalJobs: user.assignedCount,
             efficiency: user.appliedCount > 0 ? ((user.assignedCount / user.appliedCount) * 100).toFixed(1) : '0.0'
         }));
     }, [userStats]);
@@ -71,44 +70,14 @@ export function MetricsPage() {
         }),
         columnHelper.accessor("assignedCount", {
             header: "Jobs Filled",
-            meta: { type: "number" },
-            cell: info => {
-                const value = info.getValue();
-                return (
-                    <div className="d-flex align-items-center">
-                        <span className="me-2 fw-bold">{value}</span>
-                        {metrics && metrics.maxAssigned > 0 && (
-                            <div 
-                                className="progress-bar-mini" 
-                                style={{
-                                    width: '50px',
-                                    height: '8px',
-                                    backgroundColor: '#e9ecef',
-                                    borderRadius: '4px',
-                                    overflow: 'hidden'
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        width: `${(value / metrics.maxAssigned) * 100}%`,
-                                        height: '100%',
-                                        backgroundColor: value > 0 ? '#28a745' : '#6c757d',
-                                        borderRadius: '4px',
-                                        transition: 'width 0.3s ease'
-                                    }}
-                                />
-                            </div>
-                        )}
-                    </div>
-                );
-            }
+            meta: { type: "number" }
         }),
         columnHelper.accessor("efficiency", {
             header: "Success Rate",
             cell: info => `${info.getValue()}%`,
             meta: { type: "number" }
         })
-    ], [columnHelper, metrics]);
+    ], [columnHelper]);
 
     const filterFns = React.useMemo(() => ({
         includesString: (row, columnId, filterValue) => {
@@ -120,12 +89,12 @@ export function MetricsPage() {
     // Export function for CSV download
     const exportToCSV = React.useCallback(() => {
         const csvContent = [
-            ['Username', 'Jobs Filled', 'Applications Submitted', 'Jobs Created', 'Success Rate'],
+            ['Username', 'Jobs Posted', 'Applications Submitted', 'Jobs Filled', 'Success Rate'],
             ...tableData.map(user => [
                 user.username,
-                user.assignedCount,
-                user.appliedCount,
                 user.createdCount,
+                user.appliedCount,
+                user.assignedCount,
                 user.efficiency + '%'
             ])
         ].map(row => row.join(',')).join('\n');
@@ -349,6 +318,7 @@ export function MetricsPage() {
                                 columns={columns}
                                 filterFns={filterFns}
                                 initialFilters={[]}
+                                initialSorting={[{ id: "efficiency", desc: true }]}
                                 toolbarRight={
                                     <div className="d-flex gap-2 align-items-center">
                                         <button 

@@ -9,6 +9,7 @@ export function GenericReportTable({
     columns,
     filterFns,
     initialFilters,
+    initialSorting,
     onRowClick,
     toolbarRight,
     // getUniqueValues,
@@ -18,6 +19,7 @@ export function GenericReportTable({
         columns,
         filterFns,
         initialFilters,
+        initialSorting,
     });
 
     const getUniqueValues = (columnId) => {

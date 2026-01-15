@@ -6,8 +6,8 @@ import {
     getFilteredRowModel,
 } from "@tanstack/react-table";
 
-export function useReportTable({ data, columns, filterFns, initialFilters }) {
-    const [sorting, setSorting] = React.useState([]);
+export function useReportTable({ data, columns, filterFns, initialFilters, initialSorting }) {
+    const [sorting, setSorting] = React.useState(initialSorting || []);
     const [columnFilters, setColumnFilters] = React.useState(initialFilters || []);
 
     const table = useReactTable({
