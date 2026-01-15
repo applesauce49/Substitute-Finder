@@ -61,7 +61,7 @@ export default {
                         pipeline: [
                             {
                                 $match: {
-                                    $expr: { $in: ["$$userId", "$applications.userId"] }
+                                    $expr: { $in: ["$$userId", "$applications.user"] }
                                 }
                             },
                             { $count: "count" }
