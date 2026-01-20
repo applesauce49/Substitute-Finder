@@ -65,6 +65,21 @@ function parseRangeValue(raw) {
     return [];
 }
 
+/**
+ * Calculate workload balance score for an applicant
+ * Higher scores favor users with fewer meetings (better for workload distribution)
+ * @param {Object} user - The user object
+ * @returns {number} Score between 0 and 1, where 1 = lowest meeting count
+ */
+function calculateWorkloadScore(user) {
+    const meetingCount = SYSTEM_ATTRIBUTE_GETTERS.totalMeetingsHosted(user);
+    // Invert the count so people with fewer meetings get higher scores
+    // Use a reasonable upper bound to prevent extreme outliers
+    const maxMeetings = 50;
+    const normalizedCount = Math.min(meetingCount, maxMeetings);
+    return (maxMeetings - normalizedCount) / maxMeetings;
+}
+
 function coerceValueByType(value, type) {
     if (value === undefined || value === null) return null;
 
@@ -345,12 +360,28 @@ function rankApplications(candidates, constraints, attrDefMap, meetingContext) {
             };
         })
         .sort((a, b) => {
+            // 1. Disqualified applicants go to bottom
             if (a.disqualified !== b.disqualified) {
                 return a.disqualified ? 1 : -1;
             }
+            
+            // 2. Higher constraint scores first
             if (b.score !== a.score) return b.score - a.score;
+            
+            // 3. NEW: Workload balancing tie-breaker (favor users with fewer meetings)
+            const aWorkload = calculateWorkloadScore(a.application.user);
+            const bWorkload = calculateWorkloadScore(b.application.user);
+            if (Math.abs(aWorkload - bWorkload) > 0.01) {
+                return bWorkload - aWorkload; // Higher workload score (fewer meetings) wins
+            }
+            
+            // 4. Actual applicants before non-applicants
             if (a.isApplicant !== b.isApplicant) return b.isApplicant - a.isApplicant;
+            
+            // 5. Higher matched constraint count
             if (b.matched !== a.matched) return b.matched - a.matched;
+            
+            // 6. Earlier application time
             return new Date(a.application.appliedAt) - new Date(b.application.appliedAt);
         });
 
@@ -465,6 +496,8 @@ export async function previewMatchEngineForMeeting(meetingId) {
             matched: r.matched,
             total: r.total,
             score: r.score,
+            meetingsHosted: SYSTEM_ATTRIBUTE_GETTERS.totalMeetingsHosted(r.application?.user),
+            workloadScore: calculateWorkloadScore(r.application?.user),
             appliedAt: r.isApplicant ? (r.application?.appliedAt || null) : null,
             matchedConstraints: r.matchedConstraints || [],
         })),
