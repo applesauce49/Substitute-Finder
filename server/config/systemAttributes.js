@@ -33,4 +33,15 @@ export const SYSTEM_ATTRIBUTES = [
     source: "system",
     readOnly: true,
   },
+  {
+    key: "totalMeetingsHosted",
+    label: "Total Meetings Hosted",
+    type: "number",
+    options: [],
+    userEditable: false,
+    defaultValue: 0,
+    description: "Total number of meetings this user has hosted or co-hosted.",
+    source: "system",
+    readOnly: true,
+  },
 ];

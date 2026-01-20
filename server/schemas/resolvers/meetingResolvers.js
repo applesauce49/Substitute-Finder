@@ -1,5 +1,6 @@
 import Meeting from '../../models/Meeting.js';
 import ConstraintGroup from '../../matchEngine/Schemas/ConstraintGroup.js';
+import { updateMeetingSystemAttributes } from '../../services/userAttributeService.js';
 
 export default {
     Query: {
@@ -37,6 +38,9 @@ export default {
             const meeting = new Meeting(meetingData);
             const saved = await meeting.save();
 
+            // Update system attributes for affected users
+            await updateMeetingSystemAttributes(meetingData);
+
             // Populate user references before returning
             return Meeting.findById(saved._id)
                 .populate('host')
@@ -45,6 +49,9 @@ export default {
         },
 
         updateMeeting: async (_, { id, input }) => {
+            // Get the old meeting data first
+            const oldMeeting = await Meeting.findById(id);
+            
             const constraintGroupIds = Array.isArray(input.constraintGroupIds)
                 ? input.constraintGroupIds
                 : [];
@@ -64,7 +71,7 @@ export default {
             delete updateData.coHostId;
             delete updateData.alternateHostId;
 
-            return Meeting.findByIdAndUpdate(
+            const updatedMeeting = await Meeting.findByIdAndUpdate(
                 id,
                 {
                     $set: updateData,
@@ -74,6 +81,11 @@ export default {
             .populate('host')
             .populate('coHost')
             .populate('alternateHost');
+
+            // Update system attributes for affected users
+            await updateMeetingSystemAttributes(updateData, oldMeeting);
+
+            return updatedMeeting;
         },
     },
 

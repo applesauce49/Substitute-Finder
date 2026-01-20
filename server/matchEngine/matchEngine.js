@@ -30,6 +30,11 @@ const SYSTEM_ATTRIBUTE_GETTERS = {
         const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
         return Date.now() - last.getTime() <= SEVEN_DAYS;
     },
+    totalMeetingsHosted: (user) => {
+        // This getter will work when user has meetings populated
+        // For performance in constraints, we'll rely on the pre-calculated value
+        return user?.totalMeetingsHosted || 0;
+    },
 };
 
 function parseListValue(raw) {
