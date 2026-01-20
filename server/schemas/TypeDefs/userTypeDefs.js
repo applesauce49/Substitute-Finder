@@ -44,6 +44,8 @@ type UserJobStats {
   createdCount: Int!
   assignedCount: Int!
   appliedCount: Int!
+  hostedMeetingsCount: Int!
+  coHostedMeetingsCount: Int!
 }
 
 type AssignedJob {
