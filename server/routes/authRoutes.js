@@ -1,6 +1,7 @@
 import express from "express";
 import passport from "../auth/index.js";
 import { signToken } from "../utils/auth.js";
+import { refreshToken, refreshAuthMiddleware } from "../auth/tokenRefresh.js";
 import OAuthToken from "../models/OAuthToken.js";
 
 const router = express.Router();
