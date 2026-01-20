@@ -74,21 +74,10 @@ export default {
                         from: "meetings",
                         let: { userId: "$_id" },
                         pipeline: [
-                            { $match: { $expr: { $eq: ["$host", "$$userId"] } } },
+                            { $match: { $expr: { $or: [{ $eq: ["$host", "$$userId"] }, { $eq: ["$coHost", "$$userId"] }] } } },
                             { $count: "count" }
                         ],
                         as: "hostedMeetings"
-                    }
-                },
-                {
-                    $lookup: {
-                        from: "meetings",
-                        let: { userId: "$_id" },
-                        pipeline: [
-                            { $match: { $expr: { $eq: ["$coHost", "$$userId"] } } },
-                            { $count: "count" }
-                        ],
-                        as: "coHostedMeetings"
                     }
                 },
                 {
@@ -96,8 +85,7 @@ export default {
                         createdCount: { $ifNull: [{ $arrayElemAt: ["$createdJobs.count", 0] }, 0] },
                         assignedCount: { $ifNull: [{ $arrayElemAt: ["$assignedJobs.count", 0] }, 0] },
                         appliedCount: { $ifNull: [{ $arrayElemAt: ["$appliedJobs.count", 0] }, 0] },
-                        hostedMeetingsCount: { $ifNull: [{ $arrayElemAt: ["$hostedMeetings.count", 0] }, 0] },
-                        coHostedMeetingsCount: { $ifNull: [{ $arrayElemAt: ["$coHostedMeetings.count", 0] }, 0] }
+                        totalMeetingsHosted: { $ifNull: [{ $arrayElemAt: ["$hostedMeetings.count", 0] }, 0] }
                     }
                 },
                 {
@@ -105,8 +93,7 @@ export default {
                         createdJobs: 0,
                         assignedJobs: 0,
                         appliedJobs: 0,
-                        hostedMeetings: 0,
-                        coHostedMeetings: 0
+                        hostedMeetings: 0
                     }
                 }
             ]).exec();

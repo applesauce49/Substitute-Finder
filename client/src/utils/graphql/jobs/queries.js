@@ -71,8 +71,7 @@ export const QUERY_USER_JOB_STATS = gql`
       createdCount
       assignedCount
       appliedCount
-      hostedMeetingsCount
-      coHostedMeetingsCount
+      totalMeetingsHosted
     }
   }
 `;

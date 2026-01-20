@@ -26,8 +26,7 @@ export function MetricsPage() {
         const totalJobsCreated = userStats.reduce((sum, user) => sum + user.createdCount, 0);
         const totalJobsAssigned = userStats.reduce((sum, user) => sum + user.assignedCount, 0);
         const totalApplications = userStats.reduce((sum, user) => sum + user.appliedCount, 0);
-        const totalMeetingsHosted = userStats.reduce((sum, user) => sum + (user.hostedMeetingsCount || 0), 0);
-        const totalMeetingsCoHosted = userStats.reduce((sum, user) => sum + (user.coHostedMeetingsCount || 0), 0);
+        const totalMeetingsHosted = userStats.reduce((sum, user) => sum + (user.totalMeetingsHosted || 0), 0);
         const maxAssigned = Math.max(...userStats.map(user => user.assignedCount));
         
         // Get top performers
@@ -41,7 +40,6 @@ export function MetricsPage() {
             totalJobsAssigned,
             totalApplications,
             totalMeetingsHosted,
-            totalMeetingsCoHosted,
             maxAssigned,
             topSubstitutes,
             activeUsers: userStats.filter(u => u.assignedCount > 0 || u.appliedCount > 0).length,
@@ -76,12 +74,8 @@ export function MetricsPage() {
             header: "Jobs Filled",
             meta: { type: "number" }
         }),
-        columnHelper.accessor("hostedMeetingsCount", {
+        columnHelper.accessor("totalMeetingsHosted", {
             header: "Meetings Hosted",
-            meta: { type: "number" }
-        }),
-        columnHelper.accessor("coHostedMeetingsCount", {
-            header: "Meetings Co-Hosted",
             meta: { type: "number" }
         }),
         columnHelper.accessor("efficiency", {
@@ -101,14 +95,13 @@ export function MetricsPage() {
     // Export function for CSV download
     const exportToCSV = React.useCallback(() => {
         const csvContent = [
-            ['Username', 'Jobs Posted', 'Applications Submitted', 'Jobs Filled', 'Meetings Hosted', 'Meetings Co-Hosted', 'Success Rate'],
+            ['Username', 'Jobs Posted', 'Applications Submitted', 'Jobs Filled', 'Meetings Hosted', 'Success Rate'],
             ...tableData.map(user => [
                 user.username,
                 user.createdCount,
                 user.appliedCount,
                 user.assignedCount,
-                user.hostedMeetingsCount,
-                user.coHostedMeetingsCount,
+                user.totalMeetingsHosted,
                 user.efficiency + '%'
             ])
         ].map(row => row.join(',')).join('\n');
@@ -200,25 +193,14 @@ export function MetricsPage() {
 
             {/* Meeting Hosting Metrics */}
             <div className="row mb-4">
-                <div className="col-md-6">
+                <div className="col-md-12">
                     <div className="card metrics-card oplm-feature-card">
                         <div className="card-body text-center">
                             <div className="metrics-icon text-success mb-2">
                                 <i className="bi bi-camera-video-fill fs-2 oplm-icon"></i>
                             </div>
                             <h3 className="card-title">{metrics.totalMeetingsHosted}</h3>
-                            <p className="card-text text-muted">Meetings Hosted</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-md-6">
-                    <div className="card metrics-card oplm-feature-card">
-                        <div className="card-body text-center">
-                            <div className="metrics-icon text-info mb-2">
-                                <i className="bi bi-person-video2 fs-2 oplm-icon"></i>
-                            </div>
-                            <h3 className="card-title">{metrics.totalMeetingsCoHosted}</h3>
-                            <p className="card-text text-muted">Meetings Co-Hosted</p>
+                            <p className="card-text text-muted">Total Meetings Hosted</p>
                         </div>
                     </div>
                 </div>
