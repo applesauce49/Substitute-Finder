@@ -318,7 +318,7 @@ async function loadConstraintsByGroupIds(groupIds) {
     }).lean();
 }
 
-function buildCandidateApplications(job, users) {
+function buildCandidateApplications(job, users, dryRunType = "meeting") {
     const applicantMap = new Map();
     (job.applications || []).forEach(app => {
         const userId = String(app.user?._id || app.user);
@@ -327,6 +327,20 @@ function buildCandidateApplications(job, users) {
         }
     });
 
+    // For job dry runs, only include actual applicants
+    if (dryRunType === "job") {
+        return users
+            .filter(user => applicantMap.has(String(user._id)))
+            .map(user => {
+                const app = applicantMap.get(String(user._id));
+                return {
+                    application: { ...app, user },
+                    isApplicant: true,
+                };
+            });
+    }
+
+    // For meeting dry runs, include all users with applicant status
     return users.map(user => {
         const app = applicantMap.get(String(user._id)) || null;
         return {
@@ -388,7 +402,7 @@ function rankApplications(candidates, constraints, attrDefMap, meetingContext) {
     return { ranked, hasConstraints };
 }
 
-export async function previewMatchEngineForMeeting(meetingId) {
+export async function previewMatchEngineForMeeting(meetingId, userId = null, dryRunType = "meeting", jobId = null) {
     await connectDB();
     const attributeDefinitionMap = await buildAttributeDefinitionMap();
     const allUsers = await User.find({}).lean();
@@ -400,7 +414,15 @@ export async function previewMatchEngineForMeeting(meetingId) {
     ].filter(Boolean);
 
     let job = null;
-    if (eventIds.length) {
+    
+    // If this is a job dry run, get the specific job
+    if (dryRunType === "job" && jobId) {
+        job = await Job.findById(jobId)
+            .populate("applications.user")
+            .populate("createdBy")
+            .lean();
+    } else if (eventIds.length) {
+        // For meeting dry runs, look for any active job for this meeting
         job = await Job.findOne({
             $or: [
                 { "meetingSnapshot.gcalEventId": { $in: eventIds } },
@@ -481,6 +503,20 @@ export async function previewMatchEngineForMeeting(meetingId) {
         meetingContext
     );
 
+    // Determine the message based on dry run type and applicant status
+    let message = null;
+    if (dryRunType === "job") {
+        if (!job?.applications?.length) {
+            message = "This job has no applicants yet.";
+        }
+    } else {
+        if (!job?.applications?.length && !ranked.some(r => r.isApplicant)) {
+            message = "No applicants yet; showing how all users would rank for this meeting.";
+        } else if (!hasConstraints) {
+            message = "No constraints found for this meeting.";
+        }
+    }
+
     return {
         meetingId: meeting?._id?.toString() ?? null,
         jobId: job._id?.toString() ?? null,
@@ -501,11 +537,10 @@ export async function previewMatchEngineForMeeting(meetingId) {
             appliedAt: r.isApplicant ? (r.application?.appliedAt || null) : null,
             matchedConstraints: r.matchedConstraints || [],
         })),
-        message: (!job.applications?.length && !ranked.some(r => r.isApplicant))
-            ? "No applicants yet; showing all users."
-            : hasConstraints
-                ? null
-                : "No constraints found for this meeting.",
+        applicantCount: ranked.filter(r => r.isApplicant).length,
+        eligibleCount: ranked.filter(r => !r.disqualified).length,
+        dryRunType: dryRunType,
+        message: message,
     };
 }
 

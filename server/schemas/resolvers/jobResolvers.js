@@ -32,7 +32,14 @@ export default {
             return job;
         },
         matchEngineDryRun: async (_, { meetingId }) => {
-            return previewMatchEngineForMeeting(meetingId);
+            return previewMatchEngineForMeeting(meetingId, null, "meeting");
+        },
+        matchEngineJobDryRun: async (_, { jobId }) => {
+            const job = await Job.findById(jobId).populate('meeting');
+            if (!job) {
+                throw new Error("Job not found");
+            }
+            return previewMatchEngineForMeeting(job.meeting._id, null, "job", jobId);
         },
         jobMetricsOverTime: async (_, { days = 30 }) => {
             const startDate = new Date();

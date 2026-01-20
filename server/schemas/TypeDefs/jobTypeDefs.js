@@ -8,6 +8,7 @@ extend type Query {
   jobs(showAll: Boolean): [Job!]!
   job(_id: ID!): Job
   matchEngineDryRun(meetingId: ID!): MatchEngineDryRunResult!
+  matchEngineJobDryRun(jobId: ID!): MatchEngineDryRunResult!
   jobMetricsOverTime(days: Int): [JobMetricsData!]!
 }
 
@@ -59,6 +60,8 @@ type MatchEngineApplicantScore {
   matched: Int!
   total: Int!
   score: Float!
+  meetingsHosted: Int!
+  workloadScore: Float!
   appliedAt: DateTime
   matchedConstraints: [String!]!
 }
@@ -70,6 +73,9 @@ type MatchEngineDryRunResult {
   constraintCount: Int!
   constraints: [Constraint!]!
   applicants: [MatchEngineApplicantScore!]!
+  applicantCount: Int!
+  eligibleCount: Int!
+  dryRunType: String!
   message: String
 }
 
