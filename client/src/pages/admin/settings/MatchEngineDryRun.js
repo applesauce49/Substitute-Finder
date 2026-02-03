@@ -76,16 +76,37 @@ function DryRunResults({ result, loading, error }) {
               <> | Workload Window: {result.workloadBalanceWindowDays} days</>
             )}
           </small>
-          {result.workloadBalanceWindowDays && (
-            <div className="mt-1">
-              <small className="badge text-bg-info me-2">
-                📊 Workload Balance Analysis Active
-              </small>
-              <small className="text-muted">
-                Recent sub jobs within {result.workloadBalanceWindowDays} days are factored into ranking
-              </small>
-            </div>
-          )}
+          <div className="mt-1">
+            {result.workloadBalanceWindowDays ? (
+              <>
+                <small className="badge text-bg-info me-2">
+                  📊 Workload Balance Analysis Active
+                </small>
+                <small className="text-muted">
+                  Recent sub jobs within {result.workloadBalanceWindowDays} days are factored into ranking
+                </small>
+              </>
+            ) : (
+              <>
+                <small className="badge text-bg-secondary me-2">
+                  ℹ️ Workload Balance Disabled
+                </small>
+                <small className="text-muted">
+                  This meeting has no workload balance window configured. {" "}
+                  <button
+                    className="btn btn-link p-0 text-decoration-underline"
+                    style={{ fontSize: 'inherit', verticalAlign: 'baseline' }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      alert('To enable workload balancing:\n\n1. Go to Admin Settings → Meeting Settings\n2. Edit this meeting\n3. Set "Workload Balance Window (days)" field (e.g., 30)\n4. Save the meeting\n\nThen try the dry run again to see the "Recent Subs" column!');
+                    }}
+                  >
+                    Learn how to enable it
+                  </button>
+                </small>
+              </>
+            )}
+          </div>
         </div>
         {result.message && (
           <span className="badge text-bg-warning">{result.message}</span>
