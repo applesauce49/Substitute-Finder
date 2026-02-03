@@ -416,10 +416,15 @@ function rankApplications(candidates, constraints, attrDefMap, meetingContext) {
                 return a.disqualified ? 1 : -1;
             }
             
-            // 2. Higher constraint scores first
+            // 2. PRIORITY: Actual applicants before non-applicants (ALWAYS)
+            if (a.isApplicant !== b.isApplicant) {
+                return b.isApplicant - a.isApplicant;
+            }
+            
+            // 3. Higher constraint scores first
             if (b.score !== a.score) return b.score - a.score;
             
-            // 3. Time-based workload balancing (favor users with fewer recent sub jobs)
+            // 4. Time-based workload balancing (favor users with fewer recent sub jobs)
             if (workloadBalanceWindow) {
                 const aRecentScore = calculateRecentSubScore(a.application.user, workloadBalanceWindow);
                 const bRecentScore = calculateRecentSubScore(b.application.user, workloadBalanceWindow);
@@ -428,15 +433,12 @@ function rankApplications(candidates, constraints, attrDefMap, meetingContext) {
                 }
             }
             
-            // 4. General workload balancing (favor users with fewer hosted meetings)
+            // 5. General workload balancing (favor users with fewer hosted meetings)
             const aWorkload = calculateWorkloadScore(a.application.user);
             const bWorkload = calculateWorkloadScore(b.application.user);
             if (Math.abs(aWorkload - bWorkload) > 0.01) {
                 return bWorkload - aWorkload; // Higher workload score (fewer meetings) wins
             }
-            
-            // 5. Actual applicants before non-applicants
-            if (a.isApplicant !== b.isApplicant) return b.isApplicant - a.isApplicant;
             
             // 6. Higher matched constraint count
             if (b.matched !== a.matched) return b.matched - a.matched;
