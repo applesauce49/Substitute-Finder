@@ -59,12 +59,16 @@ export default {
         },
         matchEngineJobDryRun: async (_, { jobId }) => {
             try {
+                console.log(`\n=== DEBUG: matchEngineJobDryRun for jobId: ${jobId} ===`);
+                
                 const job = await Job.findById(jobId);
                 if (!job) {
                     throw new GraphQLError("Job not found", {
                         extensions: { code: 'JOB_NOT_FOUND' }
                     });
                 }
+
+                console.log('Job meetingSnapshot:', JSON.stringify(job.meetingSnapshot, null, 2));
 
                 // Find the original Meeting document using event IDs from meetingSnapshot
                 const eventIds = [
@@ -73,11 +77,24 @@ export default {
                     job.meetingSnapshot?.gcalRecurringEventId
                 ].filter(Boolean);
 
+                console.log('Extracted eventIds:', eventIds);
+
                 if (eventIds.length === 0) {
                     throw new GraphQLError("Job has no valid event IDs to match against meetings", {
                         extensions: { code: 'INVALID_EVENT_DATA' }
                     });
                 }
+                
+                // Let's see what meetings exist in the system
+                const allMeetings = await Meeting.find({}).select('_id eventId gcalEventId gcalRecurringEventId summary').lean();
+                console.log(`\nTotal meetings in database: ${allMeetings.length}`);
+                console.log('First 5 meetings:', allMeetings.slice(0, 5).map(m => ({
+                    _id: m._id,
+                    eventId: m.eventId,
+                    gcalEventId: m.gcalEventId,
+                    gcalRecurringEventId: m.gcalRecurringEventId,
+                    summary: m.summary
+                })));
                 
                 const meeting = await Meeting.findOne({
                     $or: [
@@ -87,12 +104,34 @@ export default {
                     ]
                 });
 
+                console.log('Found meeting:', meeting ? {
+                    _id: meeting._id,
+                    eventId: meeting.eventId,
+                    gcalEventId: meeting.gcalEventId,
+                    gcalRecurringEventId: meeting.gcalRecurringEventId,
+                    summary: meeting.summary
+                } : null);
+
                 if (!meeting) {
-                    throw new GraphQLError("Could not find original meeting for this job", {
+                    // Additional debugging: try to find partial matches
+                    console.log('\n=== DEBUGGING: Attempting partial matches ===');
+                    for (const eventId of eventIds) {
+                        const partialMatches = await Meeting.find({
+                            $or: [
+                                { eventId: eventId },
+                                { gcalEventId: eventId },
+                                { gcalRecurringEventId: eventId }
+                            ]
+                        }).select('_id eventId gcalEventId gcalRecurringEventId summary').lean();
+                        console.log(`Matches for eventId '${eventId}':`, partialMatches);
+                    }
+                    
+                    throw new GraphQLError(`Could not find original meeting for this job. Job event IDs: [${eventIds.join(', ')}]. Check server logs for detailed debugging info.`, {
                         extensions: { code: 'MEETING_NOT_FOUND' }
                     });
                 }
 
+                console.log(`=== SUCCESS: Found meeting ${meeting._id}, proceeding with dry run ===\n`);
                 return previewMatchEngineForMeeting(meeting._id, null, "job", jobId);
             } catch (error) {
                 console.error('matchEngineJobDryRun error:', error);
