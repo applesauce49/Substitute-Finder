@@ -28,6 +28,7 @@ export default function MeetingsSettings() {
     summary: "",
     description: "",
     constraintGroupIds: [],
+    workloadBalanceWindowDays: "",
   });
 
   const meetings = data?.meetings || [];
@@ -44,6 +45,7 @@ export default function MeetingsSettings() {
       hostId: "",
       coHostId: "",
       alternateHostId: "",
+      workloadBalanceWindowDays: "",
     });
     setEditingMeeting(null);
   }, []);
@@ -58,12 +60,14 @@ export default function MeetingsSettings() {
       hostId: meeting.host?._id ?? "",
       coHostId: meeting.coHost?._id ?? "",
       alternateHostId: meeting.alternateHost?._id ?? "",
+      workloadBalanceWindowDays: meeting.workloadBalanceWindowDays ?? "",
     });
     setShowForm(true);
   }, []);
 
   const handleSubmit = React.useCallback(async (e) => {
     e.preventDefault();
+    const workloadDays = formState.workloadBalanceWindowDays ? parseInt(formState.workloadBalanceWindowDays, 10) : null;
     const payload = {
       summary: formState.summary.trim(),
       description: formState.description,
@@ -72,6 +76,7 @@ export default function MeetingsSettings() {
       hostId: formState.hostId || null,
       coHostId: formState.coHostId || null,
       alternateHostId: formState.alternateHostId || null,
+      workloadBalanceWindowDays: (workloadDays && workloadDays > 0) ? workloadDays : null,
     };
 
     try {
@@ -152,6 +157,19 @@ export default function MeetingsSettings() {
     columnHelper.accessor(row => (row.constraintGroups ? row.constraintGroups.length : 0), {
       id: "constraintGroupCount",
       header: "Rule Groups",
+    }),
+    columnHelper.accessor("workloadBalanceWindowDays", {
+      header: "Workload Balance",
+      cell: (info) => {
+        const days = info.getValue();
+        return days ? (
+          <span className="badge text-bg-info" title={`Balances workload over ${days} days`}>
+            {days} days
+          </span>
+        ) : (
+          <span className="text-muted">—</span>
+        );
+      }
     }),
     {
       id: "actions",
@@ -301,6 +319,23 @@ export default function MeetingsSettings() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="mb-2">
+              <label className="form-label">Workload Balance Window (days)</label>
+              <input
+                className="form-control"
+                type="number"
+                min="1"
+                max="365"
+                value={formState.workloadBalanceWindowDays}
+                onChange={(e) => setFormState((prev) => ({ ...prev, workloadBalanceWindowDays: e.target.value }))}
+                placeholder="Leave empty to disable workload balancing"
+              />
+              <div className="form-text">
+                When set, applicants with fewer substitute jobs in the last N days will be favored. 
+                Leave empty to use standard ranking without workload considerations.
+              </div>
             </div>
 
             <div className="mb-2">

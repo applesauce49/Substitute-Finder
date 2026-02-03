@@ -23,6 +23,7 @@ export const UPDATE_MEETING = gql`
         username
         email
       }
+      workloadBalanceWindowDays
       updatedAt
     }
   }
@@ -51,6 +52,7 @@ export const CREATE_MEETING = gql`
         username
         email
       }
+      workloadBalanceWindowDays
       updatedAt
     }
   }
