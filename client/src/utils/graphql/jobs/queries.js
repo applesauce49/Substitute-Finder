@@ -115,6 +115,7 @@ export const QUERY_MATCH_ENGINE_DRY_RUN = gql`
       meetingTitle
       constraintCount
       message
+      workloadBalanceWindowDays
       constraints {
         _id
         name
@@ -132,6 +133,47 @@ export const QUERY_MATCH_ENGINE_DRY_RUN = gql`
         matched
         total
         score
+        meetingsHosted
+        workloadScore
+        recentSubJobs
+        recentSubScore
+        appliedAt
+        matchedConstraints
+      }
+    }
+  }
+`;
+
+export const QUERY_MATCH_ENGINE_JOB_DRY_RUN = gql`
+  query MatchEngineJobDryRun($jobId: ID!) {
+    matchEngineJobDryRun(jobId: $jobId) {
+      meetingId
+      jobId
+      meetingTitle
+      constraintCount
+      message
+      workloadBalanceWindowDays
+      constraints {
+        _id
+        name
+        fieldKey
+        operator
+        value
+        required
+      }
+      applicants {
+        applicationId
+        userId
+        userName
+        isApplicant
+        eligible
+        matched
+        total
+        score
+        meetingsHosted
+        workloadScore
+        recentSubJobs
+        recentSubScore
         appliedAt
         matchedConstraints
       }
