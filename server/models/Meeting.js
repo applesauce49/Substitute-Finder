@@ -62,6 +62,15 @@ const meetingSchema = new Schema(
       ref: 'User',
     },
 
+    // Workload balancing configuration (in days)
+    // When set, favors applicants with fewer substitute jobs in the last N days
+    workloadBalanceWindowDays: {
+      type: Number,
+      min: 1,
+      max: 365,
+      default: null, // null means no time-based workload balancing
+    },
+
     createdAt: Date,
     updatedAt: { type: Date, default: Date.now },
   },

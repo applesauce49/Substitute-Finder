@@ -1,6 +1,8 @@
 // import react from "react";
 
-export default function ModalForm({ title, onClose, children, footer }) {
+export default function ModalForm({ title, onClose, children, footer, size = "md" }) {
+    const modalSizeClass = size === "lg" ? "modal-lg" : size === "sm" ? "modal-sm" : "";
+    
     return (
         <div
             className="modal fade show"
@@ -8,7 +10,7 @@ export default function ModalForm({ title, onClose, children, footer }) {
             tabIndex="-1"
             role="dialog"
         >
-            <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className={`modal-dialog modal-dialog-centered ${modalSizeClass}`} role="document">
                 <div className="modal-content">
                     <div className="modal-header">
                         <h5 className="modal-title">{title}</h5>
@@ -20,9 +22,11 @@ export default function ModalForm({ title, onClose, children, footer }) {
                         />
                     </div>
                     <div className="modal-body">{children}</div>
-                    <div className="modal-footer">
-                        {footer}
-                    </div>
+                    {footer && (
+                        <div className="modal-footer">
+                            {footer}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

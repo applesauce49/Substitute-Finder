@@ -80,6 +80,32 @@ function calculateWorkloadScore(user) {
     return (maxMeetings - normalizedCount) / maxMeetings;
 }
 
+/**
+ * Calculate recent substitute job score for time-based workload balancing
+ * Higher scores favor users with fewer recent substitute assignments
+ * @param {Object} user - The user object
+ * @param {number} windowDays - Number of days to look back (null/undefined = no time-based balancing)
+ * @returns {number} Score between 0 and 1, where 1 = fewest recent assignments
+ */
+function calculateRecentSubScore(user, windowDays) {
+    if (!windowDays || windowDays <= 0) {
+        return 0; // No time-based balancing requested
+    }
+
+    const cutoffDate = new Date(Date.now() - (windowDays * 24 * 60 * 60 * 1000));
+    const recentJobs = (user?.assignedJobs || [])
+        .filter(assignment => {
+            const assignedAt = assignment?.assignedAt ? new Date(assignment.assignedAt) : null;
+            return assignedAt && assignedAt >= cutoffDate;
+        }).length;
+
+    // Invert the count so people with fewer recent jobs get higher scores
+    // Use a reasonable upper bound to prevent extreme outliers
+    const maxRecentJobs = Math.max(10, windowDays / 7); // Roughly 1-2 jobs per week as max
+    const normalizedCount = Math.min(recentJobs, maxRecentJobs);
+    return (maxRecentJobs - normalizedCount) / maxRecentJobs;
+}
+
 function coerceValueByType(value, type) {
     if (value === undefined || value === null) return null;
 
@@ -354,6 +380,7 @@ function buildCandidateApplications(job, users, dryRunType = "meeting") {
 
 function rankApplications(candidates, constraints, attrDefMap, meetingContext) {
     const hasConstraints = Array.isArray(constraints) && constraints.length > 0;
+    const workloadBalanceWindow = meetingContext?.workloadBalanceWindowDays;
 
     const ranked = (candidates || [])
         .map(candidate => {
@@ -382,20 +409,29 @@ function rankApplications(candidates, constraints, attrDefMap, meetingContext) {
             // 2. Higher constraint scores first
             if (b.score !== a.score) return b.score - a.score;
             
-            // 3. NEW: Workload balancing tie-breaker (favor users with fewer meetings)
+            // 3. Time-based workload balancing (favor users with fewer recent sub jobs)
+            if (workloadBalanceWindow) {
+                const aRecentScore = calculateRecentSubScore(a.application.user, workloadBalanceWindow);
+                const bRecentScore = calculateRecentSubScore(b.application.user, workloadBalanceWindow);
+                if (Math.abs(aRecentScore - bRecentScore) > 0.01) {
+                    return bRecentScore - aRecentScore; // Higher score (fewer recent jobs) wins
+                }
+            }
+            
+            // 4. General workload balancing (favor users with fewer hosted meetings)
             const aWorkload = calculateWorkloadScore(a.application.user);
             const bWorkload = calculateWorkloadScore(b.application.user);
             if (Math.abs(aWorkload - bWorkload) > 0.01) {
                 return bWorkload - aWorkload; // Higher workload score (fewer meetings) wins
             }
             
-            // 4. Actual applicants before non-applicants
+            // 5. Actual applicants before non-applicants
             if (a.isApplicant !== b.isApplicant) return b.isApplicant - a.isApplicant;
             
-            // 5. Higher matched constraint count
+            // 6. Higher matched constraint count
             if (b.matched !== a.matched) return b.matched - a.matched;
             
-            // 6. Earlier application time
+            // 7. Earlier application time
             return new Date(a.application.appliedAt) - new Date(b.application.appliedAt);
         });
 
@@ -517,12 +553,15 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
         }
     }
 
+    const workloadBalanceWindow = constraintMeeting?.workloadBalanceWindowDays || meeting?.workloadBalanceWindowDays;
+
     return {
         meetingId: meeting?._id?.toString() ?? null,
         jobId: job._id?.toString() ?? null,
         meetingTitle: job.meetingSnapshot?.title || meeting?.summary || "",
         constraintCount: constraints.length,
         constraints,
+        workloadBalanceWindowDays: workloadBalanceWindow || null,
         applicants: ranked.map(r => ({
             applicationId: r.isApplicant ? (r.application?._id?.toString() ?? null) : null,
             userId: r.application?.user?._id?.toString() ?? null,
@@ -534,6 +573,12 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
             score: r.score,
             meetingsHosted: SYSTEM_ATTRIBUTE_GETTERS.totalMeetingsHosted(r.application?.user),
             workloadScore: calculateWorkloadScore(r.application?.user),
+            recentSubJobs: workloadBalanceWindow ? (r.application?.user?.assignedJobs || []).filter(assignment => {
+                const assignedAt = assignment?.assignedAt ? new Date(assignment.assignedAt) : null;
+                const cutoffDate = new Date(Date.now() - (workloadBalanceWindow * 24 * 60 * 60 * 1000));
+                return assignedAt && assignedAt >= cutoffDate;
+            }).length : null,
+            recentSubScore: workloadBalanceWindow ? calculateRecentSubScore(r.application?.user, workloadBalanceWindow) : null,
             appliedAt: r.isApplicant ? (r.application?.appliedAt || null) : null,
             matchedConstraints: r.matchedConstraints || [],
         })),

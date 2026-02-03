@@ -62,6 +62,8 @@ type MatchEngineApplicantScore {
   score: Float!
   meetingsHosted: Int!
   workloadScore: Float!
+  recentSubJobs: Int
+  recentSubScore: Float
   appliedAt: DateTime
   matchedConstraints: [String!]!
 }
@@ -72,6 +74,7 @@ type MatchEngineDryRunResult {
   meetingTitle: String
   constraintCount: Int!
   constraints: [Constraint!]!
+  workloadBalanceWindowDays: Int
   applicants: [MatchEngineApplicantScore!]!
   applicantCount: Int!
   eligibleCount: Int!

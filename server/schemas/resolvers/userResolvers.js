@@ -135,6 +135,80 @@ export default {
 
             await user.save();
             return user;
+        },
+
+        updateUsersInBulk: async (_, { userIds, updates }) => {
+            console.log("[updateUsersInBulk] request:", { userIds, updates });
+            
+            let updatedCount = 0;
+            const failedIds = [];
+
+            try {
+                const users = await User.find({ _id: { $in: userIds } });
+                
+                if (users.length !== userIds.length) {
+                    const foundIds = users.map(u => u._id.toString());
+                    const notFoundIds = userIds.filter(id => !foundIds.includes(id));
+                    failedIds.push(...notFoundIds);
+                }
+
+                for (const user of users) {
+                    try {
+                        // Update admin status if specified
+                        if (updates.admin !== undefined) {
+                            user.admin = updates.admin;
+                        }
+
+                        // Handle attribute updates
+                        if (updates.attributes) {
+                            // Replace all attributes
+                            user.attributes = updates.attributes;
+                        } else {
+                            // Handle granular attribute operations
+                            let currentAttributes = user.attributes || [];
+                            
+                            // Add/update attributes
+                            if (updates.addAttributes) {
+                                for (const newAttr of updates.addAttributes) {
+                                    const existingIndex = currentAttributes.findIndex(a => a.key === newAttr.key);
+                                    if (existingIndex >= 0) {
+                                        currentAttributes[existingIndex].value = newAttr.value;
+                                    } else {
+                                        currentAttributes.push(newAttr);
+                                    }
+                                }
+                            }
+                            
+                            // Remove attributes
+                            if (updates.removeAttributeKeys) {
+                                currentAttributes = currentAttributes.filter(
+                                    attr => !updates.removeAttributeKeys.includes(attr.key)
+                                );
+                            }
+                            
+                            user.attributes = currentAttributes;
+                        }
+
+                        await user.save();
+                        updatedCount++;
+                    } catch (err) {
+                        console.error(`Failed to update user ${user._id}:`, err);
+                        failedIds.push(user._id.toString());
+                    }
+                }
+
+                return {
+                    success: failedIds.length === 0,
+                    updatedCount,
+                    failedIds,
+                    message: failedIds.length > 0 
+                        ? `Updated ${updatedCount} users, ${failedIds.length} failed` 
+                        : `Successfully updated ${updatedCount} users`
+                };
+            } catch (err) {
+                console.error("Bulk update error:", err);
+                throw new GraphQLError(`Bulk update failed: ${err.message}`);
+            }
         }
     }
 };

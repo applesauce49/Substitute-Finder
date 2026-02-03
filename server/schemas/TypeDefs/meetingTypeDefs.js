@@ -26,6 +26,7 @@ type Meeting {
   host: User
   coHost: User
   alternateHost: User
+  workloadBalanceWindowDays: Int
 }
 
 input MeetingInput {
@@ -43,6 +44,7 @@ input MeetingInput {
   hostId: ID
   coHostId: ID
   alternateHostId: ID
+  workloadBalanceWindowDays: Int
 }
 
 input RecurrenceInput {

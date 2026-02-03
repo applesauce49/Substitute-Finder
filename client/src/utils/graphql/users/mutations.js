@@ -70,3 +70,21 @@ export const UPDATE_USER = gql`
     }
   }
 `;
+
+// BULK UPDATE USERS
+export const UPDATE_USERS_IN_BULK = gql`
+  mutation updateUsersInBulk(
+    $userIds: [ID!]!
+    $updates: BulkUserUpdateInput!
+  ) {
+    updateUsersInBulk(
+      userIds: $userIds
+      updates: $updates
+    ) {
+      success
+      updatedCount
+      failedIds
+      message
+    }
+  }
+`;

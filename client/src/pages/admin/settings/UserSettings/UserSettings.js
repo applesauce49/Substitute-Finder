@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@apollo/client";
 import { GET_USERS } from "../../../../utils/graphql/users/queries.js";
 import { AddUserForm, EditUserForm } from "./UserForms.js";
 import ImportUsersCSV from "./ImportUsersCSV.js";
+import { BulkEditModal } from "./BulkEditModal.js";
 import { createColumnHelper } from "@tanstack/react-table";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { GenericReportTable } from "../../../../components/reporting/GenericReportTable/GenericReportTable.js";
@@ -13,6 +14,8 @@ export function UserSettings() {
   const [importUsers] = useMutation(ADD_USER);
 
   const [editingUser, setEditingUser] = useState(null);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [showBulkEdit, setShowBulkEdit] = useState(false);
 
   const users = React.useMemo(() => {
     return data?.users?.map((user) => ({
@@ -23,7 +26,49 @@ export function UserSettings() {
 
   const columnHelper = React.useMemo(() => createColumnHelper(), []);
 
+  const handleUserSelect = React.useCallback((user, isSelected) => {
+    if (isSelected) {
+      setSelectedUsers(prev => [...prev, user]);
+    } else {
+      setSelectedUsers(prev => prev.filter(u => u._id !== user._id));
+    }
+  }, []);
+
+  const handleSelectAll = React.useCallback(() => {
+    if (selectedUsers.length === users.length) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers([...users]);
+    }
+  }, [selectedUsers.length, users]);
+
   const columns = React.useMemo(() => [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <input
+          type="checkbox"
+          checked={selectedUsers.length === users.length && users.length > 0}
+          onChange={handleSelectAll}
+          className="form-check-input"
+        />
+      ),
+      cell: ({ row }) => {
+        const user = users[row.index];
+        const isSelected = selectedUsers.some(u => u._id === user._id);
+        return (
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={(e) => handleUserSelect(user, e.target.checked)}
+            className="form-check-input"
+          />
+        );
+      },
+      enableSorting: false,
+      enableColumnFilter: false,
+      size: 40,
+    },
     columnHelper.accessor("username", { header: "Name" }),
     columnHelper.accessor("email", { header: "Email" }),
     columnHelper.accessor("role", { header: "Role" }),
@@ -44,10 +89,16 @@ export function UserSettings() {
       enableColumnFilter: false,
     }
 
-  ], [columnHelper, users]);
+  ], [columnHelper, users, selectedUsers, handleSelectAll, handleUserSelect]);
 
   const handleEdit = (user) => {
     setEditingUser(user);
+  };
+
+  const handleBulkEditSuccess = (result) => {
+    setSelectedUsers([]);
+    refetch();
+    alert(`${result.message}`);
   };
 
   const [showForm, setShowForm] = React.useState(false);
@@ -123,9 +174,27 @@ export function UserSettings() {
       <GenericReportTable
         data={users}
         columns={columns}
-        onRowClick={(user) => setEditingUser(user)}
         toolbarRight={
-          <div className="d-flex gap-2">
+          <div className="d-flex gap-2 align-items-center">
+            {selectedUsers.length > 0 && (
+              <>
+                <span className="text-muted">
+                  {selectedUsers.length} selected
+                </span>
+                <button 
+                  className="btn btn-warning"
+                  onClick={() => setShowBulkEdit(true)}
+                >
+                  Bulk Edit
+                </button>
+                <button 
+                  className="btn btn-outline-secondary"
+                  onClick={() => setSelectedUsers([])}
+                >
+                  Clear Selection
+                </button>
+              </>
+            )}
             <button className="btn btn-outline-secondary" onClick={() => setShowCSVImport(true)}>
               Import CSV
             </button>
@@ -157,6 +226,14 @@ export function UserSettings() {
             setEditingUser(null);
           }}
           onClose={() => setEditingUser(null)}
+        />
+      )}
+
+      {showBulkEdit && selectedUsers.length > 0 && (
+        <BulkEditModal
+          selectedUsers={selectedUsers}
+          onClose={() => setShowBulkEdit(false)}
+          onSuccess={handleBulkEditSuccess}
         />
       )}
 

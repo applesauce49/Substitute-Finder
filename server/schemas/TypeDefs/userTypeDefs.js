@@ -31,6 +31,25 @@ type Mutation {
     about: String
     attributes: [UserAttributeValueInput]
   ): User
+
+  updateUsersInBulk(
+    userIds: [ID!]!
+    updates: BulkUserUpdateInput!
+  ): BulkUserUpdateResult!
+}
+
+input BulkUserUpdateInput {
+  admin: Boolean
+  attributes: [UserAttributeValueInput]
+  addAttributes: [UserAttributeValueInput]
+  removeAttributeKeys: [String!]
+}
+
+type BulkUserUpdateResult {
+  success: Boolean!
+  updatedCount: Int!
+  failedIds: [ID!]!
+  message: String
 }
 
 input UserAttributeValueInput {
