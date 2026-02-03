@@ -76,6 +76,16 @@ function DryRunResults({ result, loading, error }) {
               <> | Workload Window: {result.workloadBalanceWindowDays} days</>
             )}
           </small>
+          {result.workloadBalanceWindowDays && (
+            <div className="mt-1">
+              <small className="badge text-bg-info me-2">
+                📊 Workload Balance Analysis Active
+              </small>
+              <small className="text-muted">
+                Recent sub jobs within {result.workloadBalanceWindowDays} days are factored into ranking
+              </small>
+            </div>
+          )}
         </div>
         {result.message && (
           <span className="badge text-bg-warning">{result.message}</span>
@@ -106,7 +116,22 @@ function DryRunResults({ result, loading, error }) {
         </div>
         
         <div className="col-md-8">
-          <h6>Applicants ({result.applicants?.length || 0})</h6>
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <h6>Applicants ({result.applicants?.length || 0})</h6>
+            {result.workloadBalanceWindowDays && (
+              <div className="d-flex gap-2">
+                <small className="text-muted">
+                  📊 Workload Analysis:
+                </small>
+                <small className="badge text-bg-light text-dark">
+                  {result.applicants?.filter(app => (app.recentSubJobs ?? 0) === 0).length || 0} with 0 recent subs
+                </small>
+                <small className="badge text-bg-light text-dark">
+                  {result.applicants?.filter(app => (app.recentSubJobs ?? 0) >= 1).length || 0} with 1+ recent subs
+                </small>
+              </div>
+            )}
+          </div>
           <div className="table-responsive">
             <table className="table table-sm table-striped align-middle">
               <thead>
@@ -115,7 +140,11 @@ function DryRunResults({ result, loading, error }) {
                   <th>Status</th>
                   <th>Score</th>
                   <th>Constraints</th>
-                  {result.workloadBalanceWindowDays && <th>Recent Subs</th>}
+                  {result.workloadBalanceWindowDays && (
+                    <th title={`Sub jobs within last ${result.workloadBalanceWindowDays} days (used in workload scoring)`}>
+                      Recent Subs 📊
+                    </th>
+                  )}
                   <th>Meetings Hosted</th>
                   <th>Applied</th>
                 </tr>
@@ -134,10 +163,14 @@ function DryRunResults({ result, loading, error }) {
                         </span>
                       </td>
                       <td>
-                        <strong>{(app.score ?? 0).toFixed(2)}</strong>
-                        {result.workloadBalanceWindowDays && app.recentSubScore !== null && (
-                          <><br /><small className="text-muted">WL: {app.recentSubScore.toFixed(2)}</small></>
-                        )}
+                        <div className="d-flex flex-column align-items-start">
+                          <strong>{(app.score ?? 0).toFixed(2)}</strong>
+                          {result.workloadBalanceWindowDays && app.recentSubScore !== null && (
+                            <small className="text-muted" title="Workload balance adjustment">
+                              WL Adj: {app.recentSubScore.toFixed(2)}
+                            </small>
+                          )}
+                        </div>
                       </td>
                       <td
                         title={
@@ -150,10 +183,24 @@ function DryRunResults({ result, loading, error }) {
                         {app.matched}/{app.total}
                       </td>
                       {result.workloadBalanceWindowDays && (
-                        <td>
-                          <span className="badge text-bg-info">
+                        <td className="text-center">
+                          <span 
+                            className={`badge ${
+                              app.recentSubJobs === 0 ? 'text-bg-success' :
+                              app.recentSubJobs === 1 ? 'text-bg-warning' :
+                              'text-bg-danger'
+                            }`}
+                            title={`${app.recentSubJobs} substitute jobs in the last ${result.workloadBalanceWindowDays} days`}
+                          >
                             {app.recentSubJobs ?? 0}
                           </span>
+                          {app.recentSubScore !== null && (
+                            <div className="mt-1">
+                              <small className="text-muted">
+                                Score: {app.recentSubScore.toFixed(2)}
+                              </small>
+                            </div>
+                          )}
                         </td>
                       )}
                       <td>
