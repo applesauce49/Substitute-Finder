@@ -11,7 +11,6 @@ export function BulkEditModal({ selectedUsers, onClose, onSuccess }) {
   const [updateType, setUpdateType] = useState("admin"); // "admin", "addAttributes", "removeAttributes"
   const [adminValue, setAdminValue] = useState("");
   const [selectedAttributes, setSelectedAttributes] = useState([]);
-  const [attributeValues, setAttributeValues] = useState({});
   const [removeKeys, setRemoveKeys] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
