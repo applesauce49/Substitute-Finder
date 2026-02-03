@@ -99,6 +99,16 @@ function calculateRecentSubScore(user, windowDays) {
             return assignedAt && assignedAt >= cutoffDate;
         }).length;
 
+    // Debug logging
+    console.log(`[DEBUG] calculateRecentSubScore for user ${user?.username || user?._id}:`);
+    console.log(`  - Window days: ${windowDays}`);
+    console.log(`  - Cutoff date: ${cutoffDate}`);
+    console.log(`  - Total assigned jobs: ${user?.assignedJobs?.length || 0}`);
+    console.log(`  - Recent jobs count: ${recentJobs}`);
+    if (user?.assignedJobs?.length > 0) {
+        console.log(`  - Assignment dates:`, user.assignedJobs.map(a => ({assignedAt: a.assignedAt, job: a.job})));
+    }
+
     // Invert the count so people with fewer recent jobs get higher scores
     // Use a reasonable upper bound to prevent extreme outliers
     const maxRecentJobs = Math.max(10, windowDays / 7); // Roughly 1-2 jobs per week as max
@@ -454,7 +464,13 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
     // If this is a job dry run, get the specific job
     if (dryRunType === "job" && jobId) {
         job = await Job.findById(jobId)
-            .populate("applications.user")
+            .populate({
+                path: "applications.user",
+                populate: {
+                    path: "assignedJobs.job",
+                    model: "Job"
+                }
+            })
             .populate("createdBy")
             .lean();
     } else if (eventIds.length) {
@@ -467,7 +483,13 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
             ],
             active: true
         })
-            .populate("applications.user")
+            .populate({
+                path: "applications.user",
+                populate: {
+                    path: "assignedJobs.job",
+                    model: "Job"
+                }
+            })
             .populate("createdBy")
             .lean();
 
@@ -479,7 +501,13 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
                     { "meetingSnapshot.eventId": { $in: eventIds } },
                 ],
             })
-                .populate("applications.user")
+                .populate({
+                    path: "applications.user",
+                    populate: {
+                        path: "assignedJobs.job",
+                        model: "Job"
+                    }
+                })
                 .populate("createdBy")
                 .lean();
         }
