@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { Job, User } from "../../models/index.js";
+import { Job, User, Meeting } from "../../models/index.js";
 import { pubsub } from '../../graphql/pubsub.js';
 import { getImpersonatedCalendarClient, getUserCalendarClient } from '../../services/googleClient.js';
 import { inviteUserToEvent } from '../../services/calendarServices.js';
@@ -32,14 +32,77 @@ export default {
             return job;
         },
         matchEngineDryRun: async (_, { meetingId }) => {
-            return previewMatchEngineForMeeting(meetingId, null, "meeting");
+            try {
+                if (!meetingId) {
+                    throw new GraphQLError("Meeting ID is required", {
+                        extensions: { code: 'MISSING_MEETING_ID' }
+                    });
+                }
+
+                const meeting = await Meeting.findById(meetingId);
+                if (!meeting) {
+                    throw new GraphQLError("Meeting not found", {
+                        extensions: { code: 'MEETING_NOT_FOUND' }
+                    });
+                }
+
+                return previewMatchEngineForMeeting(meetingId, null, "meeting");
+            } catch (error) {
+                console.error('matchEngineDryRun error:', error);
+                throw new GraphQLError(error.message || 'Failed to run meeting dry run analysis', {
+                    extensions: { 
+                        code: error.extensions?.code || 'INTERNAL_ERROR',
+                        originalError: error.message
+                    }
+                });
+            }
         },
         matchEngineJobDryRun: async (_, { jobId }) => {
-            const job = await Job.findById(jobId).populate('meeting');
-            if (!job) {
-                throw new Error("Job not found");
+            try {
+                const job = await Job.findById(jobId);
+                if (!job) {
+                    throw new GraphQLError("Job not found", {
+                        extensions: { code: 'JOB_NOT_FOUND' }
+                    });
+                }
+
+                // Find the original Meeting document using event IDs from meetingSnapshot
+                const eventIds = [
+                    job.meetingSnapshot?.eventId,
+                    job.meetingSnapshot?.gcalEventId,
+                    job.meetingSnapshot?.gcalRecurringEventId
+                ].filter(Boolean);
+
+                if (eventIds.length === 0) {
+                    throw new GraphQLError("Job has no valid event IDs to match against meetings", {
+                        extensions: { code: 'INVALID_EVENT_DATA' }
+                    });
+                }
+                
+                const meeting = await Meeting.findOne({
+                    $or: [
+                        { eventId: { $in: eventIds } },
+                        { gcalEventId: { $in: eventIds } },
+                        { gcalRecurringEventId: { $in: eventIds } }
+                    ]
+                });
+
+                if (!meeting) {
+                    throw new GraphQLError("Could not find original meeting for this job", {
+                        extensions: { code: 'MEETING_NOT_FOUND' }
+                    });
+                }
+
+                return previewMatchEngineForMeeting(meeting._id, null, "job", jobId);
+            } catch (error) {
+                console.error('matchEngineJobDryRun error:', error);
+                throw new GraphQLError(error.message || 'Failed to run job dry run analysis', {
+                    extensions: { 
+                        code: error.extensions?.code || 'INTERNAL_ERROR',
+                        originalError: error.message
+                    }
+                });
             }
-            return previewMatchEngineForMeeting(job.meeting._id, null, "job", jobId);
         },
         jobMetricsOverTime: async (_, { days = 30 }) => {
             const startDate = new Date();

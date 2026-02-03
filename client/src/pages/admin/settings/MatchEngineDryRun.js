@@ -5,6 +5,19 @@ import { QUERY_MATCH_ENGINE_DRY_RUN, QUERY_MATCH_ENGINE_JOB_DRY_RUN, QUERY_JOBS 
 import "./MatchEngineDryRun.css";
 
 function DryRunResults({ result, loading, error }) {
+  // Log errors to console for debugging
+  React.useEffect(() => {
+    if (error) {
+      console.error('Match Engine Dry Run Error:', error);
+      console.error('GraphQL Error Details:', {
+        message: error.message,
+        graphQLErrors: error.graphQLErrors,
+        networkError: error.networkError,
+        extraInfo: error.extraInfo
+      });
+    }
+  }, [error]);
+
   if (loading) return (
     <div className="loading-container">
       <div className="text-center">
@@ -13,7 +26,43 @@ function DryRunResults({ result, loading, error }) {
       </div>
     </div>
   );
-  if (error) return <div className="alert alert-danger">Failed to run dry run. Please try again.</div>;
+  
+  if (error) {
+    return (
+      <div className="alert alert-danger">
+        <div className="d-flex align-items-start">
+          <i className="bi bi-exclamation-triangle-fill me-2 mt-1 flex-shrink-0"></i>
+          <div className="flex-grow-1">
+            <strong>Match Engine Error</strong>
+            <div className="mt-2">
+              <strong>Message:</strong> {error.message || 'Unknown error occurred'}
+            </div>
+            {error.graphQLErrors && error.graphQLErrors.length > 0 && (
+              <div className="mt-2">
+                <strong>Details:</strong>
+                <ul className="mb-0 mt-1">
+                  {error.graphQLErrors.map((err, index) => (
+                    <li key={index}>{err.message}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {error.networkError && (
+              <div className="mt-2">
+                <strong>Network Error:</strong> {error.networkError.message}
+              </div>
+            )}
+            <div className="mt-3">
+              <small className="text-muted">
+                Check the browser console for more detailed error information.
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   if (!result) return null;
 
   return (
@@ -152,7 +201,14 @@ function ActiveJobsTab() {
 
   const handleRun = React.useCallback(() => {
     if (!selectedJobId) return;
-    runJobDryRun({ variables: { jobId: selectedJobId } });
+    console.log('Running job dry run for job ID:', selectedJobId);
+    runJobDryRun({ variables: { jobId: selectedJobId } })
+      .then(result => {
+        console.log('Job dry run completed successfully:', result);
+      })
+      .catch(error => {
+        console.error('Job dry run failed:', error);
+      });
   }, [runJobDryRun, selectedJobId]);
 
   if (jobsLoading) return (
@@ -254,7 +310,14 @@ function AllMeetingsTab() {
 
   const handleRun = React.useCallback(() => {
     if (!selectedMeetingId) return;
-    runMeetingDryRun({ variables: { meetingId: selectedMeetingId } });
+    console.log('Running meeting dry run for meeting ID:', selectedMeetingId);
+    runMeetingDryRun({ variables: { meetingId: selectedMeetingId } })
+      .then(result => {
+        console.log('Meeting dry run completed successfully:', result);
+      })
+      .catch(error => {
+        console.error('Meeting dry run failed:', error);
+      });
   }, [runMeetingDryRun, selectedMeetingId]);
 
   if (meetingsLoading) return (
