@@ -469,7 +469,9 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
     
     console.log(`Using meeting: ${meeting.summary || meeting.title || 'Unknown'}`);
     console.log(`Constraints: ${meeting.constraintGroupIds?.length || 0}`);
-    console.log(`Workload balance: ${meeting.workloadBalanceWindowDays || 'disabled'}`);
+    console.log(`Meeting workload balance: ${meeting.workloadBalanceWindowDays} (type: ${typeof meeting.workloadBalanceWindowDays})`);
+    console.log(`Constraint meeting workload balance: ${constraintMeeting?.workloadBalanceWindowDays} (type: ${typeof constraintMeeting?.workloadBalanceWindowDays})`);
+    console.log(`System default workload balance: ${await getDefaultWorkloadBalanceWindowDays()} days`);
 
     const eventIds = [
         meeting?.gcalEventId,
@@ -576,13 +578,37 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
 
     const meetingContext = constraintMeeting || meeting || job.meetingSnapshot || {};
 
+    // Calculate workload balance window before ranking (needed by rankApplications)
+    const workloadBalanceWindow = await (async () => {
+        // First check if constraintMeeting has a workload balance setting
+        if (constraintMeeting?.workloadBalanceWindowDays !== null && constraintMeeting?.workloadBalanceWindowDays !== undefined) {
+            return constraintMeeting.workloadBalanceWindowDays;
+        }
+        
+        // Then check the meeting itself
+        if (meeting?.workloadBalanceWindowDays !== null && meeting?.workloadBalanceWindowDays !== undefined) {
+            return meeting.workloadBalanceWindowDays;
+        }
+        
+        // Finally fall back to system default
+        return await getDefaultWorkloadBalanceWindowDays();
+    })();
+
+    console.log(`Final workload balance window: ${workloadBalanceWindow} days`);
+
+    // Ensure workload balance is available in meetingContext for rankApplications
+    const contextWithWorkload = {
+        ...meetingContext,
+        workloadBalanceWindowDays: workloadBalanceWindow
+    };
+
     const candidates = buildCandidateApplications(job, allUsers);
 
     const { ranked, hasConstraints } = rankApplications(
         candidates,
         constraints,
         attributeDefinitionMap,
-        meetingContext
+        contextWithWorkload
     );
 
     // Determine the message based on dry run type and applicant status
@@ -599,15 +625,13 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
         }
     }
 
-    const workloadBalanceWindow = constraintMeeting?.workloadBalanceWindowDays || meeting?.workloadBalanceWindowDays || await getDefaultWorkloadBalanceWindowDays();
-
     return {
         meetingId: meeting?._id?.toString() ?? null,
         jobId: job._id?.toString() ?? null,
         meetingTitle: job.meetingSnapshot?.title || meeting?.summary || "",
         constraintCount: constraints.length,
         constraints,
-        workloadBalanceWindowDays: workloadBalanceWindow || null,
+        workloadBalanceWindowDays: workloadBalanceWindow,
         applicants: ranked.map(r => ({
             applicationId: r.isApplicant ? (r.application?._id?.toString() ?? null) : null,
             userId: r.application?.user?._id?.toString() ?? null,
