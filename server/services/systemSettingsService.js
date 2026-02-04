@@ -26,8 +26,11 @@ export async function getSystemSetting(key, defaultValue = null) {
   }
 
   try {
+    console.log(`🔍 Looking for system setting: ${key}`);
     const setting = await SystemSettings.findOne({ key });
+    console.log(`🔍 Found setting:`, setting ? `${key}=${setting.value} (type: ${typeof setting.value})` : 'null');
     const value = setting?.value ?? defaultValue;
+    console.log(`🔍 Using value: ${value} (fallback: ${defaultValue})`);
     
     // Cache the result
     settingsCache.set(key, value);
@@ -44,7 +47,10 @@ export async function getSystemSetting(key, defaultValue = null) {
  * @returns {Promise<number>} Default workload balance window days
  */
 export async function getDefaultWorkloadBalanceWindowDays() {
-  return await getSystemSetting('defaultWorkloadBalanceWindowDays', 7);
+  console.log('🔍 Getting default workload balance window days...');
+  const value = await getSystemSetting('defaultWorkloadBalanceWindowDays', 7);
+  console.log(`🔍 Default workload balance window: ${value} days (type: ${typeof value})`);
+  return value;
 }
 
 /**
