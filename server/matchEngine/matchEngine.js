@@ -32,9 +32,12 @@ const SYSTEM_ATTRIBUTE_GETTERS = {
         return Date.now() - last.getTime() <= SEVEN_DAYS;
     },
     totalMeetingsHosted: (user) => {
-        // This getter will work when user has meetings populated
-        // For performance in constraints, we'll rely on the pre-calculated value
-        return user?.totalMeetingsHosted || 0;
+        // If the user already has the pre-calculated field, use it
+        if (typeof user?.totalMeetingsHosted === 'number') {
+            return user.totalMeetingsHosted;
+        }
+        // If not available, return 0 - we'll calculate it separately for dry runs
+        return 0;
     },
 };
 
@@ -604,6 +607,54 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
     };
 
     const candidates = buildCandidateApplications(job, allUsers);
+
+    // Pre-calculate meetings hosted for all users to avoid async issues in ranking
+    const Meeting = require('../models/Meeting');
+    const userIds = candidates.map(c => c.application?.user?._id).filter(Boolean);
+    
+    if (userIds.length > 0) {
+        console.log(`[DEBUG] Calculating meetings hosted for ${userIds.length} users`);
+        
+        // Get counts for all users in one query
+        const meetingsCounts = await Meeting.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { host: { $in: userIds } },
+                        { coHost: { $in: userIds } }
+                    ]
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $cond: [
+                            { $in: ["$host", userIds] },
+                            "$host",
+                            "$coHost"
+                        ]
+                    },
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        // Create a lookup map for quick access
+        const meetingsCountMap = {};
+        meetingsCounts.forEach(result => {
+            const userId = result._id.toString();
+            meetingsCountMap[userId] = result.count;
+        });
+        
+        // Add the counts to user objects
+        candidates.forEach(candidate => {
+            if (candidate.application?.user?._id) {
+                const userId = candidate.application.user._id.toString();
+                candidate.application.user.totalMeetingsHosted = meetingsCountMap[userId] || 0;
+                console.log(`[DEBUG] User ${candidate.application.user.username} meetings hosted: ${candidate.application.user.totalMeetingsHosted}`);
+            }
+        });
+    }
 
     const { ranked, hasConstraints } = rankApplications(
         candidates,
