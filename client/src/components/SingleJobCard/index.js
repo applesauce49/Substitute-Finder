@@ -54,7 +54,7 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
     event.preventDefault();
 
     try {
-      const applicantId = userData.admin ? selectedUserId || currentUserId : currentUserId;
+      const applicantId = userData?.admin ? selectedUserId || currentUserId : currentUserId;
 
       await applyForJob({
         variables: { jobId, applicantId },
@@ -135,7 +135,7 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
         {canApply && (
           <form onSubmit={handleFormSubmit}>
             <div className="d-flex justify-content-end align-items-center gap-2">
-              {userData.admin && (
+              {userData?.admin && (
                 <>
                   <label htmlFor="applyFor" className="mb-0 text-nowrap">
                     Apply on behalf of:
@@ -160,9 +160,9 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
               <button
                 className="btn no-border-btn btn-success"
                 type="submit"
-                disabled={ !userData.admin && applied }
+                disabled={ !userData?.admin && applied }
               >
-                {!userData.admin && applied ? "Already Applied" : "Apply"}
+                {!userData?.admin && applied ? "Already Applied" : "Apply"}
               </button>
             </div>
           </form>

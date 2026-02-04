@@ -86,7 +86,7 @@ export default function App() {
             </Route>
             <Route path="/my-calendar" element={<Calendar />} />
             <Route path="/job-report" element={<JobReport me={me} />} />
-            <Route path="/jobs/:jobId" element={<JobPage />} />
+            <Route path="/jobs/:jobId" element={<JobPage me={me} />} />
             <Route path="/admin" element={<AdminPage />} />
             {/* <Route path="/user-job-stats-report" element={<UserJobStatsReport />} /> */}
             <Route path="*" element={<NoMatch />} />
