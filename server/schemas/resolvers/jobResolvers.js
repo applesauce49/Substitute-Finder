@@ -5,6 +5,7 @@ import { getImpersonatedCalendarClient, getUserCalendarClient } from '../../serv
 import { inviteUserToEvent } from '../../services/calendarServices.js';
 import { runMatchEngine, previewMatchEngineForMeeting } from '../../matchEngine/matchEngine.js';
 import { postJobToGoogleChat, postJobCancelledToGoogleChat, postJobAssignedToGoogleChat } from "../../utils/chatJobNotifier.js";
+import { getDefaultWorkloadBalanceWindowDays } from "../../services/systemSettingsService.js";
 
 export default {
     Query: {
@@ -133,6 +134,7 @@ export default {
                     // Create a virtual meeting object from the job's meetingSnapshot
                     // This handles cases where jobs are created from calendar events
                     // but no corresponding Meeting document exists in the system
+                    const defaultWorkloadBalance = await getDefaultWorkloadBalanceWindowDays();
                     const virtualMeeting = {
                         _id: job._id, // Use job ID as meeting ID for this case
                         summary: job.meetingSnapshot.title,
@@ -143,7 +145,7 @@ export default {
                         gcalEventId: job.meetingSnapshot.gcalEventId,
                         gcalRecurringEventId: job.meetingSnapshot.gcalRecurringEventId,
                         constraintGroupIds: [], // No constraints for jobs without Meeting documents
-                        workloadBalanceWindowDays: null // No workload balance for jobs without Meeting documents
+                        workloadBalanceWindowDays: defaultWorkloadBalance // Use system default
                     };
                     
                     console.log('Virtual meeting created:', {

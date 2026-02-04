@@ -3,6 +3,7 @@ import jobResolvers from "./jobResolvers.js";
 import meetingResolvers from "./meetingResolvers.js";
 import calendarResolvers from "./calendarResolvers.js";
 import constraintResolvers from "./constraintResolvers.js";
+import systemSettingsResolvers from "./systemSettingsResolvers.js";
 import { GraphQLJSON } from 'graphql-type-json';
 
 export default {
@@ -13,6 +14,7 @@ export default {
         ...meetingResolvers.Query,
         ...calendarResolvers.Query,
         ...constraintResolvers.Query,
+        ...systemSettingsResolvers.Query,
     },
     Mutation: {
         ...jobResolvers.Mutation,
@@ -20,6 +22,7 @@ export default {
         ...userResolvers.Mutation,
         ...constraintResolvers.Mutation,
         ...meetingResolvers.Mutation,
+        ...systemSettingsResolvers.Mutation,
     },
     Subscription: {
         ...jobResolvers.Subscription,

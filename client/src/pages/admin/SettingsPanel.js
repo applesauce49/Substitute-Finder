@@ -6,6 +6,7 @@ import { ConstraintGroupsSettings } from "./settings/ConstraintGroupSettings";
 import { AttributesSettings } from "./settings/attributeSettings";
 import { MatchEngineDryRun } from "./settings/MatchEngineDryRun";
 import { MetricsPage } from "./settings/MetricsPage";
+import { SystemSettings } from "./settings/SystemSettings";
 
 
 // Placeholder pages (we’ll build them later)
@@ -13,9 +14,7 @@ function Dashboard() {
     return <div><h2>Dashboard</h2></div>;
 }
 
-function Settings() {
-    return <div><h2>Settings</h2></div>;
-}
+
 
 export default function SettingsPanel({ section }) {
     switch (section) {
@@ -39,7 +38,7 @@ export default function SettingsPanel({ section }) {
             return <MatchEngineDryRun />;
 
         case "settings":
-            return <Settings />;
+            return <SystemSettings />;
         default:
             return <div>Select a section from the sidebar.</div>;
     }

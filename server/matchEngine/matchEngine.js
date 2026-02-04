@@ -8,6 +8,7 @@ import ConstraintGroup from "./Schemas/ConstraintGroup.js";
 import Constraint from "./Schemas/Constraint.js";
 import UserAttributeDefinition from "./Schemas/UserAttributeDefinition.js";
 import { SYSTEM_ATTRIBUTES } from "../config/systemAttributes.js";
+import { getDefaultWorkloadBalanceWindowDays } from "../services/systemSettingsService.js";
 
 
 // import Meeting from "../models/Meeting.js";
@@ -598,7 +599,7 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
         }
     }
 
-    const workloadBalanceWindow = constraintMeeting?.workloadBalanceWindowDays || meeting?.workloadBalanceWindowDays;
+    const workloadBalanceWindow = constraintMeeting?.workloadBalanceWindowDays || meeting?.workloadBalanceWindowDays || await getDefaultWorkloadBalanceWindowDays();
 
     return {
         meetingId: meeting?._id?.toString() ?? null,
