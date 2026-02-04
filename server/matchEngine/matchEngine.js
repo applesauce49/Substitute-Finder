@@ -470,7 +470,6 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
     console.log(`Using meeting: ${meeting.summary || meeting.title || 'Unknown'}`);
     console.log(`Constraints: ${meeting.constraintGroupIds?.length || 0}`);
     console.log(`Meeting workload balance: ${meeting.workloadBalanceWindowDays} (type: ${typeof meeting.workloadBalanceWindowDays})`);
-    console.log(`Constraint meeting workload balance: ${constraintMeeting?.workloadBalanceWindowDays} (type: ${typeof constraintMeeting?.workloadBalanceWindowDays})`);
     console.log(`System default workload balance: ${await getDefaultWorkloadBalanceWindowDays()} days`);
 
     const eventIds = [
@@ -575,6 +574,8 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
         constraintMeeting = meeting;
         constraints = await loadConstraintsByGroupIds(meeting.constraintGroupIds);
     }
+
+    console.log(`Constraint meeting workload balance: ${constraintMeeting?.workloadBalanceWindowDays} (type: ${typeof constraintMeeting?.workloadBalanceWindowDays})`);
 
     // Calculate workload balance window before ranking (needed by rankApplications)
     const workloadBalanceWindow = await (async () => {
