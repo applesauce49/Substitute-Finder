@@ -392,6 +392,59 @@ function buildCandidateApplications(job, users, dryRunType = "meeting") {
     });
 }
 
+/**
+ * Calculate a composite score that includes multiple factors
+ * @param {Object} scored - The scored application object
+ * @param {Object} meetingContext - Meeting context for workload balance
+ * @returns {number} Composite score between 0 and 1
+ */
+function calculateCompositeScore(scored, meetingContext) {
+    const user = scored.application?.user;
+    if (!user) return 0;
+
+    // 1. Constraint Score (0-1) - 40% weight
+    const constraintScore = scored.score || 0;
+    const constraintWeight = 0.40;
+
+    // 2. Workload Balance Score (0-1) - 25% weight  
+    const workloadScore = calculateWorkloadScore(user);
+    const workloadWeight = 0.25;
+
+    // 3. Recent Substitute Jobs Score (0-1) - 20% weight
+    const workloadBalanceWindow = meetingContext?.workloadBalanceWindowDays;
+    const recentSubScore = workloadBalanceWindow ? calculateRecentSubScore(user, workloadBalanceWindow) : 0;
+    const recentSubWeight = 0.20;
+
+    // 4. Application Date Score (0-1) - 15% weight
+    // Earlier applications get higher scores
+    let applicationDateScore = 0;
+    if (scored.application?.appliedAt) {
+        const appliedAt = new Date(scored.application.appliedAt);
+        const now = new Date();
+        const daysSinceApplied = (now - appliedAt) / (1000 * 60 * 60 * 24);
+        // Score decreases over 30 days, with applications in first 7 days getting full score
+        applicationDateScore = daysSinceApplied <= 7 ? 1 : Math.max(0, (30 - daysSinceApplied) / 23);
+    }
+    const applicationDateWeight = 0.15;
+
+    // Calculate weighted composite score
+    const compositeScore = 
+        (constraintScore * constraintWeight) +
+        (workloadScore * workloadWeight) +
+        (recentSubScore * recentSubWeight) +
+        (applicationDateScore * applicationDateWeight);
+
+    console.log(`[DEBUG] Composite score for ${user.username}:`, {
+        constraintScore: (constraintScore * constraintWeight).toFixed(3),
+        workloadScore: (workloadScore * workloadWeight).toFixed(3),
+        recentSubScore: (recentSubScore * recentSubWeight).toFixed(3),
+        applicationDateScore: (applicationDateScore * applicationDateWeight).toFixed(3),
+        totalScore: compositeScore.toFixed(3)
+    });
+
+    return compositeScore;
+}
+
 function rankApplications(candidates, constraints, attrDefMap, meetingContext) {
     const hasConstraints = Array.isArray(constraints) && constraints.length > 0;
     const workloadBalanceWindow = meetingContext?.workloadBalanceWindowDays;
@@ -409,8 +462,13 @@ function rankApplications(candidates, constraints, attrDefMap, meetingContext) {
                     disqualified: false,
                 };
 
+            // Calculate composite score that includes all factors
+            const compositeScore = calculateCompositeScore(scored, meetingContext);
+
             return {
                 ...scored,
+                score: compositeScore, // Replace simple constraint score with composite score
+                constraintScore: scored.score, // Keep original constraint score for reference
                 isApplicant: candidate.isApplicant,
             };
         })
@@ -696,7 +754,8 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
             eligible: !r.disqualified,
             matched: r.matched,
             total: r.total,
-            score: r.score,
+            score: r.score, // This is now the composite score
+            constraintScore: r.constraintScore, // Original constraint-only score
             meetingsHosted: SYSTEM_ATTRIBUTE_GETTERS.totalMeetingsHosted(r.application?.user),
             workloadScore: calculateWorkloadScore(r.application?.user),
             recentSubJobs: workloadBalanceWindow ? (r.application?.user?.assignedJobs || []).filter(assignment => {
