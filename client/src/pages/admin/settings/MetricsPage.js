@@ -6,9 +6,11 @@ import { GenericReportTable } from "../../../components/reporting/GenericReportT
 import "./MetricsPage.css";
 
 export function MetricsPage() {
+    const [dayRange, setDayRange] = React.useState(30);
+    
     const { data, loading, error } = useQuery(QUERY_USER_JOB_STATS);
     const { data: timeData, loading: timeLoading, error: timeError } = useQuery(QUERY_JOB_METRICS_OVER_TIME, {
-        variables: { days: 30 }
+        variables: { days: dayRange }
     });
 
     const userStats = React.useMemo(() => {
@@ -94,7 +96,8 @@ export function MetricsPage() {
 
     // Export function for CSV download
     const exportToCSV = React.useCallback(() => {
-        const csvContent = [
+        // User statistics
+        const userCsvContent = [
             ['Username', 'Jobs Posted', 'Applications Submitted', 'Jobs Filled', 'Meetings Hosted', 'Success Rate'],
             ...tableData.map(user => [
                 user.username,
@@ -106,14 +109,29 @@ export function MetricsPage() {
             ])
         ].map(row => row.join(',')).join('\n');
         
-        const blob = new Blob([csvContent], { type: 'text/csv' });
+        // Time-based metrics
+        const timeCsvContent = [
+            '',
+            `Time-Based Metrics (Last ${dayRange} Days)`,
+            ['Date', 'Jobs Posted', 'Jobs Filled', 'Applications'],
+            ...timeMetrics.map(day => [
+                new Date(day.date).toLocaleDateString(),
+                day.jobsPosted,
+                day.jobsAssigned,
+                day.totalApplications
+            ])
+        ].map(row => Array.isArray(row) ? row.join(',') : row).join('\n');
+        
+        const fullCsvContent = userCsvContent + '\n' + timeCsvContent;
+        
+        const blob = new Blob([fullCsvContent], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `substitute-metrics-${new Date().toISOString().split('T')[0]}.csv`;
+        a.download = `substitute-metrics-${dayRange}days-${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
         window.URL.revokeObjectURL(url);
-    }, [tableData]);
+    }, [tableData, timeMetrics, dayRange]);
 
     // Calculate totals for the summary row
     const totals = React.useMemo(() => {
@@ -139,9 +157,30 @@ export function MetricsPage() {
     return (
         <div className="metrics-page">
             <div className="d-flex justify-content-between align-items-center mb-4">
+                <div>
                     <h2><i className="bi bi-graph-up me-2 oplm-icon"></i>Job Fulfillment Metrics</h2>
                     <small className="text-muted">Real-time substitute job statistics</small>
                 </div>
+                <div className="d-flex align-items-center gap-3">
+                    <div className="d-flex align-items-center gap-2">
+                        <label htmlFor="dayRange" className="form-label mb-0 text-muted">
+                            <small>Time-based metrics for last:</small>
+                        </label>
+                        <div className="input-group input-group-sm" style={{width: '120px'}}>
+                            <input
+                                type="number"
+                                id="dayRange"
+                                className="form-control"
+                                value={dayRange}
+                                onChange={(e) => setDayRange(Math.max(1, parseInt(e.target.value) || 1))}
+                                min="1"
+                                max="365"
+                            />
+                            <span className="input-group-text">days</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
                 {/* Summary Cards */}
                 <div className="row mb-4">
@@ -266,7 +305,7 @@ export function MetricsPage() {
                         <div className="card-header">
                             <h5 className="card-title mb-0">
                                 <i className="bi bi-graph-up me-2"></i>
-                                Activity Over Time (Last 30 Days)
+                                Activity Over Time (Last {dayRange} Days)
                             </h5>
                         </div>
                         <div className="card-body">
@@ -332,13 +371,93 @@ export function MetricsPage() {
                             ) : (
                                 <div className="text-center py-4 text-muted">
                                     <i className="bi bi-graph-down fs-1"></i>
-                                    <p>No activity data in the last 30 days</p>
+                                    <p>No activity data in the last {dayRange} days</p>
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Time-Based Metrics Summary */}
+            {timeMetrics.length > 0 && (
+                <div className="row mb-4">
+                    <div className="col-12">
+                        <div className="card">
+                            <div className="card-header">
+                                <h5 className="card-title mb-0">
+                                    <i className="bi bi-clock-history me-2"></i>
+                                    Time-Based Metrics Summary (Last {dayRange} Days)
+                                </h5>
+                            </div>
+                            <div className="card-body">
+                                <div className="row">
+                                    <div className="col-md-3">
+                                        <div className="text-center">
+                                            <h4 className="text-primary mb-0">
+                                                {timeMetrics.reduce((sum, day) => sum + day.jobsPosted, 0)}
+                                            </h4>
+                                            <small className="text-muted">Jobs Posted</small>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-3">
+                                        <div className="text-center">
+                                            <h4 className="text-success mb-0">
+                                                {timeMetrics.reduce((sum, day) => sum + day.jobsAssigned, 0)}
+                                            </h4>
+                                            <small className="text-muted">Jobs Filled</small>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-3">
+                                        <div className="text-center">
+                                            <h4 className="text-info mb-0">
+                                                {timeMetrics.reduce((sum, day) => sum + day.totalApplications, 0)}
+                                            </h4>
+                                            <small className="text-muted">Total Applications</small>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-3">
+                                        <div className="text-center">
+                                            <h4 className="text-warning mb-0">
+                                                {timeMetrics.reduce((sum, day) => sum + day.jobsAssigned, 0) > 0 
+                                                    ? ((timeMetrics.reduce((sum, day) => sum + day.jobsAssigned, 0) / timeMetrics.reduce((sum, day) => sum + day.totalApplications, 0)) * 100).toFixed(1)
+                                                    : '0.0'}%
+                                            </h4>
+                                            <small className="text-muted">Fill Rate</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr />
+                                <div className="row">
+                                    <div className="col-md-4">
+                                        <div className="text-center">
+                                            <h6 className="text-muted mb-0">
+                                                Avg Per Day: {(timeMetrics.reduce((sum, day) => sum + day.jobsPosted, 0) / timeMetrics.length).toFixed(1)} jobs posted
+                                            </h6>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-4">
+                                        <div className="text-center">
+                                            <h6 className="text-muted mb-0">
+                                                Peak Day: {Math.max(...timeMetrics.map(d => d.jobsPosted))} jobs posted
+                                            </h6>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-4">
+                                        <div className="text-center">
+                                            <h6 className="text-muted mb-0">
+                                                Best Fill Rate: {timeMetrics.length > 0 
+                                                    ? Math.max(...timeMetrics.map(d => d.totalApplications > 0 ? (d.jobsAssigned / d.totalApplications) * 100 : 0)).toFixed(1)
+                                                    : 0}%
+                                            </h6>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Detailed Table */}
             <div className="row">
@@ -349,6 +468,7 @@ export function MetricsPage() {
                                 <i className="bi bi-table me-2"></i>
                                 Detailed User Statistics
                             </h5>
+                            <small className="text-muted">All-time cumulative statistics per user</small>
                         </div>
                         <div className="card-body p-0">
                             <GenericReportTable
