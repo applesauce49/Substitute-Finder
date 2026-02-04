@@ -48,6 +48,14 @@ export const DEFAULT_SYSTEM_SETTINGS = [
     description: 'Default number of days for workload balance analysis when not specified at meeting level',
     category: 'matching',
   },
+  {
+    key: 'maxFutureJobDays',
+    value: 90,
+    type: 'number',
+    label: 'Maximum Future Job Processing Window',
+    description: 'Maximum number of days in the future that jobs will be processed by the match engine',
+    category: 'matching',
+  },
 ];
 
 const SystemSettings = model('SystemSettings', systemSettingsSchema);

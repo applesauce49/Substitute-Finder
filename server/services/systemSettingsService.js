@@ -54,6 +54,17 @@ export async function getDefaultWorkloadBalanceWindowDays() {
 }
 
 /**
+ * Get the maximum number of days in the future to process jobs
+ * @returns {Promise<number>} Maximum future job days
+ */
+export async function getMaxFutureJobDays() {
+  console.log('🔍 Getting max future job days...');
+  const value = await getSystemSetting('maxFutureJobDays', 90);
+  console.log(`🔍 Max future job days: ${value} days (type: ${typeof value})`);
+  return value;
+}
+
+/**
  * Clear the settings cache (useful for testing or after updates)
  */
 export function clearSystemSettingsCache() {

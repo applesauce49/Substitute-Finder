@@ -8,7 +8,7 @@ import ConstraintGroup from "./Schemas/ConstraintGroup.js";
 import Constraint from "./Schemas/Constraint.js";
 import UserAttributeDefinition from "./Schemas/UserAttributeDefinition.js";
 import { SYSTEM_ATTRIBUTES } from "../config/systemAttributes.js";
-import { getDefaultWorkloadBalanceWindowDays } from "../services/systemSettingsService.js";
+import { getDefaultWorkloadBalanceWindowDays, getMaxFutureJobDays } from "../services/systemSettingsService.js";
 
 
 // import Meeting from "../models/Meeting.js";
@@ -797,6 +797,12 @@ export async function runMatchEngine() {
     const attributeDefinitionMap = await buildAttributeDefinitionMap();
     const allUsers = await User.find({}).lean();
 
+    // Get system configuration for max future job processing
+    const maxFutureJobDays = await getMaxFutureJobDays();
+    const now = new Date();
+    const maxFutureDate = new Date(now.getTime() + (maxFutureJobDays * 24 * 60 * 60 * 1000));
+    console.log(`[MatchEngine] Processing jobs with meetings between now and ${maxFutureDate.toISOString()} (${maxFutureJobDays} days)`);
+
     // Step 1: Get open jobs
     const jobs = await Job.find({
         active: true,
@@ -815,13 +821,18 @@ export async function runMatchEngine() {
     for (const job of jobs) {
         try {
             // First check if the date and time has passed.  Close the job if so.
-            const now = new Date();
             const meetingStart = new Date(job.meetingSnapshot?.startDateTime);
             if (meetingStart < now) {
                 console.log(`[MatchEngine] - Job "${job._id}" meeting time has passed. Closing job.`);
                 job.active = false;
                 await job.save();
                 totalEvaluated++;
+                continue;
+            }
+            
+            // Check if the meeting is too far in the future
+            if (meetingStart > maxFutureDate) {
+                console.log(`[MatchEngine] - Job "${job._id}" meeting is too far in future (${meetingStart.toISOString()}). Skipping for now.`);
                 continue;
             }
 
