@@ -20,9 +20,14 @@ export default {
                 ? input.constraintGroupIds
                 : [];
 
+            const linkedJobIds = Array.isArray(input.linkedJobIds)
+                ? input.linkedJobIds
+                : [];
+
             const meetingData = {
                 ...input,
                 constraintGroupIds,
+                linkedJobIds,
             };
 
             // Map user IDs to the correct field names
@@ -56,9 +61,14 @@ export default {
                 ? input.constraintGroupIds
                 : [];
 
+            const linkedJobIds = Array.isArray(input.linkedJobIds)
+                ? input.linkedJobIds
+                : [];
+
             const updateData = {
                 ...input,
                 constraintGroupIds,
+                linkedJobIds,
             };
 
             // Map user IDs to the correct field names
@@ -94,6 +104,12 @@ export default {
             console.log("[Meeting.constraintGroupIds] value:", meeting.constraintGroupIds);
             return Array.isArray(meeting.constraintGroupIds)
                 ? meeting.constraintGroupIds
+                : [];
+        },
+
+        linkedJobIds: (meeting) => {
+            return Array.isArray(meeting.linkedJobIds)
+                ? meeting.linkedJobIds
                 : [];
         },
 

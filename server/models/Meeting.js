@@ -71,6 +71,13 @@ const meetingSchema = new Schema(
       default: null, // null means no time-based workload balancing
     },
 
+    // Linked job IDs for connecting existing jobs to this meeting
+    // Allows jobs created from Google Calendar to be associated with Meeting documents
+    linkedJobIds: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Job',
+    }],
+
     createdAt: Date,
     updatedAt: { type: Date, default: Date.now },
   },

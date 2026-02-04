@@ -350,6 +350,50 @@ export default function MeetingsSettings() {
             </div>
 
             <div className="mb-2">
+              <label className="form-label">Linked Jobs</label>
+              <div className="border rounded p-2" style={{ maxHeight: 180, overflowY: "auto" }}>
+                {jobs.length === 0 ? (
+                  <div className="text-muted">No jobs available to link.</div>
+                ) : (
+                  jobs.map((job) => (
+                    <div className="form-check" key={job._id}>
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id={`job-${job._id}`}
+                        checked={formState.linkedJobIds.includes(job._id)}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setFormState((prev) => {
+                            const nextIds = checked
+                              ? [...prev.linkedJobIds, job._id]
+                              : prev.linkedJobIds.filter((id) => id !== job._id);
+                            return { ...prev, linkedJobIds: nextIds };
+                          });
+                        }}
+                      />
+                      <label className="form-check-label" htmlFor={`job-${job._id}`}>
+                        <small>
+                          <strong>{job.position || "Substitute"}</strong><br />
+                          {job.location && <span className="text-muted">{job.location} • </span>}
+                          {job.datePosted && new Date(job.datePosted).toLocaleDateString()}
+                          {job.meetingSnapshot?.summary && (
+                            <div className="text-muted small">
+                              Calendar: {job.meetingSnapshot.summary}
+                            </div>
+                          )}
+                        </small>
+                      </label>
+                    </div>
+                  ))
+                )}
+              </div>
+              <small className="text-muted">
+                Link existing substitute jobs to this meeting for dry run analysis.
+              </small>
+            </div>
+
+            <div className="mb-2">
               <label className="form-label">Rule Groups</label>
               <div className="border rounded p-2" style={{ maxHeight: 220, overflowY: "auto" }}>
                 {constraintGroups.length === 0 ? (
