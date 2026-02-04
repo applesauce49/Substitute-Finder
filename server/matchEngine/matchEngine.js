@@ -613,37 +613,42 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
     
     if (userIds.length > 0) {
         console.log(`[DEBUG] Calculating meetings hosted for ${userIds.length} users`);
+        console.log(`[DEBUG] User IDs:`, userIds.map(id => id.toString()));
         
-        // Get counts for all users in one query
-        const meetingsCounts = await Meeting.aggregate([
-            {
-                $match: {
-                    $or: [
-                        { host: { $in: userIds } },
-                        { coHost: { $in: userIds } }
-                    ]
-                }
-            },
-            {
-                $group: {
-                    _id: {
-                        $cond: [
-                            { $in: ["$host", userIds] },
-                            "$host",
-                            "$coHost"
-                        ]
-                    },
-                    count: { $sum: 1 }
-                }
-            }
+        // Get counts for hosts and coHosts separately, then merge
+        const hostCounts = await Meeting.aggregate([
+            { $match: { host: { $in: userIds } } },
+            { $group: { _id: "$host", count: { $sum: 1 } } }
         ]);
+        
+        const coHostCounts = await Meeting.aggregate([
+            { $match: { coHost: { $in: userIds } } },
+            { $group: { _id: "$coHost", count: { $sum: 1 } } }
+        ]);
+        
+        console.log(`[DEBUG] Host counts:`, hostCounts);
+        console.log(`[DEBUG] CoHost counts:`, coHostCounts);
 
-        // Create a lookup map for quick access
+        // Create a lookup map combining both host and coHost counts
         const meetingsCountMap = {};
-        meetingsCounts.forEach(result => {
-            const userId = result._id.toString();
-            meetingsCountMap[userId] = result.count;
+        
+        // Add host counts
+        hostCounts.forEach(result => {
+            if (result._id) {
+                const userId = result._id.toString();
+                meetingsCountMap[userId] = (meetingsCountMap[userId] || 0) + result.count;
+            }
         });
+        
+        // Add coHost counts
+        coHostCounts.forEach(result => {
+            if (result._id) {
+                const userId = result._id.toString();
+                meetingsCountMap[userId] = (meetingsCountMap[userId] || 0) + result.count;
+            }
+        });
+        
+        console.log(`[DEBUG] Final meetings count map:`, meetingsCountMap);
         
         // Add the counts to user objects
         candidates.forEach(candidate => {
