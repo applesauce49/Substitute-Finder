@@ -396,9 +396,10 @@ function buildCandidateApplications(job, users, dryRunType = "meeting") {
  * Calculate a composite score that includes multiple factors
  * @param {Object} scored - The scored application object
  * @param {Object} meetingContext - Meeting context for workload balance
+ * @param {Object} job - The job object to get creation date from
  * @returns {number} Composite score between 0 and 1
  */
-function calculateCompositeScore(scored, meetingContext) {
+function calculateCompositeScore(scored, meetingContext, job) {
     const user = scored.application?.user;
     if (!user) return 0;
 
@@ -416,14 +417,26 @@ function calculateCompositeScore(scored, meetingContext) {
     const recentSubWeight = 0.20;
 
     // 4. Application Date Score (0-1) - 15% weight
-    // Earlier applications get higher scores
+    // Applications closer to job post date get higher scores
     let applicationDateScore = 0;
-    if (scored.application?.appliedAt) {
+    if (scored.application?.appliedAt && job?.createdAt) {
         const appliedAt = new Date(scored.application.appliedAt);
-        const now = new Date();
-        const daysSinceApplied = (now - appliedAt) / (1000 * 60 * 60 * 24);
-        // Score decreases over 30 days, with applications in first 7 days getting full score
-        applicationDateScore = daysSinceApplied <= 7 ? 1 : Math.max(0, (30 - daysSinceApplied) / 23);
+        const jobPostedAt = new Date(job.createdAt);
+        const daysSinceJobPosted = (appliedAt - jobPostedAt) / (1000 * 60 * 60 * 24);
+        
+        // Score decreases over 30 days from job post date, with applications in first 7 days getting full score
+        if (daysSinceJobPosted <= 7) {
+            applicationDateScore = 1.0; // Full score for applications within first week
+        } else if (daysSinceJobPosted <= 30) {
+            applicationDateScore = Math.max(0, (30 - daysSinceJobPosted) / 23); // Linear decline from day 8-30
+        } else {
+            applicationDateScore = 0; // No credit for applications more than 30 days after job posted
+        }
+        
+        // Handle applications submitted before job creation (edge case)
+        if (daysSinceJobPosted < 0) {
+            applicationDateScore = 1.0;
+        }
     }
     const applicationDateWeight = 0.15;
 
@@ -445,7 +458,7 @@ function calculateCompositeScore(scored, meetingContext) {
     return compositeScore;
 }
 
-function rankApplications(candidates, constraints, attrDefMap, meetingContext) {
+function rankApplications(candidates, constraints, attrDefMap, meetingContext, job) {
     const hasConstraints = Array.isArray(constraints) && constraints.length > 0;
     const workloadBalanceWindow = meetingContext?.workloadBalanceWindowDays;
 
@@ -463,7 +476,7 @@ function rankApplications(candidates, constraints, attrDefMap, meetingContext) {
                 };
 
             // Calculate composite score that includes all factors
-            const compositeScore = calculateCompositeScore(scored, meetingContext);
+            const compositeScore = calculateCompositeScore(scored, meetingContext, job);
 
             return {
                 ...scored,
@@ -722,7 +735,8 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
         candidates,
         constraints,
         attributeDefinitionMap,
-        contextWithWorkload
+        contextWithWorkload,
+        job
     );
 
     // Determine the message based on dry run type and applicant status
@@ -840,7 +854,8 @@ export async function runMatchEngine() {
                 candidates,
                 constraints,
                 attributeDefinitionMap,
-                meetingContext
+                meetingContext,
+                job
             );
 
             if (hasConstraints) {
