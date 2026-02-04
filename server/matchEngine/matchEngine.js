@@ -576,8 +576,6 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
         constraints = await loadConstraintsByGroupIds(meeting.constraintGroupIds);
     }
 
-    const meetingContext = constraintMeeting || meeting || job.meetingSnapshot || {};
-
     // Calculate workload balance window before ranking (needed by rankApplications)
     const workloadBalanceWindow = await (async () => {
         // First check if constraintMeeting has a workload balance setting
@@ -595,6 +593,8 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
     })();
 
     console.log(`Final workload balance window: ${workloadBalanceWindow} days`);
+
+    const meetingContext = constraintMeeting || meeting || job.meetingSnapshot || {};
 
     // Ensure workload balance is available in meetingContext for rankApplications
     const contextWithWorkload = {
