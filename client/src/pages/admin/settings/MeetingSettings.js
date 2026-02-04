@@ -3,7 +3,6 @@ import { useQuery, useMutation } from "@apollo/client";
 import { QUERY_MEETINGS } from "../../../utils/graphql/meetings/queries.js";
 import { QUERY_CONSTRAINTS_GROUPS } from "../../../utils/graphql/constraints/queries.js";
 import { GET_USERS } from "../../../utils/graphql/users/queries.js";
-import { QUERY_JOBS } from "../../../utils/graphql/jobs/queries.js";
 import { UPDATE_MEETING, CREATE_MEETING, DELETE_MEETING } from "../../../utils/graphql/meetings/mutations.js";
 import { GenericReportTable } from "../../../components/reporting/GenericReportTable/GenericReportTable.js";
 import { createColumnHelper } from "@tanstack/react-table";
@@ -18,11 +17,6 @@ export default function MeetingsSettings() {
   const {
     data: usersData,
   } = useQuery(GET_USERS);
-  const {
-    data: jobsData,
-  } = useQuery(QUERY_JOBS, {
-    variables: { showAll: true } // Get all jobs, including past ones
-  });
 
   const [updateMeeting] = useMutation(UPDATE_MEETING, { onCompleted: () => refetch() });
   const [createMeeting] = useMutation(CREATE_MEETING, { onCompleted: () => refetch() });
@@ -35,13 +29,11 @@ export default function MeetingsSettings() {
     description: "",
     constraintGroupIds: [],
     workloadBalanceWindowDays: "",
-    linkedJobIds: [], // New field for job linking
   });
 
   const meetings = data?.meetings || [];
   const constraintGroups = groupsData?.constraintGroups ?? [];
   const users = usersData?.users ?? [];
-  const jobs = jobsData?.jobs ?? [];
   const columnHelper = createColumnHelper();
 
   const resetForm = React.useCallback(() => {
@@ -347,50 +339,6 @@ export default function MeetingsSettings() {
                 When set, applicants with fewer substitute jobs in the last N days will be favored. 
                 Leave empty to use standard ranking without workload considerations.
               </div>
-            </div>
-
-            <div className="mb-2">
-              <label className="form-label">Linked Jobs</label>
-              <div className="border rounded p-2" style={{ maxHeight: 180, overflowY: "auto" }}>
-                {jobs.length === 0 ? (
-                  <div className="text-muted">No jobs available to link.</div>
-                ) : (
-                  jobs.map((job) => (
-                    <div className="form-check" key={job._id}>
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id={`job-${job._id}`}
-                        checked={formState.linkedJobIds.includes(job._id)}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          setFormState((prev) => {
-                            const nextIds = checked
-                              ? [...prev.linkedJobIds, job._id]
-                              : prev.linkedJobIds.filter((id) => id !== job._id);
-                            return { ...prev, linkedJobIds: nextIds };
-                          });
-                        }}
-                      />
-                      <label className="form-check-label" htmlFor={`job-${job._id}`}>
-                        <small>
-                          <strong>{job.position || "Substitute"}</strong><br />
-                          {job.location && <span className="text-muted">{job.location} • </span>}
-                          {job.datePosted && new Date(job.datePosted).toLocaleDateString()}
-                          {job.meetingSnapshot?.summary && (
-                            <div className="text-muted small">
-                              Calendar: {job.meetingSnapshot.summary}
-                            </div>
-                          )}
-                        </small>
-                      </label>
-                    </div>
-                  ))
-                )}
-              </div>
-              <small className="text-muted">
-                Link existing substitute jobs to this meeting for dry run analysis.
-              </small>
             </div>
 
             <div className="mb-2">
