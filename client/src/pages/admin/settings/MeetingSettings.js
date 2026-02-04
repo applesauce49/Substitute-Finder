@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@apollo/client";
 import { QUERY_MEETINGS } from "../../../utils/graphql/meetings/queries.js";
 import { QUERY_CONSTRAINTS_GROUPS } from "../../../utils/graphql/constraints/queries.js";
 import { GET_USERS } from "../../../utils/graphql/users/queries.js";
+import { QUERY_JOBS } from "../../../utils/graphql/jobs/queries.js";
 import { UPDATE_MEETING, CREATE_MEETING, DELETE_MEETING } from "../../../utils/graphql/meetings/mutations.js";
 import { GenericReportTable } from "../../../components/reporting/GenericReportTable/GenericReportTable.js";
 import { createColumnHelper } from "@tanstack/react-table";
@@ -17,6 +18,11 @@ export default function MeetingsSettings() {
   const {
     data: usersData,
   } = useQuery(GET_USERS);
+  const {
+    data: jobsData,
+  } = useQuery(QUERY_JOBS, {
+    variables: { showAll: true } // Get all jobs, including past ones
+  });
 
   const [updateMeeting] = useMutation(UPDATE_MEETING, { onCompleted: () => refetch() });
   const [createMeeting] = useMutation(CREATE_MEETING, { onCompleted: () => refetch() });
@@ -29,11 +35,13 @@ export default function MeetingsSettings() {
     description: "",
     constraintGroupIds: [],
     workloadBalanceWindowDays: "",
+    linkedJobIds: [], // New field for job linking
   });
 
   const meetings = data?.meetings || [];
   const constraintGroups = groupsData?.constraintGroups ?? [];
   const users = usersData?.users ?? [];
+  const jobs = jobsData?.jobs ?? [];
   const columnHelper = createColumnHelper();
 
   const resetForm = React.useCallback(() => {
@@ -46,6 +54,7 @@ export default function MeetingsSettings() {
       coHostId: "",
       alternateHostId: "",
       workloadBalanceWindowDays: "",
+      linkedJobIds: [],
     });
     setEditingMeeting(null);
   }, []);
@@ -61,6 +70,7 @@ export default function MeetingsSettings() {
       coHostId: meeting.coHost?._id ?? "",
       alternateHostId: meeting.alternateHost?._id ?? "",
       workloadBalanceWindowDays: meeting.workloadBalanceWindowDays ?? "",
+      linkedJobIds: meeting.linkedJobIds ?? [],
     });
     setShowForm(true);
   }, []);
@@ -77,6 +87,7 @@ export default function MeetingsSettings() {
       coHostId: formState.coHostId || null,
       alternateHostId: formState.alternateHostId || null,
       workloadBalanceWindowDays: (workloadDays && workloadDays > 0) ? workloadDays : null,
+      linkedJobIds: formState.linkedJobIds,
     };
 
     try {
