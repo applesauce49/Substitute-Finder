@@ -609,7 +609,6 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
     const candidates = buildCandidateApplications(job, allUsers);
 
     // Pre-calculate meetings hosted for all users to avoid async issues in ranking
-    const Meeting = require('../models/Meeting');
     const userIds = candidates.map(c => c.application?.user?._id).filter(Boolean);
     
     if (userIds.length > 0) {
