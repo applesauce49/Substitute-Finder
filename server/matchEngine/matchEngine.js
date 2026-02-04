@@ -407,16 +407,16 @@ function calculateCompositeScore(scored, meetingContext, job) {
     const constraintScore = scored.score || 0;
     const constraintWeight = 0.40;
 
-    // 2. Workload Balance Score (0-1) - 25% weight  
+    // 2. Workload Balance Score (0-1) - 30% weight  
     const workloadScore = calculateWorkloadScore(user);
-    const workloadWeight = 0.25;
+    const workloadWeight = 0.30;
 
     // 3. Recent Substitute Jobs Score (0-1) - 20% weight
     const workloadBalanceWindow = meetingContext?.workloadBalanceWindowDays;
     const recentSubScore = workloadBalanceWindow ? calculateRecentSubScore(user, workloadBalanceWindow) : 0;
     const recentSubWeight = 0.20;
 
-    // 4. Application Date Score (0-1) - 15% weight
+    // 4. Application Date Score (0-1) - 10% weight
     // Applications closer to job post date get higher scores
     let applicationDateScore = 0;
     if (scored.application?.appliedAt && job?.createdAt) {
@@ -438,7 +438,7 @@ function calculateCompositeScore(scored, meetingContext, job) {
             applicationDateScore = 1.0;
         }
     }
-    const applicationDateWeight = 0.15;
+    const applicationDateWeight = 0.10;
 
     // Calculate weighted composite score
     const compositeScore = 
