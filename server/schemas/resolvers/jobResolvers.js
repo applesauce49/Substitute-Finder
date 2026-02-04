@@ -126,9 +126,37 @@ export default {
                         console.log(`Matches for eventId '${eventId}':`, partialMatches);
                     }
                     
-                    throw new GraphQLError(`Could not find original meeting for this job. Job event IDs: [${eventIds.join(', ')}]. Check server logs for detailed debugging info.`, {
-                        extensions: { code: 'MEETING_NOT_FOUND' }
+                    console.log('\n=== FALLBACK: Job has no corresponding Meeting document ===');
+                    console.log('This is normal for jobs created directly from Google Calendar events.');
+                    console.log('Creating virtual meeting from job meetingSnapshot data...');
+                    
+                    // Create a virtual meeting object from the job's meetingSnapshot
+                    // This handles cases where jobs are created from calendar events
+                    // but no corresponding Meeting document exists in the system
+                    const virtualMeeting = {
+                        _id: job._id, // Use job ID as meeting ID for this case
+                        summary: job.meetingSnapshot.title,
+                        description: job.meetingSnapshot.description || '',
+                        start: job.meetingSnapshot.startDateTime,
+                        end: job.meetingSnapshot.endDateTime,
+                        eventId: job.meetingSnapshot.eventId,
+                        gcalEventId: job.meetingSnapshot.gcalEventId,
+                        gcalRecurringEventId: job.meetingSnapshot.gcalRecurringEventId,
+                        constraintGroupIds: [], // No constraints for jobs without Meeting documents
+                        workloadBalanceWindowDays: null // No workload balance for jobs without Meeting documents
+                    };
+                    
+                    console.log('Virtual meeting created:', {
+                        _id: virtualMeeting._id,
+                        summary: virtualMeeting.summary,
+                        eventId: virtualMeeting.eventId,
+                        constraintCount: 0,
+                        workloadBalance: null
                     });
+                    
+                    // Call the match engine with the virtual meeting data
+                    // We'll modify previewMatchEngineForMeeting to accept a virtual meeting parameter
+                    return await previewMatchEngineForMeeting(virtualMeeting._id, null, "job", jobId, virtualMeeting);
                 }
 
                 console.log(`=== SUCCESS: Found meeting ${meeting._id}, proceeding with dry run ===\n`);

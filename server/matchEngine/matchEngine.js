@@ -450,15 +450,30 @@ function rankApplications(candidates, constraints, attrDefMap, meetingContext) {
     return { ranked, hasConstraints };
 }
 
-export async function previewMatchEngineForMeeting(meetingId, userId = null, dryRunType = "meeting", jobId = null) {
+export async function previewMatchEngineForMeeting(meetingId, userId = null, dryRunType = "meeting", jobId = null, virtualMeeting = null) {
     await connectDB();
     const attributeDefinitionMap = await buildAttributeDefinitionMap();
     const allUsers = await User.find({}).lean();
 
-    const meeting = meetingId ? await Meeting.findById(meetingId).lean() : null;
+    console.log(`\n=== DEBUG: previewMatchEngineForMeeting ===`);
+    console.log(`meetingId: ${meetingId}, dryRunType: ${dryRunType}, jobId: ${jobId}`);
+    console.log(`virtualMeeting provided: ${!!virtualMeeting}`);
+
+    // Use virtual meeting if provided, otherwise fetch from database
+    const meeting = virtualMeeting || (meetingId ? await Meeting.findById(meetingId).lean() : null);
+    
+    if (!meeting) {
+        throw new Error(`Meeting not found for ID: ${meetingId}`);
+    }
+    
+    console.log(`Using meeting: ${meeting.summary || meeting.title || 'Unknown'}`);
+    console.log(`Constraints: ${meeting.constraintGroupIds?.length || 0}`);
+    console.log(`Workload balance: ${meeting.workloadBalanceWindowDays || 'disabled'}`);
+
     const eventIds = [
         meeting?.gcalEventId,
         meeting?.gcalRecurringEventId,
+        meeting?.eventId
     ].filter(Boolean);
 
     let job = null;
