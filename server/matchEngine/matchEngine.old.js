@@ -1,30 +1,530 @@
-/**
- * Match Engine Core
- * Main orchestration functions for job matching and assignment
- */
-
 import { connectDB } from "../config/db.js";
 import Job from "../models/Job.js";
 import User from "../models/User.js";
-import Meeting from "../models/Meeting.js";
 import resolvers from "../schemas/resolvers/index.js";
 import { postJobToGoogleChat } from "../utils/chatJobNotifier.js";
+import Meeting from "../models/Meeting.js";
+import ConstraintGroup from "./Schemas/ConstraintGroup.js";
+import Constraint from "./Schemas/Constraint.js";
+import UserAttributeDefinition from "./Schemas/UserAttributeDefinition.js";
+import { SYSTEM_ATTRIBUTES } from "../config/systemAttributes.js";
 import { getDefaultWorkloadBalanceWindowDays, getMaxFutureJobDays } from "../services/systemSettingsService.js";
 
-// Import from modular files
-import { SYSTEM_ATTRIBUTE_GETTERS } from './systemAttributes.js';
-import { calculateWorkloadScore, calculateRecentSubScore, rankApplications } from './scoring.js';
-import { buildAttributeDefinitionMap, getMeetingConstraints, loadConstraintsByGroupIds, buildCandidateApplications } from './dataLoaders.js';
+
+// import Meeting from "../models/Meeting.js";
+// import User from "../models/User.js";
+
+// --- Helpers for evaluating constraints ---
+
+const SYSTEM_ATTRIBUTE_GETTERS = {
+    lastSubbedAt: (user) => {
+        const mostRecent = (user?.assignedJobs || [])
+            .map(a => a?.assignedAt ? new Date(a.assignedAt).getTime() : null)
+            .filter(Boolean)
+            .sort((a, b) => b - a)[0];
+        return mostRecent ? new Date(mostRecent) : null;
+    },
+    assignedJobCount: (user) => Array.isArray(user?.assignedJobs) ? user.assignedJobs.length : 0,
+    hasSubbedInLast7Days: (user) => {
+        const last = SYSTEM_ATTRIBUTE_GETTERS.lastSubbedAt(user);
+        if (!last) return false;
+        const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+        return Date.now() - last.getTime() <= SEVEN_DAYS;
+    },
+    totalMeetingsHosted: (user) => {
+        // If the user already has the pre-calculated field, use it
+        if (typeof user?.totalMeetingsHosted === 'number') {
+            return user.totalMeetingsHosted;
+        }
+        // If not available, return 0 - we'll calculate it separately for dry runs
+        return 0;
+    },
+};
+
+function parseListValue(raw) {
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === "string") {
+        try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return parsed;
+        } catch (_) { /* no-op */ }
+        return raw
+            .split(",")
+            .map(v => v.trim())
+            .filter(Boolean);
+    }
+    return [];
+}
+
+function parseRangeValue(raw) {
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === "string") {
+        try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return parsed;
+        } catch (_) { /* no-op */ }
+        const parts = raw.split(",").map(v => v.trim());
+        if (parts.length >= 2) return [parts[0], parts[1]];
+    }
+    return [];
+}
 
 /**
- * Preview match engine results for a meeting without making any changes
- * @param {string} meetingId - The meeting ID
- * @param {string} userId - Optional user ID filter
- * @param {string} dryRunType - Type of dry run ("meeting" or "job")
- * @param {string} jobId - Optional job ID for job-specific dry runs
- * @param {Object} virtualMeeting - Optional virtual meeting object
- * @returns {Promise<Object>} Preview results with applicant rankings
+ * Calculate workload balance score for an applicant
+ * Higher scores favor users with fewer meetings (better for workload distribution)
+ * @param {Object} user - The user object
+ * @returns {number} Score between 0 and 1, where 1 = lowest meeting count
  */
+function calculateWorkloadScore(user) {
+    const meetingCount = SYSTEM_ATTRIBUTE_GETTERS.totalMeetingsHosted(user);
+    // Invert the count so people with fewer meetings get higher scores
+    // Use a reasonable upper bound to prevent extreme outliers
+    const maxMeetings = 50;
+    const normalizedCount = Math.min(meetingCount, maxMeetings);
+    return (maxMeetings - normalizedCount) / maxMeetings;
+}
+
+/**
+ * Calculate recent substitute job score for time-based workload balancing
+ * Higher scores favor users with fewer recent substitute assignments
+ * @param {Object} user - The user object
+ * @param {number} windowDays - Number of days to look back (null/undefined = no time-based balancing)
+ * @returns {number} Score between 0 and 1, where 1 = fewest recent assignments
+ */
+function calculateRecentSubScore(user, windowDays) {
+    if (!windowDays || windowDays <= 0) {
+        return 0; // No time-based balancing requested
+    }
+
+    const cutoffDate = new Date(Date.now() - (windowDays * 24 * 60 * 60 * 1000));
+    const recentJobs = (user?.assignedJobs || [])
+        .filter(assignment => {
+            const assignedAt = assignment?.assignedAt ? new Date(assignment.assignedAt) : null;
+            return assignedAt && assignedAt >= cutoffDate;
+        }).length;
+
+    // Debug logging
+    console.log(`[DEBUG] calculateRecentSubScore for user ${user?.username || user?._id}:`);
+    console.log(`  - Window days: ${windowDays}`);
+    console.log(`  - Cutoff date: ${cutoffDate}`);
+    console.log(`  - Total assigned jobs: ${user?.assignedJobs?.length || 0}`);
+    console.log(`  - Recent jobs count: ${recentJobs}`);
+    if (user?.assignedJobs?.length > 0) {
+        console.log(`  - Assignment dates:`, user.assignedJobs.map(a => ({assignedAt: a.assignedAt, job: a.job})));
+    }
+
+    // Invert the count so people with fewer recent jobs get higher scores
+    // Use a reasonable upper bound to prevent extreme outliers
+    const maxRecentJobs = Math.max(10, windowDays / 7); // Roughly 1-2 jobs per week as max
+    const normalizedCount = Math.min(recentJobs, maxRecentJobs);
+    return (maxRecentJobs - normalizedCount) / maxRecentJobs;
+}
+
+function coerceValueByType(value, type) {
+    if (value === undefined || value === null) return null;
+
+    if (Array.isArray(value)) {
+        return value
+            .map(v => coerceValueByType(v, type))
+            .filter(v => v !== null);
+    }
+
+    switch (type) {
+        case "number": {
+            const num = Number(value);
+            return Number.isNaN(num) ? null : num;
+        }
+        case "boolean":
+            return value === true || value === "true" || value === "1";
+        case "date": {
+            const d = new Date(value);
+            return Number.isNaN(d.getTime()) ? null : d.getTime();
+        }
+        case "time": {
+            if (typeof value !== "string") return null;
+            const [hours, minutes] = value.split(":").map(Number);
+            if (
+                Number.isNaN(hours) ||
+                Number.isNaN(minutes) ||
+                hours < 0 ||
+                hours > 23 ||
+                minutes < 0 ||
+                minutes > 59
+            ) {
+                return null;
+            }
+            return hours * 60 + minutes;
+        }
+        default:
+            return String(value).toLowerCase();
+    }
+}
+
+function normalizeConstraintValue(constraint, attrType) {
+    const operator = constraint?.operator || "";
+    if (["in", "notIn"].includes(operator)) {
+        return coerceValueByType(parseListValue(constraint.value), attrType);
+    }
+    if (operator === "between") {
+        const [min, max] = parseRangeValue(constraint.value);
+        return [coerceValueByType(min, attrType), coerceValueByType(max, attrType)];
+    }
+    return coerceValueByType(constraint?.value, attrType);
+}
+
+function isEqual(a, b, type) {
+    if (Array.isArray(a) || Array.isArray(b)) return false;
+    if (type === "number" || type === "date" || type === "time") {
+        return a === b;
+    }
+    return String(a).toLowerCase() === String(b).toLowerCase();
+}
+
+function evaluateConstraint(constraint, userValue, attrType) {
+    const operator = constraint?.operator || "";
+    const targetValue = normalizeConstraintValue(constraint, attrType);
+
+    const lhs = coerceValueByType(userValue, attrType);
+
+    if (lhs === null || lhs === undefined) return false;
+
+    switch (operator) {
+        case "equals":
+            return isEqual(lhs, targetValue, attrType);
+        case "notEquals":
+            return !isEqual(lhs, targetValue, attrType);
+        case "gt":
+            return lhs > targetValue;
+        case "lt":
+            return lhs < targetValue;
+        case "gte":
+            return lhs >= targetValue;
+        case "lte":
+            return lhs <= targetValue;
+        case "contains":
+            return String(lhs).toLowerCase().includes(String(targetValue ?? "").toLowerCase());
+        case "notContains":
+            return !String(lhs).toLowerCase().includes(String(targetValue ?? "").toLowerCase());
+        case "in": {
+            const list = Array.isArray(targetValue) ? targetValue : [targetValue];
+            return list.some(v => isEqual(lhs, v, attrType));
+        }
+        case "notIn": {
+            const list = Array.isArray(targetValue) ? targetValue : [targetValue];
+            return !list.some(v => isEqual(lhs, v, attrType));
+        }
+        case "between": {
+            const [min, max] = targetValue || [];
+            if (min === null || max === null) return false;
+            return lhs >= min && lhs <= max;
+        }
+        default:
+            return false;
+    }
+}
+
+async function buildAttributeDefinitionMap() {
+    const customDefs = await UserAttributeDefinition.find({}).lean();
+    const allDefs = [
+        ...SYSTEM_ATTRIBUTES.map(attr => ({
+            ...attr,
+            type: typeof attr.type === "string" ? attr.type.toLowerCase() : attr.type
+        })),
+        ...customDefs.map(def => ({
+            ...def,
+            type: typeof def.type === "string" ? def.type.toLowerCase() : def.type
+        })),
+    ];
+
+    return new Map(allDefs.map(def => [def.key, def]));
+}
+
+function resolveAttributeValue(fieldSource, fieldKey, user, meetingContext) {
+    if (fieldSource === "meeting") {
+        return meetingContext?.[fieldKey];
+    }
+
+    if (SYSTEM_ATTRIBUTE_GETTERS[fieldKey]) {
+        return SYSTEM_ATTRIBUTE_GETTERS[fieldKey](user);
+    }
+
+    return user?.attributes?.find(attr => attr.key === fieldKey)?.value;
+}
+
+function scoreApplicant(application, constraints, attrDefMap, meetingContext) {
+    if (!constraints.length) {
+        return {
+            application,
+            score: 0,
+            matched: 0,
+            total: 0,
+            matchedConstraints: [],
+            disqualified: false,
+        };
+    }
+
+    let matched = 0;
+    const matchedConstraints = [];
+    let failedRequired = false;
+
+    for (const constraint of constraints) {
+        const attrDef = attrDefMap.get(constraint.fieldKey);
+        const attrType = attrDef?.type ?? "string";
+        const userValue = resolveAttributeValue(
+            constraint.fieldSource,
+            constraint.fieldKey,
+            application.user,
+            meetingContext
+        );
+
+        const passes = evaluateConstraint(constraint, userValue, attrType);
+        const isRequired = Boolean(constraint.required);
+
+        if (passes) {
+            matched++;
+            matchedConstraints.push(constraint.name || constraint.fieldKey);
+        } else if (isRequired) {
+            failedRequired = true;
+        }
+    }
+
+    const disqualified = failedRequired;
+
+    return {
+        application,
+        matched,
+        total: constraints.length,
+        score: disqualified
+            ? 0
+            : constraints.length
+                ? matched / constraints.length
+                : 0,
+        matchedConstraints,
+        disqualified,
+    };
+}
+
+async function getMeetingConstraints(job) {
+    const eventIds = [
+        job?.meetingSnapshot?.gcalEventId,
+        job?.meetingSnapshot?.gcalRecurringEventId,
+        job?.meetingSnapshot?.eventId,
+    ].filter(Boolean);
+
+    if (!eventIds.length) {
+        return { meeting: null, constraints: [] };
+    }
+
+    const meeting = await Meeting.findOne({
+        $or: [
+            { gcalEventId: { $in: eventIds } },
+            { gcalRecurringEventId: { $in: eventIds } },
+        ],
+    }).lean();
+    const groupIds = meeting?.constraintGroupIds || [];
+
+    if (!groupIds.length) {
+        return { meeting, constraints: [] };
+    }
+
+    const groups = await ConstraintGroup.find({ _id: { $in: groupIds } }).lean();
+    const constraintIds = [...new Set(groups.flatMap(g => g.constraintIds || []))];
+
+    if (!constraintIds.length) {
+        return { meeting, constraints: [] };
+    }
+
+    const constraints = await Constraint.find({
+        _id: { $in: constraintIds },
+        active: { $ne: false },
+    }).lean();
+
+    return { meeting, constraints };
+}
+
+async function loadConstraintsByGroupIds(groupIds) {
+    if (!Array.isArray(groupIds) || !groupIds.length) {
+        return [];
+    }
+
+    const groups = await ConstraintGroup.find({ _id: { $in: groupIds } }).lean();
+    const constraintIds = [...new Set(groups.flatMap(g => g.constraintIds || []))];
+
+    if (!constraintIds.length) return [];
+
+    return Constraint.find({
+        _id: { $in: constraintIds },
+        active: { $ne: false },
+    }).lean();
+}
+
+function buildCandidateApplications(job, users, dryRunType = "meeting") {
+    const applicantMap = new Map();
+    (job.applications || []).forEach(app => {
+        const userId = String(app.user?._id || app.user);
+        if (!applicantMap.has(userId)) {
+            applicantMap.set(userId, app);
+        }
+    });
+
+    // For job dry runs, only include actual applicants
+    if (dryRunType === "job") {
+        return users
+            .filter(user => applicantMap.has(String(user._id)))
+            .map(user => {
+                const app = applicantMap.get(String(user._id));
+                return {
+                    application: { ...app, user },
+                    isApplicant: true,
+                };
+            });
+    }
+
+    // For meeting dry runs, include all users with applicant status
+    return users.map(user => {
+        const app = applicantMap.get(String(user._id)) || null;
+        return {
+            application: app
+                ? { ...app, user }
+                : { user, appliedAt: job.createdAt || new Date() },
+            isApplicant: Boolean(app),
+        };
+    });
+}
+
+/**
+ * Calculate a composite score that includes multiple factors
+ * @param {Object} scored - The scored application object
+ * @param {Object} meetingContext - Meeting context for workload balance
+ * @param {Object} job - The job object to get creation date from
+ * @returns {number} Composite score between 0 and 1
+ */
+function calculateCompositeScore(scored, meetingContext, job) {
+    const user = scored.application?.user;
+    if (!user) return 0;
+
+    // 1. Constraint Score (0-1) - 40% weight
+    const constraintScore = scored.score || 0;
+    const constraintWeight = 0.40;
+
+    // 2. Workload Balance Score (0-1) - 30% weight  
+    const workloadScore = calculateWorkloadScore(user);
+    const workloadWeight = 0.30;
+
+    // 3. Recent Substitute Jobs Score (0-1) - 20% weight
+    const workloadBalanceWindow = meetingContext?.workloadBalanceWindowDays;
+    const recentSubScore = workloadBalanceWindow ? calculateRecentSubScore(user, workloadBalanceWindow) : 0;
+    const recentSubWeight = 0.20;
+
+    // 4. Application Date Score (0-1) - 10% weight
+    // Applications closer to job post date get higher scores
+    let applicationDateScore = 0;
+    if (scored.application?.appliedAt && job?.createdAt) {
+        const appliedAt = new Date(scored.application.appliedAt);
+        const jobPostedAt = new Date(job.createdAt);
+        const daysSinceJobPosted = (appliedAt - jobPostedAt) / (1000 * 60 * 60 * 24);
+        
+        // Score decreases over 30 days from job post date, with applications in first 7 days getting full score
+        if (daysSinceJobPosted <= 7) {
+            applicationDateScore = 1.0; // Full score for applications within first week
+        } else if (daysSinceJobPosted <= 30) {
+            applicationDateScore = Math.max(0, (30 - daysSinceJobPosted) / 23); // Linear decline from day 8-30
+        } else {
+            applicationDateScore = 0; // No credit for applications more than 30 days after job posted
+        }
+        
+        // Handle applications submitted before job creation (edge case)
+        if (daysSinceJobPosted < 0) {
+            applicationDateScore = 1.0;
+        }
+    }
+    const applicationDateWeight = 0.10;
+
+    // Calculate weighted composite score
+    const compositeScore = 
+        (constraintScore * constraintWeight) +
+        (workloadScore * workloadWeight) +
+        (recentSubScore * recentSubWeight) +
+        (applicationDateScore * applicationDateWeight);
+
+    console.log(`[DEBUG] Composite score for ${user.username}:`, {
+        constraintScore: (constraintScore * constraintWeight).toFixed(3),
+        workloadScore: (workloadScore * workloadWeight).toFixed(3),
+        recentSubScore: (recentSubScore * recentSubWeight).toFixed(3),
+        applicationDateScore: (applicationDateScore * applicationDateWeight).toFixed(3),
+        totalScore: compositeScore.toFixed(3)
+    });
+
+    return compositeScore;
+}
+
+function rankApplications(candidates, constraints, attrDefMap, meetingContext, job) {
+    const hasConstraints = Array.isArray(constraints) && constraints.length > 0;
+    const workloadBalanceWindow = meetingContext?.workloadBalanceWindowDays;
+
+    const ranked = (candidates || [])
+        .map(candidate => {
+            const scored = hasConstraints
+                ? scoreApplicant(candidate.application, constraints, attrDefMap, meetingContext)
+                : {
+                    application: candidate.application,
+                    score: 0,
+                    matched: 0,
+                    total: 0,
+                    matchedConstraints: [],
+                    disqualified: false,
+                };
+
+            // Calculate composite score that includes all factors
+            const compositeScore = calculateCompositeScore(scored, meetingContext, job);
+
+            return {
+                ...scored,
+                score: compositeScore, // Replace simple constraint score with composite score
+                constraintScore: scored.score, // Keep original constraint score for reference
+                isApplicant: candidate.isApplicant,
+            };
+        })
+        .sort((a, b) => {
+            // 1. Disqualified applicants go to bottom
+            if (a.disqualified !== b.disqualified) {
+                return a.disqualified ? 1 : -1;
+            }
+            
+            // 2. PRIORITY: Actual applicants before non-applicants (ALWAYS)
+            if (a.isApplicant !== b.isApplicant) {
+                return b.isApplicant - a.isApplicant;
+            }
+            
+            // 3. Higher constraint scores first
+            if (b.score !== a.score) return b.score - a.score;
+            
+            // 4. Time-based workload balancing (favor users with fewer recent sub jobs)
+            if (workloadBalanceWindow) {
+                const aRecentScore = calculateRecentSubScore(a.application.user, workloadBalanceWindow);
+                const bRecentScore = calculateRecentSubScore(b.application.user, workloadBalanceWindow);
+                if (Math.abs(aRecentScore - bRecentScore) > 0.01) {
+                    return bRecentScore - aRecentScore; // Higher score (fewer recent jobs) wins
+                }
+            }
+            
+            // 5. General workload balancing (favor users with fewer hosted meetings)
+            const aWorkload = calculateWorkloadScore(a.application.user);
+            const bWorkload = calculateWorkloadScore(b.application.user);
+            if (Math.abs(aWorkload - bWorkload) > 0.01) {
+                return bWorkload - aWorkload; // Higher workload score (fewer meetings) wins
+            }
+            
+            // 6. Higher matched constraint count
+            if (b.matched !== a.matched) return b.matched - a.matched;
+            
+            // 7. Earlier application time
+            return new Date(a.application.appliedAt) - new Date(b.application.appliedAt);
+        });
+
+    return { ranked, hasConstraints };
+}
+
 export async function previewMatchEngineForMeeting(meetingId, userId = null, dryRunType = "meeting", jobId = null, virtualMeeting = null) {
     await connectDB();
     const attributeDefinitionMap = await buildAttributeDefinitionMap();
@@ -177,7 +677,7 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
         workloadBalanceWindowDays: workloadBalanceWindow
     };
 
-    const candidates = buildCandidateApplications(job, allUsers, dryRunType);
+    const candidates = buildCandidateApplications(job, allUsers);
 
     // Pre-calculate meetings hosted for all users to avoid async issues in ranking
     const userIds = candidates.map(c => c.application?.user?._id).filter(Boolean);
@@ -288,10 +788,6 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
     };
 }
 
-/**
- * Run the match engine to process open jobs and assign winners
- * @returns {Promise<void>}
- */
 export async function runMatchEngine() {
     console.log(`[MatchEngine] Cycle started at ${new Date().toISOString()}`);
     const { acceptApplication } = resolvers.Mutation;
@@ -324,7 +820,7 @@ export async function runMatchEngine() {
 
     for (const job of jobs) {
         try {
-            // First check if the date and time has passed. Close the job if so.
+            // First check if the date and time has passed.  Close the job if so.
             const meetingStart = new Date(job.meetingSnapshot?.startDateTime);
             if (meetingStart < now) {
                 console.log(`[MatchEngine] - Job "${job._id}" meeting time has passed. Closing job.`);
@@ -341,6 +837,7 @@ export async function runMatchEngine() {
             }
 
             if (!job.applications || job.applications.length === 0) {
+
                 if (!job.firstNotificationSent) {
                     console.log(`[MatchEngine] - Job "${job._id}" has no applications. Sending first notification.`);
                     job.firstNotificationSent = true;
@@ -348,6 +845,12 @@ export async function runMatchEngine() {
                     await postJobToGoogleChat(job);
                     totalEvaluated++;
                     continue;
+                // } else if(job.firstNotificationSent && !job.secondNotificationSent) {
+                //     console.log(`[MatchEngine] - Job "${job._id}" has no applications. Sending second notification.`);
+                //     job.secondNotificationSent = true;
+                //     await job.save();
+                //     totalEvaluated++;
+                //     continue;
                 } else {
                     console.log(`[MatchEngine] - Job "${job._id}" has no applications. Skipping job.`);
                     continue;
@@ -356,7 +859,7 @@ export async function runMatchEngine() {
 
             const { meeting, constraints } = await getMeetingConstraints(job);
             const meetingContext = meeting || job.meetingSnapshot || {};
-            const candidates = buildCandidateApplications(job, allUsers, "job");
+            const candidates = buildCandidateApplications(job, allUsers);
 
             const { ranked: rankedApplications, hasConstraints } = rankApplications(
                 candidates,
@@ -436,7 +939,7 @@ export async function runMatchEngine() {
 
 /**
  * Get list of eligible jobs for match engine processing
- * @returns {Promise<Array>} Array of eligible job information
+ * @returns {Array} Array of eligible job information
  */
 export async function getEligibleJobsForMatchEngine() {
     await connectDB();
@@ -475,7 +978,7 @@ export async function getEligibleJobsForMatchEngine() {
  * Run match engine with configurable options
  * @param {Array<String>} jobIds - Optional array of specific job IDs to process
  * @param {Boolean} dryRun - If true, don't make any changes, just return what would happen
- * @returns {Promise<Object>} Results of the match engine run
+ * @returns {Object} Results of the match engine run
  */
 export async function runMatchEngineConfigurable(jobIds = null, dryRun = false) {
     const logPrefix = dryRun ? "[MatchEngine-DryRun]" : "[MatchEngine-Config]";
@@ -586,7 +1089,7 @@ export async function runMatchEngineConfigurable(jobIds = null, dryRun = false) 
             // Process job with applications
             const { meeting, constraints } = await getMeetingConstraints(job);
             const meetingContext = meeting || job.meetingSnapshot || {};
-            const candidates = buildCandidateApplications(job, allUsers, "job");
+            const candidates = buildCandidateApplications(job, allUsers);
 
             const { ranked: rankedApplications, hasConstraints } = rankApplications(
                 candidates,
@@ -678,3 +1181,4 @@ export async function runMatchEngineConfigurable(jobIds = null, dryRun = false) 
         totalEvaluated
     };
 }
+

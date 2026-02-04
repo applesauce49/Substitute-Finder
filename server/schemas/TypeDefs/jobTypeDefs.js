@@ -10,6 +10,7 @@ extend type Query {
   matchEngineDryRun(meetingId: ID!): MatchEngineDryRunResult!
   matchEngineJobDryRun(jobId: ID!): MatchEngineDryRunResult!
   jobMetricsOverTime(days: Int): [JobMetricsData!]!
+  eligibleJobsForMatchEngine: [EligibleJobInfo!]!
 }
 
 extend type Mutation {
@@ -24,6 +25,7 @@ extend type Mutation {
   acceptApplication(jobId: ID!, applicationId: ID!): AcceptApplicationResult!
   declineApplication(jobId: ID!, applicationId: ID!): Boolean!
   runMatchEngine: Boolean!
+  runMatchEngineConfigurable(jobIds: [ID!], dryRun: Boolean): MatchEngineConfigurableResult!
 }
 
 type Subscription {
@@ -97,6 +99,37 @@ type JobMetricsData {
   jobsPosted: Int!
   jobsAssigned: Int!
   totalApplications: Int!
+}
+
+type EligibleJobInfo {
+  jobId: ID!
+  meetingTitle: String!
+  startDateTime: DateTime!
+  createdBy: String
+  applicationCount: Int!
+  meetingIsPast: Boolean!
+  meetingIsTooFarFuture: Boolean!
+  isEligible: Boolean!
+}
+
+type MatchEngineJobResult {
+  jobId: ID!
+  meetingTitle: String!
+  status: String!
+  message: String
+  assignedTo: ID
+  assignedToName: String
+  applicantCount: Int
+  eligibleCount: Int
+  winnerScore: Float
+}
+
+type MatchEngineConfigurableResult {
+  success: Boolean!
+  dryRun: Boolean!
+  jobsProcessed: Int!
+  jobResults: [MatchEngineJobResult!]!
+  totalEvaluated: Int!
 }
 
 type Job {

@@ -180,3 +180,20 @@ export const QUERY_MATCH_ENGINE_JOB_DRY_RUN = gql`
     }
   }
 `;
+
+
+export const QUERY_ELIGIBLE_JOBS_FOR_MATCH_ENGINE = gql`
+  query EligibleJobsForMatchEngine {
+    eligibleJobsForMatchEngine {
+      jobId
+      meetingTitle
+      startDateTime
+      createdBy
+      applicationCount
+      meetingIsPast
+      meetingIsTooFarFuture
+      isEligible
+    }
+  }
+`;
+

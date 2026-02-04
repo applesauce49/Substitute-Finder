@@ -1,18 +1,20 @@
 // JobReport.js (new)
 import React from "react";
-import { useQuery, useMutation } from "@apollo/client";
+import { useQuery } from "@apollo/client";
 import { QUERY_ALL_JOBS } from "../utils/graphql/jobs/queries";
-import { RUN_MATCH_ENGINE } from "../utils/graphql/jobs/mutations";
 import { GenericReportTable } from "../components/reporting/GenericReportTable/GenericReportTable.js";
 import SingleJobCard from "../components/SingleJobCard";
 import { ModalForm } from "../components/Modal/ModalForm";
+import { MatchEngineModal } from "../components/MatchEngineModal";
 import { createColumnHelper } from "@tanstack/react-table";
 
 
 export default function JobReport({ me }) {
     const { data } = useQuery(QUERY_ALL_JOBS);
-    const [runMatchEngine] = useMutation(RUN_MATCH_ENGINE);
     const isAdmin = me?.admin;
+
+    const [selectedJob, setSelectedJob] = React.useState(null);
+    const [showMatchEngineModal, setShowMatchEngineModal] = React.useState(false);
 
     const jobs = React.useMemo(() => {
         return data?.jobs?.map(job => ({
@@ -100,8 +102,6 @@ export default function JobReport({ me }) {
         { id: "date", value: { fn: "afterDate", value: today } }
     ];
 
-    const [selectedJob, setSelectedJob] = React.useState(null);
-
     return (
         <>
             <GenericReportTable
@@ -112,7 +112,7 @@ export default function JobReport({ me }) {
                 onRowClick={(job) => setSelectedJob(job)}
                 toolbarRight={
                     isAdmin && (
-                        <button className="btn btn-info" onClick={runMatchEngine}>
+                        <button className="btn btn-info" onClick={() => setShowMatchEngineModal(true)}>
                             Run Match Engine
                         </button>
                     )
@@ -123,6 +123,10 @@ export default function JobReport({ me }) {
                 <ModalForm title="Sub Request Details" onClose={() => setSelectedJob(null)}>
                     <SingleJobCard me={me} jobId={selectedJob.id} />
                 </ModalForm>
+            )}
+
+            {showMatchEngineModal && (
+                <MatchEngineModal onClose={() => setShowMatchEngineModal(false)} />
             )}
         </>
     );

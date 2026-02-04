@@ -3,7 +3,7 @@ import { Job, User, Meeting } from "../../models/index.js";
 import { pubsub } from '../../graphql/pubsub.js';
 import { getImpersonatedCalendarClient, getUserCalendarClient } from '../../services/googleClient.js';
 import { inviteUserToEvent } from '../../services/calendarServices.js';
-import { runMatchEngine, previewMatchEngineForMeeting } from '../../matchEngine/matchEngine.js';
+import { runMatchEngine, previewMatchEngineForMeeting, getEligibleJobsForMatchEngine, runMatchEngineConfigurable } from '../../matchEngine/matchEngine.js';
 import { postJobToGoogleChat, postJobCancelledToGoogleChat, postJobAssignedToGoogleChat } from "../../utils/chatJobNotifier.js";
 import { getDefaultWorkloadBalanceWindowDays } from "../../services/systemSettingsService.js";
 
@@ -230,6 +230,13 @@ export default {
                 jobsAssigned: m.jobsAssigned,
                 totalApplications: m.totalApplications
             }));
+        },
+        eligibleJobsForMatchEngine: async (_, __, context) => {
+            // Optional: Add admin check if needed
+            // if (!context.user?.admin) {
+            //     throw new GraphQLError('Unauthorized', { extensions: { code: 'UNAUTHORIZED' } });
+            // }
+            return await getEligibleJobsForMatchEngine();
         },
     },
     Mutation: {
@@ -467,6 +474,15 @@ export default {
             // }
             await runMatchEngine();
             return true;
+        },
+
+        runMatchEngineConfigurable: async (_, { jobIds, dryRun = false }, context) => {
+            // Optional: Add admin check if needed
+            // if (!context.user?.admin) {
+            //     throw new GraphQLError('Unauthorized', { extensions: { code: 'UNAUTHORIZED' } });
+            // }
+            
+            return await runMatchEngineConfigurable(jobIds, dryRun);
         },
     },
     Subscription: {

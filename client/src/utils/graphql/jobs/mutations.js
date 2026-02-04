@@ -73,3 +73,25 @@ export const RUN_MATCH_ENGINE = gql`
   }
 `;
 
+export const RUN_MATCH_ENGINE_CONFIGURABLE = gql`
+  mutation RunMatchEngineConfigurable($jobIds: [ID!], $dryRun: Boolean) {
+    runMatchEngineConfigurable(jobIds: $jobIds, dryRun: $dryRun) {
+      success
+      dryRun
+      jobsProcessed
+      totalEvaluated
+      jobResults {
+        jobId
+        meetingTitle
+        status
+        message
+        assignedTo
+        assignedToName
+        applicantCount
+        eligibleCount
+        winnerScore
+      }
+    }
+  }
+`;
+
