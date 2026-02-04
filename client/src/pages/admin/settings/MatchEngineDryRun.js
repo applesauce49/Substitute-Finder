@@ -231,7 +231,7 @@ function DryRunResults({ result, loading, error }) {
                       </td>
                       <td>
                         {app.appliedAt
-                          ? new Date(app.appliedAt).toLocaleDateString()
+                          ? new Date(app.appliedAt).toLocaleString()
                           : "—"}
                       </td>
                     </tr>
