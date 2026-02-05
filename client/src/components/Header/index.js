@@ -5,8 +5,8 @@ import Navigation from "./Navigation";
 
 const Header = ({ maintenance = false, me = {}, loggedIn = false }) => {
   return (
-    <header className="navbar navbar-expand-lg theme-header-navigation-container mb-4">
-      <div className="container d-flex justify-content-between align-items-center">
+    <header className="bg-dark mb-4 flex-row align-center text-white">
+      <div className="container flex-row justify-space-between-lg justify-center align-center main-logo">
         <Branding />
 
         { maintenance ? (

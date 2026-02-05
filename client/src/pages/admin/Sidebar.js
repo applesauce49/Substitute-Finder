@@ -2,7 +2,7 @@ import React from 'react';
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 const NAV_ITEMS = [
-    // { id: 'dashboard', icon: 'bi-speedometer2', label: 'Dashboard' },
+    { id: 'dashboard', icon: 'bi-speedometer2', label: 'Dashboard' },
     { id: 'metrics', icon: 'bi-graph-up', label: 'Metrics' },
     { id: 'users', icon: 'bi-people', label: 'Users' },
     // { id: "jobs", icon: "bi-briefcase", label: "Jobs" },
@@ -35,7 +35,7 @@ export default function Sidebar({
 
     return (
         <div
-            className="admin-sidebar d-flex flex-column flex-shrink-0 p-3 bg-body-tertiary border-end"
+            className="d-flex flex-column flex-shrink-0 p-3 bg-body-tertiary border-end"
             style={{
                 width: collapsed ? "80px" : "240px",
                 transition: "width 0.25s ease",

@@ -4,7 +4,7 @@ import SettingsPanel from './SettingsPanel';
 
 export default function AdminLayout({ children }) {
     const [collapsed, setCollapsed] = React.useState(false);
-    const [activeSection, setActiveSection] = React.useState('metrics');
+    const [activeSection, setActiveSection] = React.useState('dashboard');
     return (
         <div className="d-flex flex-nowrap" >
             <Sidebar

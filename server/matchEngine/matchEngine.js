@@ -388,7 +388,11 @@ export async function runMatchEngine() {
                 continue;
             }
 
+            // Ensure we have the application ID
+            let applicationId = winner._id;
+            
             if (!winnerRecord.isApplicant) {
+                // Winner is not an existing applicant, create application
                 job.applications.push({
                     user: winner.user._id,
                     appliedAt: new Date(),
@@ -396,15 +400,21 @@ export async function runMatchEngine() {
                 await job.save();
 
                 const inserted = job.applications.find(app => String(app.user) === String(winner.user._id) && app.appliedAt);
-                winner._id = inserted?._id || winner._id;
+                applicationId = inserted?._id;
+                
+                if (!applicationId) {
+                    console.error(`[MatchEngine] - Failed to create application for winner ${winner.user._id} on job ${job._id}`);
+                    totalEvaluated++;
+                    continue;
+                }
             }
 
             console.log(
-                `[Assign] Job "${job._id}" assigned to ${winner._id}`
+                `[Assign] Job "${job._id}" assigned to application ${applicationId}`
             );
             const res = await acceptApplication(
                 null,
-                { jobId: job._id, applicationId: winner._id },
+                { jobId: job._id, applicationId: applicationId },
                 null,
             )
 
@@ -624,7 +634,10 @@ export async function runMatchEngineConfigurable(jobIds = null, dryRun = false) 
                 result.message = `Would assign to ${result.assignedToName} (score: ${result.winnerScore.toFixed(2)})`;
             } else {
                 // Actually assign the job
+                let applicationId = winner._id;
+                
                 if (!winnerRecord.isApplicant) {
+                    // Winner is not an existing applicant, create application
                     job.applications.push({
                         user: winner.user._id,
                         appliedAt: new Date(),
@@ -634,12 +647,20 @@ export async function runMatchEngineConfigurable(jobIds = null, dryRun = false) 
                     const inserted = job.applications.find(
                         app => String(app.user) === String(winner.user._id) && app.appliedAt
                     );
-                    winner._id = inserted?._id || winner._id;
+                    applicationId = inserted?._id;
+                    
+                    if (!applicationId) {
+                        result.status = "error";
+                        result.message = `Failed to create application for ${result.assignedToName}`;
+                        totalEvaluated++;
+                        jobResults.push(result);
+                        continue;
+                    }
                 }
 
                 const res = await acceptApplication(
                     null,
-                    { jobId: job._id, applicationId: winner._id },
+                    { jobId: job._id, applicationId: applicationId },
                     null,
                 );
 

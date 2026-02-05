@@ -64,20 +64,46 @@ export function MetricsPage() {
             header: "User",
             filterFn: "includesString"
         }),
-        columnHelper.accessor("createdCount", {
-            header: "Jobs Posted",
-            meta: { type: "number" }
+        columnHelper.accessor("assignedCount", {
+            header: "Jobs Filled",
+            meta: { type: "number" },
+            cell: info => {
+                const value = info.getValue();
+                return (
+                    <div className="d-flex align-items-center">
+                        <span className="me-2 fw-bold">{value}</span>
+                        {metrics && metrics.maxAssigned > 0 && (
+                            <div 
+                                className="progress-bar-mini"
+                                style={{
+                                    width: '50px',
+                                    height: '8px',
+                                    backgroundColor: '#e9ecef',
+                                    borderRadius: '4px',
+                                    overflow: 'hidden'
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        width: `${(value / metrics.maxAssigned) * 100}%`,
+                                        height: '100%',
+                                        backgroundColor: value > 0 ? '#28a745' : '#6c757d',
+                                        borderRadius: '4px',
+                                        transition: 'width 0.3s ease'
+                                    }}
+                                />
+                            </div>
+                        )}
+                    </div>
+                );
+            }
         }),
         columnHelper.accessor("appliedCount", {
             header: "Applications Submitted",
             meta: { type: "number" }
         }),
-        columnHelper.accessor("assignedCount", {
-            header: "Jobs Filled",
-            meta: { type: "number" }
-        }),
-        columnHelper.accessor("totalMeetingsHosted", {
-            header: "Meetings Hosted",
+        columnHelper.accessor("createdCount", {
+            header: "Jobs Created",
             meta: { type: "number" }
         }),
         columnHelper.accessor("efficiency", {
@@ -98,13 +124,12 @@ export function MetricsPage() {
     const exportToCSV = React.useCallback(() => {
         // User statistics
         const userCsvContent = [
-            ['Username', 'Jobs Posted', 'Applications Submitted', 'Jobs Filled', 'Meetings Hosted', 'Success Rate'],
+            ['Username', 'Jobs Filled', 'Applications Submitted', 'Jobs Created', 'Success Rate'],
             ...tableData.map(user => [
                 user.username,
-                user.createdCount,
-                user.appliedCount,
                 user.assignedCount,
-                user.totalMeetingsHosted,
+                user.appliedCount,
+                user.createdCount,
                 user.efficiency + '%'
             ])
         ].map(row => row.join(',')).join('\n');
@@ -158,7 +183,7 @@ export function MetricsPage() {
         <div className="metrics-page">
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2><i className="bi bi-graph-up me-2 oplm-icon"></i>Job Fulfillment Metrics</h2>
+                    <h2><i className="bi bi-graph-up me-2"></i>Job Fulfillment Metrics</h2>
                     <small className="text-muted">Real-time substitute job statistics</small>
                 </div>
                 <div className="d-flex align-items-center gap-3">
@@ -182,61 +207,61 @@ export function MetricsPage() {
                 </div>
             </div>
 
-                {/* Summary Cards */}
-                <div className="row mb-4">
-                    <div className="col-md-3">
-                        <div className="card metrics-card oplm-feature-card">
-                            <div className="card-body text-center">
-                                <div className="metrics-icon text-primary mb-2">
-                                    <i className="bi bi-briefcase-fill fs-2 oplm-icon"></i>
-                                </div>
-                                <h3 className="card-title">{metrics.totalJobsAssigned}</h3>
-                                <p className="card-text text-muted">Total Jobs Filled</p>
+            {/* Summary Cards */}
+            <div className="row mb-4">
+                <div className="col-md-3">
+                    <div className="card metrics-card">
+                        <div className="card-body text-center">
+                            <div className="metrics-icon text-primary mb-2">
+                                <i className="bi bi-briefcase-fill fs-2"></i>
                             </div>
-                        </div>
-                    </div>
-                    <div className="col-md-3">
-                        <div className="card metrics-card oplm-feature-card">
-                            <div className="card-body text-center">
-                                <div className="metrics-icon text-success mb-2">
-                                    <i className="bi bi-people-fill fs-2 oplm-icon"></i>
-                                </div>
-                                <h3 className="card-title">{metrics.activeUsers}</h3>
-                                <p className="card-text text-muted">Active Substitutes</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-md-3">
-                        <div className="card metrics-card oplm-feature-card">
-                            <div className="card-body text-center">
-                                <div className="metrics-icon text-info mb-2">
-                                    <i className="bi bi-hand-index-fill fs-2 oplm-icon"></i>
-                                </div>
-                                <h3 className="card-title">{metrics.totalApplications}</h3>
-                                <p className="card-text text-muted">Total Applications</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-md-3">
-                        <div className="card metrics-card oplm-feature-card">
-                            <div className="card-body text-center">
-                                <div className="metrics-icon text-warning mb-2">
-                                    <i className="bi bi-plus-circle-fill fs-2 oplm-icon"></i>
-                                </div>
-                                <h3 className="card-title">{metrics.totalJobsCreated}</h3>
-                                <p className="card-text text-muted">Jobs Posted</p>
-                            </div>
+                            <h3 className="card-title">{metrics.totalJobsAssigned}</h3>
+                            <p className="card-text text-muted">Total Jobs Filled</p>
                         </div>
                     </div>
                 </div>
+                <div className="col-md-3">
+                    <div className="card metrics-card">
+                        <div className="card-body text-center">
+                            <div className="metrics-icon text-success mb-2">
+                                <i className="bi bi-people-fill fs-2"></i>
+                            </div>
+                            <h3 className="card-title">{metrics.activeUsers}</h3>
+                            <p className="card-text text-muted">Active Substitutes</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-3">
+                    <div className="card metrics-card">
+                        <div className="card-body text-center">
+                            <div className="metrics-icon text-info mb-2">
+                                <i className="bi bi-hand-index-fill fs-2"></i>
+                            </div>
+                            <h3 className="card-title">{metrics.totalApplications}</h3>
+                            <p className="card-text text-muted">Total Applications</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-3">
+                    <div className="card metrics-card">
+                        <div className="card-body text-center">
+                            <div className="metrics-icon text-warning mb-2">
+                                <i className="bi bi-plus-circle-fill fs-2"></i>
+                            </div>
+                            <h3 className="card-title">{metrics.totalJobsCreated}</h3>
+                            <p className="card-text text-muted">Jobs Posted</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* Meeting Hosting Metrics */}
             <div className="row mb-4">
                 <div className="col-md-12">
-                    <div className="card metrics-card oplm-feature-card">
+                    <div className="card metrics-card">
                         <div className="card-body text-center">
                             <div className="metrics-icon text-success mb-2">
-                                <i className="bi bi-camera-video-fill fs-2 oplm-icon"></i>
+                                <i className="bi bi-camera-video-fill fs-2"></i>
                             </div>
                             <h3 className="card-title">{metrics.totalMeetingsHosted}</h3>
                             <p className="card-text text-muted">Total Meetings Hosted</p>

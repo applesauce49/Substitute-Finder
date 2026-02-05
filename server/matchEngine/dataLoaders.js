@@ -116,7 +116,11 @@ export function buildCandidateApplications(job, users, dryRunType = "meeting") {
             .map(user => {
                 const app = applicantMap.get(String(user._id));
                 return {
-                    application: { ...app, user },
+                    application: { 
+                        _id: app._id,
+                        appliedAt: app.appliedAt,
+                        user 
+                    },
                     isApplicant: true,
                 };
             });
@@ -127,7 +131,11 @@ export function buildCandidateApplications(job, users, dryRunType = "meeting") {
         const app = applicantMap.get(String(user._id)) || null;
         return {
             application: app
-                ? { ...app, user }
+                ? { 
+                    _id: app._id,
+                    appliedAt: app.appliedAt,
+                    user 
+                }
                 : { user, appliedAt: job.createdAt || new Date() },
             isApplicant: Boolean(app),
         };

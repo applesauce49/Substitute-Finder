@@ -2,7 +2,6 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./index.css";
-import "./css/oplm-theme.css";
 
 import Root from "./root";   // <-- import the new wrapper
 import reportWebVitals from "./reportWebVitals";
