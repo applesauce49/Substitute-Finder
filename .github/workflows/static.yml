@@ -1,39 +1,46 @@
-name: Deploy Frontend to GitHub Pages
+name: Deploy SubAtomic
 
 on:
-  # push:
-  #   branches:
-  #     - main   # or whichever branch you develop on
-  workflow_dispatch:   # allows manual trigger
+  workflow_dispatch:
+  push:
+    branches: [ main ]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: write   # required to push to gh-pages
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          node-version: 22   # or match your local version
-          cache: 'npm'
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
 
-      - name: Install dependencies
-        working-directory: ./client   # adjust if frontend lives in /client
-        run: npm ci
+            export NVM_DIR="$HOME/.nvm"
+            source "$NVM_DIR/nvm.sh"
+            nvm use 22
 
-      - name: Build project
-        working-directory: ./client
-        run: npm run build
+            RELEASE_DIR=/var/www/subatomic/releases/$(date +%Y%m%d%H%M%S)
+            REPO_DIR=~/subatomic
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./client/build
-          publish_branch: gh-pages
+            mkdir -p /var/www/subatomic/releases
+
+            if [ ! -d "$REPO_DIR" ]; then
+              git clone https://github.com/YOURORG/subatomic.git $REPO_DIR
+            fi
+
+            cd $REPO_DIR
+            git pull
+
+            npm install
+            npm run build
+
+            mkdir -p $RELEASE_DIR
+            cp -r dist/* $RELEASE_DIR/
+
+            ln -sfn $RELEASE_DIR /var/www/subatomic/current
+
+            echo "Deploy complete → $RELEASE_DIR"
