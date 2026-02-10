@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: oplm-subatomic-deploy
+    environment: oplm-subatomic-deployment
 
     steps:
       - name: Deploy via SSH
