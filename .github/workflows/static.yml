@@ -36,6 +36,8 @@ jobs:
             cd $REPO_DIR
             git pull
 
+            export REACT_APP_API_URL="${{ vars.REACT_APP_API_URL }}"
+
             npm install
             npm run build
 
