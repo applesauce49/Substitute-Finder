@@ -40,7 +40,7 @@ jobs:
             npm run build
 
             mkdir -p $RELEASE_DIR
-            cp -r dist/* $RELEASE_DIR/
+            cp -r client/build/* $RELEASE_DIR/
 
             ln -sfn $RELEASE_DIR /var/www/subatomic/current
 
