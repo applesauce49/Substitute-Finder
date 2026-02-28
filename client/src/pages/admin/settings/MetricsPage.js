@@ -111,7 +111,7 @@ export function MetricsPage() {
             cell: info => `${info.getValue()}%`,
             meta: { type: "number" }
         })
-    ], [columnHelper]);
+    ], [columnHelper, metrics]);
 
     const filterFns = React.useMemo(() => ({
         includesString: (row, columnId, filterValue) => {
