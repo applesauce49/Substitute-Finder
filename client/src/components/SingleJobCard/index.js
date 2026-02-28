@@ -62,7 +62,23 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
 
       await refetch();
     } catch (e) {
-      console.error(e);
+      console.error('Error applying for job:', e);
+      
+      let errorMessage = 'Failed to apply for job. ';
+      
+      if (e.message?.includes('Not Found') || e.networkError?.statusCode === 404) {
+        errorMessage += 'The server endpoint could not be found. Please check your network connection or contact support.';
+      } else if (e.message?.includes('already applied')) {
+        errorMessage += 'You have already applied for this job.';
+      } else if (e.networkError) {
+        errorMessage += `Network error: ${e.networkError.message || 'Unable to connect to server'}`;
+      } else if (e.graphQLErrors?.length > 0) {
+        errorMessage += e.graphQLErrors.map(err => err.message).join(', ');
+      } else {
+        errorMessage += e.message || 'An unknown error occurred.';
+      }
+      
+      alert(errorMessage);
     }
 
     if (onClose) onClose();
@@ -75,7 +91,23 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
       await cancelJob({ variables: { jobId } });
       await refetch();
     } catch (e) {
-      console.error(e);
+      console.error('Error cancelling job:', e);
+      
+      let errorMessage = 'Failed to cancel job. ';
+      
+      if (e.message?.includes('Not Found') || e.networkError?.statusCode === 404) {
+        errorMessage += 'The server endpoint could not be found. Please check your network connection or contact support.';
+      } else if (e.message?.includes('Job not found')) {
+        errorMessage += 'This job no longer exists.';
+      } else if (e.networkError) {
+        errorMessage += `Network error: ${e.networkError.message || 'Unable to connect to server'}`;
+      } else if (e.graphQLErrors?.length > 0) {
+        errorMessage += e.graphQLErrors.map(err => err.message).join(', ');
+      } else {
+        errorMessage += e.message || 'An unknown error occurred.';
+      }
+      
+      alert(errorMessage);
     }
 
     if (onClose) onClose();
@@ -87,7 +119,26 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
       await declineApplication({ variables: { jobId, applicationId: appId } });
       await refetch();
     } catch (e) {
-      console.error(e);
+      console.error('Error declining application:', e);
+      
+      // Provide user-friendly error messages
+      let errorMessage = 'Failed to decline application. ';
+      
+      if (e.message?.includes('Not Found') || e.networkError?.statusCode === 404) {
+        errorMessage += 'The server endpoint could not be found. Please check your network connection or contact support.';
+      } else if (e.message?.includes('Job not found')) {
+        errorMessage += 'This job no longer exists.';
+      } else if (e.message?.includes('Application not found')) {
+        errorMessage += 'This application no longer exists.';
+      } else if (e.networkError) {
+        errorMessage += `Network error: ${e.networkError.message || 'Unable to connect to server'}`;
+      } else if (e.graphQLErrors?.length > 0) {
+        errorMessage += e.graphQLErrors.map(err => err.message).join(', ');
+      } else {
+        errorMessage += e.message || 'An unknown error occurred.';
+      }
+      
+      alert(errorMessage);
     }
     if (onClose) onClose();
   };
@@ -98,7 +149,28 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
       await acceptApplication({ variables: { jobId, applicationId: appId } });
       await refetch();
     } catch (e) {
-      console.error(e);
+      console.error('Error accepting application:', e);
+      
+      // Provide user-friendly error messages
+      let errorMessage = 'Failed to accept application. ';
+      
+      if (e.message?.includes('Not Found') || e.networkError?.statusCode === 404) {
+        errorMessage += 'The server endpoint could not be found. Please check your network connection or contact support.';
+      } else if (e.message?.includes('Calendar event not found')) {
+        errorMessage += 'The associated calendar event may have been deleted, but the job assignment was still processed.';
+      } else if (e.message?.includes('Job not found')) {
+        errorMessage += 'This job no longer exists.';
+      } else if (e.message?.includes('Application not found')) {
+        errorMessage += 'This application no longer exists.';
+      } else if (e.networkError) {
+        errorMessage += `Network error: ${e.networkError.message || 'Unable to connect to server'}`;
+      } else if (e.graphQLErrors?.length > 0) {
+        errorMessage += e.graphQLErrors.map(err => err.message).join(', ');
+      } else {
+        errorMessage += e.message || 'An unknown error occurred.';
+      }
+      
+      alert(errorMessage);
     }
     if (onClose) onClose();
   };
