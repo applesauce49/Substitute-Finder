@@ -157,6 +157,8 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
       
       if (e.message?.includes('Not Found') || e.networkError?.statusCode === 404) {
         errorMessage += `The server endpoint could not be found (Trying to connect to: ${URLS.apiURL}). Please check your network connection or contact support.`;
+      } else if (e.message?.includes('Calendar event is cancelled')) {
+        errorMessage += 'The associated calendar event has been cancelled, but the job assignment was still processed.';
       } else if (e.message?.includes('Calendar event not found')) {
         errorMessage += 'The associated calendar event may have been deleted, but the job assignment was still processed.';
       } else if (e.message?.includes('Job not found')) {

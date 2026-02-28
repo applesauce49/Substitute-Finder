@@ -426,9 +426,12 @@ export default {
                     context // this contains context.user
                 );
             } catch (error) {
-                // If the calendar event is deleted, log warning but still accept the application
+                // If the calendar event is deleted or cancelled, log warning but still accept the application
                 if (error.extensions?.code === 'CALENDAR_EVENT_NOT_FOUND') {
                     console.warn(`⚠️  Could not invite user to calendar event - event may have been deleted. Job assignment will continue.`);
+                    console.warn(`Job: ${job._id}, Event: ${job.meetingSnapshot.eventId}`);
+                } else if (error.extensions?.code === 'CALENDAR_EVENT_CANCELLED') {
+                    console.warn(`⚠️  Could not invite user to calendar event - event is cancelled. Job assignment will continue.`);
                     console.warn(`Job: ${job._id}, Event: ${job.meetingSnapshot.eventId}`);
                 } else {
                     // For other errors, re-throw

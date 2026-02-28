@@ -84,6 +84,14 @@ export async function inviteUserToEvent({ calendarId, eventId, organizer, attend
     throw new GraphQLError("Failed to fetch event for invitation");
   }
 
+  // Check if the event is cancelled
+  if (event.status === 'cancelled') {
+    console.warn(`⚠️  Calendar event ${eventId} is cancelled - cannot update`);
+    throw new GraphQLError("Calendar event is cancelled and cannot be updated", {
+      extensions: { code: 'CALENDAR_EVENT_CANCELLED' }
+    });
+  }
+
   // check if the organizer matches, and get a new calendar client if needed
   if (event.organizer?.email !== organizer) {
     console.log("Organizer email does not match. Getting new calendar client for organizer:", event.organizer?.email);
