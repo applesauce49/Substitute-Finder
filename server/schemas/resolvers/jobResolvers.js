@@ -415,15 +415,26 @@ export default {
             job.assignedAt = new Date();
 
             // Invite the accepted user to the meeting
-            await inviteUserToEvent(
-                {
-                    calendarId: job.meetingSnapshot.calendarId,
-                    eventId: job.meetingSnapshot.eventId,
-                    attendee: assignedTo.email,
-                    organizer: jobCreator.email,
-                },
-                context // this contains context.user
-            );
+            try {
+                await inviteUserToEvent(
+                    {
+                        calendarId: job.meetingSnapshot.calendarId,
+                        eventId: job.meetingSnapshot.eventId,
+                        attendee: assignedTo.email,
+                        organizer: jobCreator.email,
+                    },
+                    context // this contains context.user
+                );
+            } catch (error) {
+                // If the calendar event is deleted, log warning but still accept the application
+                if (error.extensions?.code === 'CALENDAR_EVENT_NOT_FOUND') {
+                    console.warn(`⚠️  Could not invite user to calendar event - event may have been deleted. Job assignment will continue.`);
+                    console.warn(`Job: ${job._id}, Event: ${job.meetingSnapshot.eventId}`);
+                } else {
+                    // For other errors, re-throw
+                    throw error;
+                }
+            }
             await job.save();
 
             await pubsub.publish("JOB_ASSIGNED", { jobAssigned: job });

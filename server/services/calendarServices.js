@@ -74,6 +74,13 @@ export async function inviteUserToEvent({ calendarId, eventId, organizer, attend
     }));
   } catch (error) {
     console.error("Error fetching event:", error);
+    // Check if event was deleted/not found
+    if (error.code === 404 || error.message?.includes('Not Found')) {
+      console.warn(`⚠️  Calendar event ${eventId} not found - it may have been deleted`);
+      throw new GraphQLError("Calendar event not found - it may have been cancelled or deleted", {
+        extensions: { code: 'CALENDAR_EVENT_NOT_FOUND' }
+      });
+    }
     throw new GraphQLError("Failed to fetch event for invitation");
   }
 
