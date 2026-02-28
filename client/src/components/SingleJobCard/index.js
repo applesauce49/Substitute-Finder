@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import ApplicantList from "../ApplicantList";
 
 import Auth from "../../utils/auth";
+import { URLS } from "../../config/urls";
 import { useQuery, useMutation } from "@apollo/client";
 import { QUERY_JOB } from "../../utils/graphql/jobs/queries.js";
 import { GET_USERS } from "../../utils/graphql/users/queries.js";
@@ -67,7 +68,7 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
       let errorMessage = 'Failed to apply for job. ';
       
       if (e.message?.includes('Not Found') || e.networkError?.statusCode === 404) {
-        errorMessage += 'The server endpoint could not be found. Please check your network connection or contact support.';
+        errorMessage += `The server endpoint could not be found (Trying to connect to: ${URLS.apiURL}). Please check your network connection or contact support.`;
       } else if (e.message?.includes('already applied')) {
         errorMessage += 'You have already applied for this job.';
       } else if (e.networkError) {
@@ -96,7 +97,7 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
       let errorMessage = 'Failed to cancel job. ';
       
       if (e.message?.includes('Not Found') || e.networkError?.statusCode === 404) {
-        errorMessage += 'The server endpoint could not be found. Please check your network connection or contact support.';
+        errorMessage += `The server endpoint could not be found (Trying to connect to: ${URLS.apiURL}). Please check your network connection or contact support.`;
       } else if (e.message?.includes('Job not found')) {
         errorMessage += 'This job no longer exists.';
       } else if (e.networkError) {
@@ -125,7 +126,7 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
       let errorMessage = 'Failed to decline application. ';
       
       if (e.message?.includes('Not Found') || e.networkError?.statusCode === 404) {
-        errorMessage += 'The server endpoint could not be found. Please check your network connection or contact support.';
+        errorMessage += `The server endpoint could not be found (Trying to connect to: ${URLS.apiURL}). Please check your network connection or contact support.`;
       } else if (e.message?.includes('Job not found')) {
         errorMessage += 'This job no longer exists.';
       } else if (e.message?.includes('Application not found')) {
@@ -155,7 +156,7 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
       let errorMessage = 'Failed to accept application. ';
       
       if (e.message?.includes('Not Found') || e.networkError?.statusCode === 404) {
-        errorMessage += 'The server endpoint could not be found. Please check your network connection or contact support.';
+        errorMessage += `The server endpoint could not be found (Trying to connect to: ${URLS.apiURL}). Please check your network connection or contact support.`;
       } else if (e.message?.includes('Calendar event not found')) {
         errorMessage += 'The associated calendar event may have been deleted, but the job assignment was still processed.';
       } else if (e.message?.includes('Job not found')) {
