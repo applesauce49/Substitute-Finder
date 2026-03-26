@@ -9,6 +9,32 @@ import Constraint from "./Schemas/Constraint.js";
 import UserAttributeDefinition from "./Schemas/UserAttributeDefinition.js";
 import { SYSTEM_ATTRIBUTES } from "../config/systemAttributes.js";
 
+export function buildMeetingLookupQuery(eventIds) {
+    const filteredEventIds = (eventIds || []).filter(Boolean);
+
+    if (!filteredEventIds.length) {
+        return null;
+    }
+
+    return {
+        $or: [
+            { eventId: { $in: filteredEventIds } },
+            { gcalEventId: { $in: filteredEventIds } },
+            { gcalRecurringEventId: { $in: filteredEventIds } },
+        ],
+    };
+}
+
+export async function findMeetingByEventIds(eventIds) {
+    const query = buildMeetingLookupQuery(eventIds);
+
+    if (!query) {
+        return null;
+    }
+
+    return Meeting.findOne(query).lean();
+}
+
 /**
  * Build a map of attribute definitions (system + custom)
  * @returns {Promise<Map>} Map of attribute key to definition
@@ -34,23 +60,18 @@ export async function buildAttributeDefinitionMap() {
  * @param {Object} job - The job object
  * @returns {Promise<Object>} Object with meeting and constraints array
  */
-export async function getMeetingConstraints(job) {
+export async function getMeetingConstraints(job, fallbackMeeting = null) {
     const eventIds = [
         job?.meetingSnapshot?.gcalEventId,
         job?.meetingSnapshot?.gcalRecurringEventId,
         job?.meetingSnapshot?.eventId,
     ].filter(Boolean);
 
-    if (!eventIds.length) {
+    if (!eventIds.length && !fallbackMeeting) {
         return { meeting: null, constraints: [] };
     }
 
-    const meeting = await Meeting.findOne({
-        $or: [
-            { gcalEventId: { $in: eventIds } },
-            { gcalRecurringEventId: { $in: eventIds } },
-        ],
-    }).lean();
+    const meeting = fallbackMeeting || await findMeetingByEventIds(eventIds);
     const groupIds = meeting?.constraintGroupIds || [];
 
     if (!groupIds.length) {

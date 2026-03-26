@@ -16,6 +16,172 @@ import { SYSTEM_ATTRIBUTE_GETTERS } from './systemAttributes.js';
 import { calculateWorkloadScore, calculateRecentSubScore, rankApplications } from './scoring.js';
 import { buildAttributeDefinitionMap, getMeetingConstraints, loadConstraintsByGroupIds, buildCandidateApplications } from './dataLoaders.js';
 
+export function buildVirtualMeetingForJob(job, defaultWorkloadBalanceWindow) {
+    return {
+        _id: job?._id || null,
+        summary: job?.meetingSnapshot?.title || job?.meetingSnapshot?.summary || "",
+        description: job?.meetingSnapshot?.description || "",
+        start: job?.meetingSnapshot?.startDateTime || null,
+        end: job?.meetingSnapshot?.endDateTime || null,
+        eventId: job?.meetingSnapshot?.eventId || null,
+        gcalEventId: job?.meetingSnapshot?.gcalEventId || null,
+        gcalRecurringEventId: job?.meetingSnapshot?.gcalRecurringEventId || null,
+        constraintGroupIds: [],
+        workloadBalanceWindowDays: defaultWorkloadBalanceWindow,
+    };
+}
+
+export function resolveWorkloadBalanceWindow(constraintMeeting, meeting, defaultWorkloadBalanceWindow) {
+    if (constraintMeeting?.workloadBalanceWindowDays !== null && constraintMeeting?.workloadBalanceWindowDays !== undefined) {
+        return constraintMeeting.workloadBalanceWindowDays;
+    }
+
+    if (meeting?.workloadBalanceWindowDays !== null && meeting?.workloadBalanceWindowDays !== undefined) {
+        return meeting.workloadBalanceWindowDays;
+    }
+
+    return defaultWorkloadBalanceWindow;
+}
+
+export function mergeMeetingsHostedCounts(hostCounts = [], coHostCounts = []) {
+    const meetingsCountMap = {};
+
+    hostCounts.forEach(result => {
+        if (result?._id) {
+            const userId = result._id.toString();
+            meetingsCountMap[userId] = (meetingsCountMap[userId] || 0) + result.count;
+        }
+    });
+
+    coHostCounts.forEach(result => {
+        if (result?._id) {
+            const userId = result._id.toString();
+            meetingsCountMap[userId] = (meetingsCountMap[userId] || 0) + result.count;
+        }
+    });
+
+    return meetingsCountMap;
+}
+
+export function buildMatchEngineApplicantScores(ranked, workloadBalanceWindow) {
+    return ranked.map(r => ({
+        applicationId: r.isApplicant ? (r.application?._id?.toString() ?? null) : null,
+        userId: r.application?.user?._id?.toString() ?? null,
+        userName: r.application?.user?.username || r.application?.user?.email || "Unknown",
+        isApplicant: r.isApplicant,
+        eligible: !r.disqualified,
+        matched: r.matched,
+        total: r.total,
+        score: r.score,
+        constraintScore: r.constraintScore,
+        meetingsHosted: SYSTEM_ATTRIBUTE_GETTERS.totalMeetingsHosted(r.application?.user),
+        workloadScore: calculateWorkloadScore(r.application?.user),
+        recentSubJobs: workloadBalanceWindow ? (r.application?.user?.assignedJobs || []).filter(assignment => {
+            const assignedAt = assignment?.assignedAt ? new Date(assignment.assignedAt) : null;
+            const cutoffDate = new Date(Date.now() - (workloadBalanceWindow * 24 * 60 * 60 * 1000));
+            return assignedAt && assignedAt >= cutoffDate;
+        }).length : null,
+        recentSubScore: workloadBalanceWindow ? calculateRecentSubScore(r.application?.user, workloadBalanceWindow) : null,
+        appliedAt: r.isApplicant ? (r.application?.appliedAt || null) : null,
+        matchedConstraints: r.matchedConstraints || [],
+    }));
+}
+
+async function enrichCandidatesWithMeetingsHosted(candidates) {
+    const userIds = candidates.map(candidate => candidate.application?.user?._id).filter(Boolean);
+
+    if (!userIds.length) {
+        return;
+    }
+
+    console.log(`[DEBUG] Calculating meetings hosted for ${userIds.length} users`);
+    console.log(`[DEBUG] User IDs:`, userIds.map(id => id.toString()));
+
+    const hostCounts = await Meeting.aggregate([
+        { $match: { host: { $in: userIds } } },
+        { $group: { _id: "$host", count: { $sum: 1 } } }
+    ]);
+
+    const coHostCounts = await Meeting.aggregate([
+        { $match: { coHost: { $in: userIds } } },
+        { $group: { _id: "$coHost", count: { $sum: 1 } } }
+    ]);
+
+    console.log(`[DEBUG] Host counts:`, hostCounts);
+    console.log(`[DEBUG] CoHost counts:`, coHostCounts);
+
+    const meetingsCountMap = mergeMeetingsHostedCounts(hostCounts, coHostCounts);
+
+    console.log(`[DEBUG] Final meetings count map:`, meetingsCountMap);
+
+    candidates.forEach(candidate => {
+        if (candidate.application?.user?._id) {
+            const userId = candidate.application.user._id.toString();
+            candidate.application.user.totalMeetingsHosted = meetingsCountMap[userId] || 0;
+            console.log(`[DEBUG] User ${candidate.application.user.username} meetings hosted: ${candidate.application.user.totalMeetingsHosted}`);
+        }
+    });
+}
+
+async function prepareJobRankingContext(job, allUsers, dryRunType, fallbackMeeting = null, defaultWorkloadBalanceWindow = null) {
+    const resolvedDefaultWorkloadBalanceWindow = defaultWorkloadBalanceWindow ?? await getDefaultWorkloadBalanceWindowDays();
+    const { meeting: resolvedMeeting, constraints } = await getMeetingConstraints(job, fallbackMeeting);
+
+    const effectiveMeeting = resolvedMeeting || fallbackMeeting || buildVirtualMeetingForJob(job, resolvedDefaultWorkloadBalanceWindow);
+    const workloadBalanceWindow = resolveWorkloadBalanceWindow(
+        resolvedMeeting,
+        fallbackMeeting,
+        resolvedDefaultWorkloadBalanceWindow
+    );
+    const meetingContext = {
+        ...(effectiveMeeting || job.meetingSnapshot || {}),
+        workloadBalanceWindowDays: workloadBalanceWindow,
+    };
+    const candidates = buildCandidateApplications(job, allUsers, dryRunType);
+
+    await enrichCandidatesWithMeetingsHosted(candidates);
+
+    return {
+        constraints,
+        candidates,
+        meeting: effectiveMeeting,
+        meetingContext,
+        workloadBalanceWindow,
+    };
+}
+
+export async function buildScoredApplicantsForJob(
+    job,
+    allUsers,
+    attributeDefinitionMap,
+    dryRunType = "job",
+    fallbackMeeting = null,
+    defaultWorkloadBalanceWindow = null
+) {
+    const preparedContext = await prepareJobRankingContext(
+        job,
+        allUsers,
+        dryRunType,
+        fallbackMeeting,
+        defaultWorkloadBalanceWindow
+    );
+
+    const { ranked: rankedApplications, hasConstraints } = rankApplications(
+        preparedContext.candidates,
+        preparedContext.constraints,
+        attributeDefinitionMap,
+        preparedContext.meetingContext,
+        job
+    );
+
+    return {
+        ...preparedContext,
+        rankedApplications,
+        hasConstraints,
+        applicantScores: buildMatchEngineApplicantScores(rankedApplications, preparedContext.workloadBalanceWindow),
+    };
+}
+
 /**
  * Preview match engine results for a meeting without making any changes
  * @param {string} meetingId - The meeting ID
@@ -29,6 +195,7 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
     await connectDB();
     const attributeDefinitionMap = await buildAttributeDefinitionMap();
     const allUsers = await User.find({}).lean();
+    const defaultWorkloadBalanceWindow = await getDefaultWorkloadBalanceWindowDays();
 
     console.log(`\n=== DEBUG: previewMatchEngineForMeeting ===`);
     console.log(`meetingId: ${meetingId}, dryRunType: ${dryRunType}, jobId: ${jobId}`);
@@ -44,7 +211,7 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
     console.log(`Using meeting: ${meeting.summary || meeting.title || 'Unknown'}`);
     console.log(`Constraints: ${meeting.constraintGroupIds?.length || 0}`);
     console.log(`Meeting workload balance: ${meeting.workloadBalanceWindowDays} (type: ${typeof meeting.workloadBalanceWindowDays})`);
-    console.log(`System default workload balance: ${await getDefaultWorkloadBalanceWindowDays()} days`);
+    console.log(`System default workload balance: ${defaultWorkloadBalanceWindow} days`);
 
     const eventIds = [
         meeting?.gcalEventId,
@@ -137,99 +304,29 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
         };
     }
 
-    let constraintMeeting = null;
+    let constraintMeeting = meeting;
     let constraints = [];
+    let workloadBalanceWindow = resolveWorkloadBalanceWindow(meeting, meeting, defaultWorkloadBalanceWindow);
+    let contextWithWorkload = {
+        ...(meeting || job.meetingSnapshot || {}),
+        workloadBalanceWindowDays: workloadBalanceWindow,
+    };
+    let candidates = buildCandidateApplications(job, allUsers, dryRunType);
 
-    if (job?._id) {
-        const result = await getMeetingConstraints(job);
-        constraintMeeting = result.meeting;
-        constraints = result.constraints;
+    if (job?.meetingSnapshot) {
+        const preparedContext = await prepareJobRankingContext(job, allUsers, dryRunType, meeting, defaultWorkloadBalanceWindow);
+        constraintMeeting = preparedContext.meeting;
+        constraints = preparedContext.constraints;
+        workloadBalanceWindow = preparedContext.workloadBalanceWindow;
+        contextWithWorkload = preparedContext.meetingContext;
+        candidates = preparedContext.candidates;
     } else if (meeting) {
-        constraintMeeting = meeting;
         constraints = await loadConstraintsByGroupIds(meeting.constraintGroupIds);
+        await enrichCandidatesWithMeetingsHosted(candidates);
     }
 
     console.log(`Constraint meeting workload balance: ${constraintMeeting?.workloadBalanceWindowDays} (type: ${typeof constraintMeeting?.workloadBalanceWindowDays})`);
-
-    // Calculate workload balance window before ranking (needed by rankApplications)
-    const workloadBalanceWindow = await (async () => {
-        // First check if constraintMeeting has a workload balance setting
-        if (constraintMeeting?.workloadBalanceWindowDays !== null && constraintMeeting?.workloadBalanceWindowDays !== undefined) {
-            return constraintMeeting.workloadBalanceWindowDays;
-        }
-        
-        // Then check the meeting itself
-        if (meeting?.workloadBalanceWindowDays !== null && meeting?.workloadBalanceWindowDays !== undefined) {
-            return meeting.workloadBalanceWindowDays;
-        }
-        
-        // Finally fall back to system default
-        return await getDefaultWorkloadBalanceWindowDays();
-    })();
-
     console.log(`Final workload balance window: ${workloadBalanceWindow} days`);
-
-    const meetingContext = constraintMeeting || meeting || job.meetingSnapshot || {};
-
-    // Ensure workload balance is available in meetingContext for rankApplications
-    const contextWithWorkload = {
-        ...meetingContext,
-        workloadBalanceWindowDays: workloadBalanceWindow
-    };
-
-    const candidates = buildCandidateApplications(job, allUsers, dryRunType);
-
-    // Pre-calculate meetings hosted for all users to avoid async issues in ranking
-    const userIds = candidates.map(c => c.application?.user?._id).filter(Boolean);
-    
-    if (userIds.length > 0) {
-        console.log(`[DEBUG] Calculating meetings hosted for ${userIds.length} users`);
-        console.log(`[DEBUG] User IDs:`, userIds.map(id => id.toString()));
-        
-        // Get counts for hosts and coHosts separately, then merge
-        const hostCounts = await Meeting.aggregate([
-            { $match: { host: { $in: userIds } } },
-            { $group: { _id: "$host", count: { $sum: 1 } } }
-        ]);
-        
-        const coHostCounts = await Meeting.aggregate([
-            { $match: { coHost: { $in: userIds } } },
-            { $group: { _id: "$coHost", count: { $sum: 1 } } }
-        ]);
-        
-        console.log(`[DEBUG] Host counts:`, hostCounts);
-        console.log(`[DEBUG] CoHost counts:`, coHostCounts);
-
-        // Create a lookup map combining both host and coHost counts
-        const meetingsCountMap = {};
-        
-        // Add host counts
-        hostCounts.forEach(result => {
-            if (result._id) {
-                const userId = result._id.toString();
-                meetingsCountMap[userId] = (meetingsCountMap[userId] || 0) + result.count;
-            }
-        });
-        
-        // Add coHost counts
-        coHostCounts.forEach(result => {
-            if (result._id) {
-                const userId = result._id.toString();
-                meetingsCountMap[userId] = (meetingsCountMap[userId] || 0) + result.count;
-            }
-        });
-        
-        console.log(`[DEBUG] Final meetings count map:`, meetingsCountMap);
-        
-        // Add the counts to user objects
-        candidates.forEach(candidate => {
-            if (candidate.application?.user?._id) {
-                const userId = candidate.application.user._id.toString();
-                candidate.application.user.totalMeetingsHosted = meetingsCountMap[userId] || 0;
-                console.log(`[DEBUG] User ${candidate.application.user.username} meetings hosted: ${candidate.application.user.totalMeetingsHosted}`);
-            }
-        });
-    }
 
     const { ranked, hasConstraints } = rankApplications(
         candidates,
@@ -260,27 +357,7 @@ export async function previewMatchEngineForMeeting(meetingId, userId = null, dry
         constraintCount: constraints.length,
         constraints,
         workloadBalanceWindowDays: workloadBalanceWindow,
-        applicants: ranked.map(r => ({
-            applicationId: r.isApplicant ? (r.application?._id?.toString() ?? null) : null,
-            userId: r.application?.user?._id?.toString() ?? null,
-            userName: r.application?.user?.username || r.application?.user?.email || "Unknown",
-            isApplicant: r.isApplicant,
-            eligible: !r.disqualified,
-            matched: r.matched,
-            total: r.total,
-            score: r.score, // This is now the composite score
-            constraintScore: r.constraintScore, // Original constraint-only score
-            meetingsHosted: SYSTEM_ATTRIBUTE_GETTERS.totalMeetingsHosted(r.application?.user),
-            workloadScore: calculateWorkloadScore(r.application?.user),
-            recentSubJobs: workloadBalanceWindow ? (r.application?.user?.assignedJobs || []).filter(assignment => {
-                const assignedAt = assignment?.assignedAt ? new Date(assignment.assignedAt) : null;
-                const cutoffDate = new Date(Date.now() - (workloadBalanceWindow * 24 * 60 * 60 * 1000));
-                return assignedAt && assignedAt >= cutoffDate;
-            }).length : null,
-            recentSubScore: workloadBalanceWindow ? calculateRecentSubScore(r.application?.user, workloadBalanceWindow) : null,
-            appliedAt: r.isApplicant ? (r.application?.appliedAt || null) : null,
-            matchedConstraints: r.matchedConstraints || [],
-        })),
+        applicants: buildMatchEngineApplicantScores(ranked, workloadBalanceWindow),
         applicantCount: ranked.filter(r => r.isApplicant).length,
         eligibleCount: ranked.filter(r => !r.disqualified).length,
         dryRunType: dryRunType,
@@ -354,16 +431,11 @@ export async function runMatchEngine() {
                 }
             }
 
-            const { meeting, constraints } = await getMeetingConstraints(job);
-            const meetingContext = meeting || job.meetingSnapshot || {};
-            const candidates = buildCandidateApplications(job, allUsers, "job");
-
-            const { ranked: rankedApplications, hasConstraints } = rankApplications(
-                candidates,
-                constraints,
+            const { meeting, constraints, rankedApplications, hasConstraints } = await buildScoredApplicantsForJob(
+                job,
+                allUsers,
                 attributeDefinitionMap,
-                meetingContext,
-                job
+                "job"
             );
 
             if (hasConstraints) {
@@ -542,7 +614,10 @@ export async function runMatchEngineConfigurable(jobIds = null, dryRun = false) 
             assignedToName: null,
             applicantCount: job.applications?.length || 0,
             eligibleCount: 0,
-            winnerScore: null
+            winnerScore: null,
+            constraintCount: 0,
+            workloadBalanceWindowDays: null,
+            rankedApplicants: []
         };
 
         try {
@@ -594,19 +669,24 @@ export async function runMatchEngineConfigurable(jobIds = null, dryRun = false) 
             }
 
             // Process job with applications
-            const { meeting, constraints } = await getMeetingConstraints(job);
-            const meetingContext = meeting || job.meetingSnapshot || {};
-            const candidates = buildCandidateApplications(job, allUsers, "job");
-
-            const { ranked: rankedApplications, hasConstraints } = rankApplications(
-                candidates,
+            const {
+                meeting,
                 constraints,
+                rankedApplications,
+                hasConstraints,
+                workloadBalanceWindow,
+                applicantScores,
+            } = await buildScoredApplicantsForJob(
+                job,
+                allUsers,
                 attributeDefinitionMap,
-                meetingContext,
-                job
+                "job"
             );
 
             result.eligibleCount = rankedApplications.filter(r => !r.disqualified).length;
+            result.constraintCount = constraints.length;
+            result.workloadBalanceWindowDays = workloadBalanceWindow;
+            result.rankedApplicants = applicantScores;
 
             if (hasConstraints) {
                 console.log(

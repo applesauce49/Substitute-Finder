@@ -90,6 +90,25 @@ export const RUN_MATCH_ENGINE_CONFIGURABLE = gql`
         applicantCount
         eligibleCount
         winnerScore
+        constraintCount
+        workloadBalanceWindowDays
+        rankedApplicants {
+          applicationId
+          userId
+          userName
+          isApplicant
+          eligible
+          matched
+          total
+          score
+          constraintScore
+          meetingsHosted
+          workloadScore
+          recentSubJobs
+          recentSubScore
+          appliedAt
+          matchedConstraints
+        }
       }
     }
   }

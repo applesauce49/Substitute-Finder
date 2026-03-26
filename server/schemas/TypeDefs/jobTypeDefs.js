@@ -62,6 +62,7 @@ type MatchEngineApplicantScore {
   matched: Int!
   total: Int!
   score: Float!
+  constraintScore: Float
   meetingsHosted: Int!
   workloadScore: Float!
   recentSubJobs: Int
@@ -122,6 +123,9 @@ type MatchEngineJobResult {
   applicantCount: Int
   eligibleCount: Int
   winnerScore: Float
+  constraintCount: Int
+  workloadBalanceWindowDays: Int
+  rankedApplicants: [MatchEngineApplicantScore!]!
 }
 
 type MatchEngineConfigurableResult {

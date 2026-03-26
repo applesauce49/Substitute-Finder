@@ -4,6 +4,88 @@ import { QUERY_ELIGIBLE_JOBS_FOR_MATCH_ENGINE } from "../../utils/graphql/jobs/q
 import { RUN_MATCH_ENGINE_CONFIGURABLE } from "../../utils/graphql/jobs/mutations";
 import "./MatchEngineModal.css";
 
+function formatScore(value) {
+    return typeof value === "number" ? value.toFixed(2) : "--";
+}
+
+function ResultApplicantTable({ result }) {
+    const applicants = result.rankedApplicants || [];
+
+    if (!applicants.length) {
+        return <div className="result-applicant-empty">No ranked applicants available.</div>;
+    }
+
+    return (
+        <div className="result-applicant-panel">
+            <div className="result-applicant-summary">
+                <span>{result.eligibleCount} / {result.applicantCount} eligible</span>
+                <span>{result.constraintCount || 0} constraints</span>
+                <span>
+                    {result.workloadBalanceWindowDays
+                        ? `Workload window: ${result.workloadBalanceWindowDays} days`
+                        : "Workload window: not set"}
+                </span>
+            </div>
+            <div className="result-applicant-note">
+                Job-level dry run ranks applicants only. Compare this against the Admin job dry run for the same job.
+            </div>
+            <div className="result-applicant-table-wrap">
+                <table className="result-applicant-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Status</th>
+                            <th>Composite</th>
+                            <th>Constraint</th>
+                            <th>Recent Subs</th>
+                            <th>Meetings Hosted</th>
+                            <th>Matched</th>
+                            <th>Applied</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {applicants.map((applicant, index) => (
+                            <tr key={applicant.applicationId || applicant.userId || `${result.jobId}-${index}`}>
+                                <td>
+                                    <strong>{applicant.userName}</strong>
+                                </td>
+                                <td>
+                                    <span className={`badge ${applicant.eligible ? "badge-success" : "badge-danger"}`}>
+                                        {applicant.eligible ? "Eligible" : "Disqualified"}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div className="score-stack">
+                                        <strong>{formatScore(applicant.score)}</strong>
+                                        <small>WL {formatScore(applicant.workloadScore)}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div className="score-stack">
+                                        <strong>{formatScore(applicant.constraintScore)}</strong>
+                                        <small>{applicant.matched}/{applicant.total}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div className="score-stack">
+                                        <strong>{applicant.recentSubJobs ?? 0}</strong>
+                                        <small>{formatScore(applicant.recentSubScore)}</small>
+                                    </div>
+                                </td>
+                                <td>{applicant.meetingsHosted || 0}</td>
+                                <td className="matched-constraints-cell">
+                                    {applicant.matchedConstraints?.length ? applicant.matchedConstraints.join(", ") : "—"}
+                                </td>
+                                <td>{applicant.appliedAt ? new Date(applicant.appliedAt).toLocaleString() : "—"}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
 export function MatchEngineModal({ onClose }) {
     const { loading, error, data } = useQuery(QUERY_ELIGIBLE_JOBS_FOR_MATCH_ENGINE);
     const [runMatchEngine, { loading: running }] = useMutation(RUN_MATCH_ENGINE_CONFIGURABLE);
@@ -163,6 +245,12 @@ export function MatchEngineModal({ onClose }) {
                                                 {result.applicantCount > 0 ? (
                                                     <>
                                                         {result.eligibleCount} / {result.applicantCount} eligible
+                                                        {results.dryRun && result.rankedApplicants?.length > 0 && (
+                                                            <details className="result-details">
+                                                                <summary>Show ranked applicants</summary>
+                                                                <ResultApplicantTable result={result} />
+                                                            </details>
+                                                        )}
                                                     </>
                                                 ) : (
                                                     <span className="text-muted">—</span>

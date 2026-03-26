@@ -178,7 +178,8 @@ const SingleJobCard = ({me: userData, jobId: propJobId, onClose }) => {
     if (onClose) onClose();
   };
 
-  const canCancelJob = Auth.loggedIn() && job.active === true && (createdById === Auth.getProfile()?.data?._id || userData?.admin);
+  // Allow admins and job creators to cancel jobs (even if assigned)
+  const canCancelJob = Auth.loggedIn() && (createdById === Auth.getProfile()?.data?._id || userData?.admin);
   const canApply = Auth.loggedIn() && job.active === true && (createdById !== Auth.getProfile()?.data?._id || userData?.admin);
 
   return (

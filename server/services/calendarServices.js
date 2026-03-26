@@ -143,6 +143,88 @@ export async function inviteUserToEvent({ calendarId, eventId, organizer, attend
   };
 }
 
+export async function removeUserFromEvent({ calendarId, eventId, organizer, attendee }) {
+  let calendar = await getImpersonatedCalendarClient(organizer);
+  console.log("Got Impersonated Calendar Client:", calendar);
+
+  console.log("Fetching event to remove user:", attendee, eventId);
+
+  let event;
+  try {
+    ({ data: event } = await calendar.events.get({
+      calendarId,
+      eventId,
+    }));
+  } catch (error) {
+    console.error("Error fetching event:", error);
+    // Check if event was deleted/not found
+    if (error.code === 404 || error.message?.includes('Not Found')) {
+      console.warn(`⚠️  Calendar event ${eventId} not found - it may have been deleted`);
+      throw new GraphQLError("Calendar event not found - it may have been cancelled or deleted", {
+        extensions: { code: 'CALENDAR_EVENT_NOT_FOUND' }
+      });
+    }
+    throw new GraphQLError("Failed to fetch event for removal");
+  }
+
+  // Check if the event is cancelled
+  if (event.status === 'cancelled') {
+    console.warn(`⚠️  Calendar event ${eventId} is cancelled - cannot update`);
+    throw new GraphQLError("Calendar event is cancelled and cannot be updated", {
+      extensions: { code: 'CALENDAR_EVENT_CANCELLED' }
+    });
+  }
+
+  // check if the organizer matches, and get a new calendar client if needed
+  if (event.organizer?.email !== organizer) {
+    console.log("Organizer email does not match. Getting new calendar client for organizer:", event.organizer?.email);
+    const organizerCalendar = await getImpersonatedCalendarClient(event.organizer?.email);
+    console.log("Got new Calendar Client for organizer:", organizerCalendar);
+    calendar = organizerCalendar;
+  }
+
+  const existingAttendees = event.attendees || [];
+  // Filter out the attendee, but preserve anyone marked as organizer
+  const updatedAttendees = existingAttendees.filter(a => 
+    a.email !== attendee || a.organizer === true
+  );
+
+  console.log("Removing user from event:", attendee, eventId);
+  console.log("Event organizer:", event.organizer?.email);
+  console.log("Existing attendees:", existingAttendees);
+  console.log("Updated attendees:", updatedAttendees);
+  console.log("Calendar ID:", calendarId);
+
+  const result = await calendar.events.patch({
+    calendarId,
+    eventId,
+    sendUpdates: 'all',
+    requestBody: {
+      attendees: updatedAttendees,
+    }
+  });
+
+  console.log("Event updated successfully:", result);
+  const updatedEvent = result?.data || {};
+  return {
+    id: updatedEvent.id,
+    summary: updatedEvent.summary || "(Untitled}",
+    description: updatedEvent.description || "",
+    start: updatedEvent.start?.dateTime || updatedEvent.start.date,
+    end: updatedEvent.end?.dateTime || updatedEvent.end.date,
+    calendarId,
+    attendees: updatedEvent.attendees?.map(a => ({
+      id: a.id,
+      email: a.email,
+      displayName: a.displayName,
+      responseStatus: a.responseStatus,
+      self: a.self || false,
+      organizer: a.organizer || false,
+    })) || []
+  };
+}
+
+
 
 export async function importGoogleMeetingParents(user) {
 

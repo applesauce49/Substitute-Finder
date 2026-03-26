@@ -41,7 +41,7 @@ export default function JobReport({ me }) {
             return new Date(row.getValue(columnId)) < new Date(value);
         },
         afterDate: (row, columnId, value) => {
-            return new Date(row.getValue(columnId)) > new Date(value);
+            return new Date(row.getValue(columnId)) >= new Date(value);
         },
         betweenDate: (row, columnId, range) => {
             const d = new Date(row.getValue(columnId));
@@ -97,7 +97,8 @@ export default function JobReport({ me }) {
     ], [columnHelper, filterFns]);
 
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const initialFilters = [
         { id: "date", value: { fn: "afterDate", value: today } }
     ];
