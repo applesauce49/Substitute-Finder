@@ -2,7 +2,7 @@ import { GraphQLError } from 'graphql';
 import { Job, User, Meeting } from "../../models/index.js";
 import { pubsub } from '../../graphql/pubsub.js';
 import { getImpersonatedCalendarClient, getUserCalendarClient } from '../../services/googleClient.js';
-import { inviteUserToEvent } from '../../services/calendarServices.js';
+import { inviteUserToEvent, removeUserFromEvent } from '../../services/calendarServices.js';
 import { runMatchEngine, previewMatchEngineForMeeting, getEligibleJobsForMatchEngine, runMatchEngineConfigurable } from '../../matchEngine/matchEngine.js';
 import { postJobToGoogleChat, postJobCancelledToGoogleChat, postJobAssignedToGoogleChat } from "../../utils/chatJobNotifier.js";
 import { getDefaultWorkloadBalanceWindowDays } from "../../services/systemSettingsService.js";
@@ -351,7 +351,7 @@ export default {
             if (!job) throw new Error("Job not found");
 
             try {
-                // Optional: only allow creator or admin
+                // Only allow creator or admin
                 if (job.createdBy.toString() !== context.user._id.toString() && !context.user.admin) {
                     throw new GraphQLError("Not authorized");
                 }
@@ -360,10 +360,54 @@ export default {
                 throw new GraphQLError(err.message);
             }
 
+            // If the job was assigned to someone, remove them from the calendar and clean up their records
+            if (job.assignedTo) {
+                console.log(`Job ${jobId} was assigned to user ${job.assignedTo}. Cleaning up...`);
+                
+                const assignedUser = await User.findById(job.assignedTo);
+                const jobCreator = await User.findById(job.createdBy);
+                
+                if (assignedUser && jobCreator && job.meetingSnapshot) {
+                    // Try to remove the user from the calendar event
+                    try {
+                        await removeUserFromEvent({
+                            calendarId: job.meetingSnapshot.calendarId,
+                            eventId: job.meetingSnapshot.eventId,
+                            attendee: assignedUser.email,
+                            organizer: jobCreator.email,
+                        });
+                        console.log(`Removed ${assignedUser.email} from calendar event ${job.meetingSnapshot.eventId}`);
+                    } catch (error) {
+                        // If the calendar event is deleted or cancelled, log warning but continue with cancellation
+                        if (error.extensions?.code === 'CALENDAR_EVENT_NOT_FOUND') {
+                            console.warn(`⚠️  Could not remove user from calendar event - event may have been deleted. Job cancellation will continue.`);
+                        } else if (error.extensions?.code === 'CALENDAR_EVENT_CANCELLED') {
+                            console.warn(`⚠️  Could not remove user from calendar event - event is cancelled. Job cancellation will continue.`);
+                        } else {
+                            // For other errors, log but continue
+                            console.error(`Error removing user from calendar event:`, error);
+                        }
+                    }
+                }
+                
+                // Remove job from user's assignedJobs and acceptedJobs arrays
+                if (assignedUser) {
+                    await User.findByIdAndUpdate(
+                        job.assignedTo,
+                        { 
+                            $pull: { 
+                                assignedJobs: { job: jobId },
+                                acceptedJobs: jobId
+                            } 
+                        }
+                    );
+                    console.log(`Removed job ${jobId} from user ${job.assignedTo}'s records`);
+                }
+            }
+
             const user = await User.findById(job.createdBy);
 
             // Delete the job
-
             await Job.findByIdAndDelete(jobId);
 
             await pubsub.publish("JOB_CANCELED", { jobCanceled: jobId });
