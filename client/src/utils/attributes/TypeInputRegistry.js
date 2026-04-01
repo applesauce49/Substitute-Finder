@@ -39,6 +39,7 @@ export const TypeInputRegistry = {
     ),
 
     BOOLEAN: ({ value, setValue, mode = "user", id }) => {
+        // Treat null/undefined as unchecked, but distinguish from false
         const checked = value === true || value === "true";
 
         if (mode === "user") {
@@ -53,17 +54,24 @@ export const TypeInputRegistry = {
                         onChange={e => setValue(e.target.checked)}
                         style={{ cursor: "pointer" }}
                     />
+                    {value === false && (
+                        <small className="text-muted ms-2">(explicitly set to false)</small>
+                    )}
                 </div>
             );
         }
 
-        // default admin/editor version:
+        // default admin/editor version with explicit null/true/false handling:
         return (
             <select
                 className="form-select"
-                value={checked ? "true" : "false"}
-                onChange={e => setValue(e.target.value === "true")}
+                value={value === null ? "" : (value === true ? "true" : "false")}
+                onChange={e => {
+                    if (e.target.value === "") setValue(null);
+                    else setValue(e.target.value === "true");
+                }}
             >
+                <option value="">Not Set</option>
                 <option value="true">True</option>
                 <option value="false">False</option>
             </select>

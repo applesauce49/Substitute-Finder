@@ -25,11 +25,23 @@ export function UserAttributeEditor({
     return onlyEditable ? attributeDefs.filter(def => def.userEditable) : attributeDefs;
   }, [attrDefData, onlyEditable]);
 
-  const [values, setValues] = React.useState(initialValues);
+  // Initialize state with all attributes, even if null/undefined
+  const [values, setValues] = React.useState(() => {
+    const allAttrs = {};
+    filteredAttributes.forEach(def => {
+      allAttrs[def.key] = initialValues[def.key] ?? null;
+    });
+    return allAttrs;
+  });
 
   React.useEffect(() => {
-    setValues(initialValues);
-  }, [initialValues]);
+    // Update state when initialValues changes (e.g., form reload)
+    const updated = {};
+    filteredAttributes.forEach(def => {
+      updated[def.key] = initialValues[def.key] ?? null;
+    });
+    setValues(updated);
+  }, [initialValues, filteredAttributes]);
 
   const handleValueChange = (key, value) => {
     setValues(prev => {

@@ -20,11 +20,18 @@ export const ProfileForm = ({ initialData = {}, onSubmit }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Filter out null values only if they were never set (not in initialData)
+    // This allows saving false values for boolean attributes
+    const attributesToSubmit = Object.entries(attributeValues)
+      .filter(([key, value]) => value !== null || initialData.attributes?.some(a => a.key === key))
+      .map(([key, value]) => ({ key, value }));
+    
     onSubmit?.({
       email,
       phone,
       about,
-      attributes: Object.entries(attributeValues).map(([key, value]) => ({ key, value })),
+      attributes: attributesToSubmit,
     });
   };
 
