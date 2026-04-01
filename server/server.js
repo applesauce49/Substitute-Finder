@@ -5,6 +5,7 @@ import { typeDefs, resolvers } from "./schemas/index.js";
 import "./config/env.js";
 import express from "express";
 import session from "express-session";
+import MongoStore from "connect-mongo";
 import cors from "cors";
 import fs from "fs";
 import https from "https";
@@ -45,6 +46,7 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
     cookie: {
       httpOnly: true,
       sameSite: "lax",
