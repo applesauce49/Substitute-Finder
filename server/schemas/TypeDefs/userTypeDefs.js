@@ -10,6 +10,7 @@ type Query {
   userById(id: ID!): User
   users: [User!]!
   userJobStats: [UserJobStats!]!
+  myJobStats: UserJobStats
 }
 
 type Mutation {

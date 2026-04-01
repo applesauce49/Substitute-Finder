@@ -1,0 +1,60 @@
+/* MatchProfileCard Styles */
+
+.match-profile-card {
+  margin-top: 2rem;
+}
+
+.match-readiness-container {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.readiness-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+}
+
+.readiness-percent {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #0d6efd;
+  line-height: 1;
+}
+
+.readiness-label {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-top: 0.25rem;
+}
+
+.factor-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.factor-row .badge {
+  align-self: flex-start;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 576px) {
+  .match-readiness-container {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .readiness-score {
+    min-width: auto;
+    flex-grow: 1;
+  }
+
+  .progress {
+    min-height: 30px !important;
+  }
+}

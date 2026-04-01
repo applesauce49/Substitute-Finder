@@ -5,6 +5,8 @@ import ProfileForm from "../components/ProfileForm";
 import { QUERY_USER_ATTRIBUTE_DEFINITIONS } from "../utils/graphql/constraints/queries.js";
 import { ModalForm } from "../components/Modal/ModalForm";
 import { UPDATE_USER } from "../utils/graphql/users/mutations.js";
+import { QUERY_MY_JOB_STATS } from "../utils/graphql/users/queries.js";
+import MatchProfileCard from "../components/MatchProfileCard";
 
 const Profile = ({ me }) => {
   const user = me || {};
@@ -15,8 +17,12 @@ const Profile = ({ me }) => {
   const { data: attrDefData } = useQuery(QUERY_USER_ATTRIBUTE_DEFINITIONS, {
     skip: !hasUser,
   });
+  const { data: statsData } = useQuery(QUERY_MY_JOB_STATS, {
+    skip: !hasUser,
+  });
   const [updateUser] = useMutation(UPDATE_USER);
   const attributeDefs = attrDefData?.userAttributeDefinitions ?? [];
+  const stats = statsData?.myJobStats || {};
 
   const attributeMap = useMemo(() => {
     const map = {};
@@ -112,6 +118,66 @@ const Profile = ({ me }) => {
           <span className="text-dark">Phone Number: </span> {user.phone || "—"}
         </div>
       </div>
+
+      {/* My Activity Card - Own Profile Only */}
+      <div className="mt-4">
+        <h5 className="mb-3">My Activity</h5>
+        <div className="row">
+          <div className="col-sm-6 col-lg-3 mb-3">
+            <div className="card shadow-sm h-100 text-center">
+              <div className="card-body">
+                <div className="stat-number text-primary fw-bold" style={{ fontSize: "2rem" }}>
+                  {stats.appliedCount || 0}
+                </div>
+                <div className="stat-label text-muted">Applications Submitted</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-sm-6 col-lg-3 mb-3">
+            <div className="card shadow-sm h-100 text-center">
+              <div className="card-body">
+                <div className="stat-number text-success fw-bold" style={{ fontSize: "2rem" }}>
+                  {stats.assignedCount || 0}
+                </div>
+                <div className="stat-label text-muted">Jobs Filled</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-sm-6 col-lg-3 mb-3">
+            <div className="card shadow-sm h-100 text-center">
+              <div className="card-body">
+                <div className="stat-number text-info fw-bold" style={{ fontSize: "2rem" }}>
+                  {stats.appliedCount && stats.appliedCount > 0
+                    ? `${Math.round((stats.assignedCount / stats.appliedCount) * 100)}%`
+                    : "—"}
+                </div>
+                <div className="stat-label text-muted">Success Rate</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-sm-6 col-lg-3 mb-3">
+            <div className="card shadow-sm h-100 text-center">
+              <div className="card-body">
+                <div className="stat-number text-warning fw-bold" style={{ fontSize: "2rem" }}>
+                  {stats.totalMeetingsHosted || 0}
+                </div>
+                <div className="stat-label text-muted">Meetings Hosted</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Match Profile Card */}
+      <MatchProfileCard
+        user={user}
+        attributeDefs={attributeDefs}
+        stats={stats}
+        onEditProfile={() => setShowEditor(true)}
+      />
 
       {showEditor && (
         <ModalForm
