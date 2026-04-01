@@ -98,6 +98,80 @@ export default {
                 }
             ]).exec();
         },
+
+        myJobStats: async (_, __, { user }) => {
+            if (!user) throw new GraphQLError('Not logged in');
+
+            const stats = await User.aggregate([
+                { $match: { _id: user._id } },
+                {
+                    $lookup: {
+                        from: "jobs",
+                        let: { userId: "$_id" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$createdBy", "$$userId"] } } },
+                            { $count: "count" }
+                        ],
+                        as: "createdJobs"
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "jobs",
+                        let: { userId: "$_id" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$assignedTo", "$$userId"] } } },
+                            { $count: "count" }
+                        ],
+                        as: "assignedJobs"
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "jobs",
+                        let: { userId: "$_id" },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: { $in: ["$$userId", "$applications.user"] }
+                                }
+                            },
+                            { $count: "count" }
+                        ],
+                        as: "appliedJobs"
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "meetings",
+                        let: { userId: "$_id" },
+                        pipeline: [
+                            { $match: { $expr: { $or: [{ $eq: ["$host", "$$userId"] }, { $eq: ["$coHost", "$$userId"] }] } } },
+                            { $count: "count" }
+                        ],
+                        as: "hostedMeetings"
+                    }
+                },
+                {
+                    $addFields: {
+                        createdCount: { $ifNull: [{ $arrayElemAt: ["$createdJobs.count", 0] }, 0] },
+                        assignedCount: { $ifNull: [{ $arrayElemAt: ["$assignedJobs.count", 0] }, 0] },
+                        appliedCount: { $ifNull: [{ $arrayElemAt: ["$appliedJobs.count", 0] }, 0] },
+                        totalMeetingsHosted: { $ifNull: [{ $arrayElemAt: ["$hostedMeetings.count", 0] }, 0] }
+                    }
+                },
+                {
+                    $project: {
+                        createdJobs: 0,
+                        assignedJobs: 0,
+                        appliedJobs: 0,
+                        hostedMeetings: 0
+                    }
+                }
+            ]).exec();
+
+            return stats.length > 0 ? stats[0] : null;
+        },
     },
     Mutation: {
         addUser: async (_, { username, email, admin, attributes, phone, about }) => {

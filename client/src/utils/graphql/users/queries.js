@@ -60,6 +60,23 @@ export const QUERY_ME = gql`
           createdAt
         }
       }
+      attributes {
+        key
+        value
+      }
+    }
+  }
+`;
+
+export const QUERY_MY_JOB_STATS = gql`
+  query GetMyJobStats {
+    myJobStats {
+      _id
+      username
+      createdCount
+      assignedCount
+      appliedCount
+      totalMeetingsHosted
     }
   }
 `;
