@@ -6,6 +6,7 @@ import { inviteUserToEvent, removeUserFromEvent } from '../../services/calendarS
 import { runMatchEngine, previewMatchEngineForMeeting, getEligibleJobsForMatchEngine, runMatchEngineConfigurable } from '../../matchEngine/matchEngine.js';
 import { postJobToGoogleChat, postJobCancelledToGoogleChat, postJobAssignedToGoogleChat } from "../../utils/chatJobNotifier.js";
 import { getDefaultWorkloadBalanceWindowDays } from "../../services/systemSettingsService.js";
+import { acquireMatchEngineRunLock, releaseMatchEngineRunLock } from "../../services/systemSettingsService.js";
 
 export default {
     Query: {
@@ -527,20 +528,48 @@ export default {
         },
 
         runMatchEngine: async (_, __, context) => {
-            // if (!context.user || context.user.role !== "admin") {
-            //   throw new Error("Unauthorized");
-            // }
-            await runMatchEngine();
-            return true;
+            if (!context.user?.admin) {
+                throw new GraphQLError('Unauthorized', { extensions: { code: 'UNAUTHORIZED' } });
+            }
+
+            const lockResult = await acquireMatchEngineRunLock({
+                owner: `graphql:${context.user._id}`,
+            });
+
+            if (!lockResult.acquired) {
+                throw new GraphQLError('Match engine run already in progress', { extensions: { code: 'LOCKED' } });
+            }
+
+            try {
+                await runMatchEngine();
+                return true;
+            } finally {
+                await releaseMatchEngineRunLock(lockResult.runId);
+            }
         },
 
         runMatchEngineConfigurable: async (_, { jobIds, dryRun = false }, context) => {
-            // Optional: Add admin check if needed
-            // if (!context.user?.admin) {
-            //     throw new GraphQLError('Unauthorized', { extensions: { code: 'UNAUTHORIZED' } });
-            // }
-            
-            return await runMatchEngineConfigurable(jobIds, dryRun);
+            if (!context.user?.admin) {
+                throw new GraphQLError('Unauthorized', { extensions: { code: 'UNAUTHORIZED' } });
+            }
+
+            if (dryRun) {
+                return await runMatchEngineConfigurable(jobIds, true);
+            }
+
+            const lockResult = await acquireMatchEngineRunLock({
+                owner: `graphql:${context.user._id}`,
+            });
+
+            if (!lockResult.acquired) {
+                throw new GraphQLError('Match engine run already in progress', { extensions: { code: 'LOCKED' } });
+            }
+
+            try {
+                return await runMatchEngineConfigurable(jobIds, false);
+            } finally {
+                await releaseMatchEngineRunLock(lockResult.runId);
+            }
         },
     },
     Subscription: {
