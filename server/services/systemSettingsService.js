@@ -4,6 +4,8 @@ import SystemSettings from '../models/SystemSettings.js';
 const settingsCache = new Map();
 let cacheExpiry = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const MATCH_ENGINE_LOCK_KEY = 'matchEngineRunLock';
+const DEFAULT_MATCH_ENGINE_LOCK_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 /**
  * Get a system setting value by key
@@ -70,4 +72,104 @@ export async function getMaxFutureJobDays() {
 export function clearSystemSettingsCache() {
   settingsCache.clear();
   cacheExpiry = 0;
+}
+
+/**
+ * Attempt to acquire a distributed lock for match engine execution.
+ * @param {Object} options
+ * @param {string} options.owner - Caller identifier for observability.
+ * @param {number} options.timeoutMs - Lock expiry in milliseconds.
+ * @returns {Promise<{acquired: boolean, runId: string|null, lock: Object|null}>}
+ */
+export async function acquireMatchEngineRunLock({
+  owner = 'unknown',
+  timeoutMs = DEFAULT_MATCH_ENGINE_LOCK_TIMEOUT_MS,
+} = {}) {
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + timeoutMs);
+  const runId = `${now.getTime()}-${Math.random().toString(36).slice(2, 10)}`;
+
+  const lockDoc = await SystemSettings.findOneAndUpdate(
+    {
+      key: MATCH_ENGINE_LOCK_KEY,
+      $or: [
+        { 'value.locked': { $ne: true } },
+        { 'value.expiresAt': { $lte: now } },
+      ],
+    },
+    {
+      $set: {
+        value: {
+          locked: true,
+          owner,
+          runId,
+          lockedAt: now,
+          expiresAt,
+        },
+        updatedAt: now,
+      },
+      $setOnInsert: {
+        key: MATCH_ENGINE_LOCK_KEY,
+        type: 'object',
+        label: 'Match Engine Run Lock',
+        description: 'Distributed lock preventing overlapping match engine executions.',
+        category: 'matching',
+      },
+    },
+    {
+      new: true,
+      upsert: true,
+    }
+  );
+
+  if (!lockDoc || lockDoc?.value?.runId !== runId) {
+    const existing = await SystemSettings.findOne({ key: MATCH_ENGINE_LOCK_KEY }).lean();
+    return {
+      acquired: false,
+      runId: null,
+      lock: existing?.value || null,
+    };
+  }
+
+  return {
+    acquired: true,
+    runId,
+    lock: lockDoc.value,
+  };
+}
+
+/**
+ * Release the distributed match engine lock if owned by the provided runId.
+ * @param {string} runId - Run identifier returned by acquireMatchEngineRunLock.
+ * @returns {Promise<boolean>} true if lock was released, otherwise false.
+ */
+export async function releaseMatchEngineRunLock(runId) {
+  if (!runId) {
+    return false;
+  }
+
+  const now = new Date();
+  const released = await SystemSettings.findOneAndUpdate(
+    {
+      key: MATCH_ENGINE_LOCK_KEY,
+      'value.runId': runId,
+      'value.locked': true,
+    },
+    {
+      $set: {
+        value: {
+          locked: false,
+          runId: null,
+          owner: null,
+          lockedAt: null,
+          releasedAt: now,
+          expiresAt: now,
+        },
+        updatedAt: now,
+      },
+    },
+    { new: true }
+  );
+
+  return Boolean(released);
 }
