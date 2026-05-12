@@ -18,6 +18,7 @@ export const JOB_BASE_FIELDS = gql`
     meetingSnapshot {
       eventId
       title
+      description
       startDateTime
       endDateTime
     }

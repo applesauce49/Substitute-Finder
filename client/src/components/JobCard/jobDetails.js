@@ -3,6 +3,7 @@ import React from "react";
 
 export default function JobDetails({ job, active = false }) {
   const start = new Date(job.meetingSnapshot?.startDateTime);
+  const notes = job?.description || job?.meetingSnapshot?.description || "—";
 
   const dateStr = start.toLocaleDateString(undefined, {
     weekday: "long",
@@ -27,11 +28,13 @@ export default function JobDetails({ job, active = false }) {
       <br />
       {active ? (
         <>
-          <b>Notes:</b> {job.description || "—"}
+          <b>Notes:</b> {notes}
         </>
       ) : (
         <>
           <b>Assigned To:</b> {job.assignedTo?.username ?? "Unassigned"}
+          <br />
+          <b>Notes:</b> {notes}
         </>
       )}
     </p>

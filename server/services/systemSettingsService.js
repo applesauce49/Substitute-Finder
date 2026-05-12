@@ -67,6 +67,28 @@ export async function getMaxFutureJobDays() {
 }
 
 /**
+ * Get the minimum number of hours a job should be posted before assignment.
+ * @returns {Promise<number>} Minimum posted duration in hours
+ */
+export async function getMinimumJobPostedHoursBeforeAssignment() {
+  console.log('🔍 Getting minimum job posted hours before assignment...');
+  const value = await getSystemSetting('minimumJobPostedHoursBeforeAssignment', 12);
+  console.log(`🔍 Minimum posted hours before assignment: ${value} (type: ${typeof value})`);
+  return value;
+}
+
+/**
+ * Get urgent meeting window in hours that bypasses minimum posted-duration requirement.
+ * @returns {Promise<number>} Urgent assignment window in hours
+ */
+export async function getUrgentAssignmentWindowHours() {
+  console.log('🔍 Getting urgent assignment window hours...');
+  const value = await getSystemSetting('urgentAssignmentWindowHours', 23);
+  console.log(`🔍 Urgent assignment window hours: ${value} (type: ${typeof value})`);
+  return value;
+}
+
+/**
  * Clear the settings cache (useful for testing or after updates)
  */
 export function clearSystemSettingsCache() {

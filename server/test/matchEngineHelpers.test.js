@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
     buildScoredApplicantsForJob,
     buildVirtualMeetingForJob,
+    getAssignmentTimingDecision,
     mergeMeetingsHostedCounts,
     resolveWorkloadBalanceWindow,
 } from "../matchEngine/matchEngine.js";
@@ -87,6 +88,82 @@ test("buildVirtualMeetingForJob preserves job snapshot identity and default work
         constraintGroupIds: [],
         workloadBalanceWindowDays: 21,
     });
+});
+
+test("getAssignmentTimingDecision allows assignment after minimum posted hours even when meeting is far away", () => {
+    const now = new Date("2026-05-08T12:00:00.000Z");
+    const decision = getAssignmentTimingDecision(
+        {
+            createdAt: "2026-05-07T23:00:00.000Z", // 13 hours ago
+            meetingSnapshot: {
+                startDateTime: "2026-05-10T12:00:00.000Z", // 48 hours away
+            },
+        },
+        now,
+        12,
+        23
+    );
+
+    assert.equal(decision.meetsMinimumPostedWindow, true);
+    assert.equal(decision.overrideForUrgentMeeting, false);
+    assert.equal(decision.canAssignNow, true);
+});
+
+test("getAssignmentTimingDecision blocks assignment before minimum posted hours when meeting is not urgent", () => {
+    const now = new Date("2026-05-08T12:00:00.000Z");
+    const decision = getAssignmentTimingDecision(
+        {
+            createdAt: "2026-05-08T04:00:00.000Z", // 8 hours ago
+            meetingSnapshot: {
+                startDateTime: "2026-05-10T12:00:00.000Z", // 48 hours away
+            },
+        },
+        now,
+        12,
+        23
+    );
+
+    assert.equal(decision.meetsMinimumPostedWindow, false);
+    assert.equal(decision.overrideForUrgentMeeting, false);
+    assert.equal(decision.canAssignNow, false);
+});
+
+test("getAssignmentTimingDecision allows urgent override before minimum posted hours", () => {
+    const now = new Date("2026-05-08T12:00:00.000Z");
+    const decision = getAssignmentTimingDecision(
+        {
+            createdAt: "2026-05-08T06:00:00.000Z", // 6 hours ago
+            meetingSnapshot: {
+                startDateTime: "2026-05-09T08:00:00.000Z", // 20 hours away
+            },
+        },
+        now,
+        12,
+        23
+    );
+
+    assert.equal(decision.meetsMinimumPostedWindow, false);
+    assert.equal(decision.overrideForUrgentMeeting, true);
+    assert.equal(decision.canAssignNow, true);
+});
+
+test("getAssignmentTimingDecision treats the urgent window boundary as eligible", () => {
+    const now = new Date("2026-05-08T12:00:00.000Z");
+    const decision = getAssignmentTimingDecision(
+        {
+            createdAt: "2026-05-08T10:00:00.000Z", // 2 hours ago
+            meetingSnapshot: {
+                startDateTime: "2026-05-09T11:00:00.000Z", // 23 hours away
+            },
+        },
+        now,
+        12,
+        23
+    );
+
+    assert.equal(decision.meetsMinimumPostedWindow, false);
+    assert.equal(decision.overrideForUrgentMeeting, true);
+    assert.equal(decision.canAssignNow, true);
 });
 
 test("buildScoredApplicantsForJob uses shared meeting lookup, constraints, and workload inputs", async () => {
