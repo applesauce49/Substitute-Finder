@@ -56,6 +56,22 @@ export const DEFAULT_SYSTEM_SETTINGS = [
     description: 'Maximum number of days in the future that jobs will be processed by the match engine',
     category: 'matching',
   },
+  {
+    key: 'minimumJobPostedHoursBeforeAssignment',
+    value: 12,
+    type: 'number',
+    label: 'Minimum Job Posted Hours Before Assignment',
+    description: 'Minimum number of hours a job should be posted before assignment, unless urgent override applies',
+    category: 'matching',
+  },
+  {
+    key: 'urgentAssignmentWindowHours',
+    value: 23,
+    type: 'number',
+    label: 'Urgent Assignment Window (Hours)',
+    description: 'If a meeting starts within this many hours, assignment can bypass the minimum posted-time requirement',
+    category: 'matching',
+  },
 ];
 
 const SystemSettings = model('SystemSettings', systemSettingsSchema);

@@ -9,7 +9,12 @@ import User from "../models/User.js";
 import Meeting from "../models/Meeting.js";
 import resolvers from "../schemas/resolvers/index.js";
 import { postJobToGoogleChat } from "../utils/chatJobNotifier.js";
-import { getDefaultWorkloadBalanceWindowDays, getMaxFutureJobDays } from "../services/systemSettingsService.js";
+import {
+    getDefaultWorkloadBalanceWindowDays,
+    getMaxFutureJobDays,
+    getMinimumJobPostedHoursBeforeAssignment,
+    getUrgentAssignmentWindowHours,
+} from "../services/systemSettingsService.js";
 
 // Import from modular files
 import { SYSTEM_ATTRIBUTE_GETTERS } from './systemAttributes.js';
@@ -28,6 +33,35 @@ export function buildVirtualMeetingForJob(job, defaultWorkloadBalanceWindow) {
         gcalRecurringEventId: job?.meetingSnapshot?.gcalRecurringEventId || null,
         constraintGroupIds: [],
         workloadBalanceWindowDays: defaultWorkloadBalanceWindow,
+    };
+}
+
+export function getAssignmentTimingDecision(job, now, minimumPostedHours, urgentWindowHours) {
+    const nowTime = now instanceof Date ? now.getTime() : new Date(now).getTime();
+    const postedAt = new Date(job?.createdAt);
+    const meetingStart = new Date(job?.meetingSnapshot?.startDateTime);
+
+    const postedAtMs = postedAt.getTime();
+    const meetingStartMs = meetingStart.getTime();
+    const hasPostedAt = Number.isFinite(postedAtMs);
+    const hasMeetingStart = Number.isFinite(meetingStartMs);
+
+    const hoursSincePosted = hasPostedAt ? (nowTime - postedAtMs) / (1000 * 60 * 60) : null;
+    const hoursUntilMeeting = hasMeetingStart ? (meetingStartMs - nowTime) / (1000 * 60 * 60) : null;
+
+    const overrideForUrgentMeeting =
+        hasMeetingStart && typeof urgentWindowHours === "number" && hoursUntilMeeting <= urgentWindowHours;
+    const meetsMinimumPostedWindow =
+        hasPostedAt && typeof minimumPostedHours === "number" && hoursSincePosted >= minimumPostedHours;
+
+    const canAssignNow = overrideForUrgentMeeting || meetsMinimumPostedWindow;
+
+    return {
+        canAssignNow,
+        overrideForUrgentMeeting,
+        meetsMinimumPostedWindow,
+        hoursSincePosted,
+        hoursUntilMeeting,
     };
 }
 
@@ -380,9 +414,12 @@ export async function runMatchEngine() {
 
     // Get system configuration for max future job processing
     const maxFutureJobDays = await getMaxFutureJobDays();
+    const minimumPostedHours = await getMinimumJobPostedHoursBeforeAssignment();
+    const urgentWindowHours = await getUrgentAssignmentWindowHours();
     const now = new Date();
     const maxFutureDate = new Date(now.getTime() + (maxFutureJobDays * 24 * 60 * 60 * 1000));
     console.log(`[MatchEngine] Processing jobs with meetings between now and ${maxFutureDate.toISOString()} (${maxFutureJobDays} days)`);
+    console.log(`[MatchEngine] Assignment timing config: minimumPostedHours=${minimumPostedHours}, urgentWindowHours=${urgentWindowHours}`);
 
     // Step 1: Get open jobs
     const jobs = await Job.find({
@@ -429,6 +466,30 @@ export async function runMatchEngine() {
                     console.log(`[MatchEngine] - Job "${job._id}" has no applications. Skipping job.`);
                     continue;
                 }
+            }
+
+            const assignmentTimingDecision = getAssignmentTimingDecision(
+                job,
+                now,
+                minimumPostedHours,
+                urgentWindowHours
+            );
+
+            if (!assignmentTimingDecision.canAssignNow) {
+                console.log(
+                    `[MatchEngine] - Job "${job._id}" waiting for minimum posted window before assignment ` +
+                    `(posted=${assignmentTimingDecision.hoursSincePosted?.toFixed(2) || "n/a"}h, ` +
+                    `required=${minimumPostedHours}h, meetingIn=${assignmentTimingDecision.hoursUntilMeeting?.toFixed(2) || "n/a"}h, ` +
+                    `urgentOverride<=${urgentWindowHours}h).`
+                );
+                continue;
+            }
+
+            if (assignmentTimingDecision.overrideForUrgentMeeting && !assignmentTimingDecision.meetsMinimumPostedWindow) {
+                console.log(
+                    `[MatchEngine] - Job "${job._id}" bypassing minimum posted window due to urgent meeting ` +
+                    `(meetingIn=${assignmentTimingDecision.hoursUntilMeeting?.toFixed(2) || "n/a"}h <= ${urgentWindowHours}h).`
+                );
             }
 
             const { meeting, constraints, rankedApplications, hasConstraints } = await buildScoredApplicantsForJob(
@@ -524,6 +585,8 @@ export async function getEligibleJobsForMatchEngine() {
     await connectDB();
     
     const maxFutureJobDays = await getMaxFutureJobDays();
+    const minimumPostedHours = await getMinimumJobPostedHoursBeforeAssignment();
+    const urgentWindowHours = await getUrgentAssignmentWindowHours();
     const now = new Date();
     const maxFutureDate = new Date(now.getTime() + (maxFutureJobDays * 24 * 60 * 60 * 1000));
 
@@ -539,6 +602,15 @@ export async function getEligibleJobsForMatchEngine() {
         const meetingStart = new Date(job.meetingSnapshot?.startDateTime);
         const isPast = meetingStart < now;
         const isTooFarFuture = meetingStart > maxFutureDate;
+        const hasApplications = (job.applications?.length || 0) > 0;
+        const assignmentTimingDecision = getAssignmentTimingDecision(
+            job,
+            now,
+            minimumPostedHours,
+            urgentWindowHours
+        );
+        const canAssignNow = hasApplications && assignmentTimingDecision.canAssignNow;
+        const shouldNotifyNow = !hasApplications && !job.firstNotificationSent;
         
         return {
             jobId: job._id.toString(),
@@ -548,7 +620,14 @@ export async function getEligibleJobsForMatchEngine() {
             applicationCount: job.applications?.length || 0,
             meetingIsPast: isPast,
             meetingIsTooFarFuture: isTooFarFuture,
-            isEligible: !isPast && !isTooFarFuture && (job.applications?.length > 0 || !job.firstNotificationSent)
+            minimumPostedHoursBeforeAssignment: minimumPostedHours,
+            urgentAssignmentWindowHours: urgentWindowHours,
+            hoursSincePosted: assignmentTimingDecision.hoursSincePosted,
+            hoursUntilMeeting: assignmentTimingDecision.hoursUntilMeeting,
+            assignmentUrgentOverride: assignmentTimingDecision.overrideForUrgentMeeting,
+            assignmentTimingEligible: canAssignNow,
+            notificationEligible: shouldNotifyNow,
+            isEligible: !isPast && !isTooFarFuture && (canAssignNow || shouldNotifyNow)
         };
     });
 }
@@ -571,6 +650,8 @@ export async function runMatchEngineConfigurable(jobIds = null, dryRun = false) 
     const allUsers = await User.find({}).lean();
 
     const maxFutureJobDays = await getMaxFutureJobDays();
+    const minimumPostedHours = await getMinimumJobPostedHoursBeforeAssignment();
+    const urgentWindowHours = await getUrgentAssignmentWindowHours();
     const now = new Date();
     const maxFutureDate = new Date(now.getTime() + (maxFutureJobDays * 24 * 60 * 60 * 1000));
 
@@ -666,6 +747,29 @@ export async function runMatchEngineConfigurable(jobIds = null, dryRun = false) 
                 
                 jobResults.push(result);
                 continue;
+            }
+
+            const assignmentTimingDecision = getAssignmentTimingDecision(
+                job,
+                now,
+                minimumPostedHours,
+                urgentWindowHours
+            );
+
+            if (!assignmentTimingDecision.canAssignNow) {
+                result.status = "waiting-post-window";
+                result.message =
+                    `Waiting for minimum posted window (${assignmentTimingDecision.hoursSincePosted?.toFixed(2) || "n/a"}h < ${minimumPostedHours}h) ` +
+                    `and meeting is not urgent yet (${assignmentTimingDecision.hoursUntilMeeting?.toFixed(2) || "n/a"}h > ${urgentWindowHours}h).`;
+                jobResults.push(result);
+                continue;
+            }
+
+            if (assignmentTimingDecision.overrideForUrgentMeeting && !assignmentTimingDecision.meetsMinimumPostedWindow) {
+                console.log(
+                    `${logPrefix} - Job "${job._id}" bypassing minimum posted window due to urgent meeting ` +
+                    `(meetingIn=${assignmentTimingDecision.hoursUntilMeeting?.toFixed(2) || "n/a"}h <= ${urgentWindowHours}h).`
+                );
             }
 
             // Process job with applications

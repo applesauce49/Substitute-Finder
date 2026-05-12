@@ -39,7 +39,9 @@ const Home = ({ me }) => {
   const myCreatedJobs = jobs.filter(job => job.createdBy?._id === userId);
   console.log('My Created Jobs:', myCreatedJobs)
 
-  const myAssignedJobs = jobs.filter(job => job.assignedTo?._id === userId);
+  const myAssignedJobs = jobs
+    .filter(job => job.assignedTo?._id === userId)
+    .sort((a, b) => new Date(a.meetingSnapshot?.startDateTime) - new Date(b.meetingSnapshot?.startDateTime));
   console.log('My Assigned Jobs:', myAssignedJobs)
 
   const availableJobs = jobs.filter(job => job.createdBy?._id !== userId && job.active && !job.assignedTo?._id)
