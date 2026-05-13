@@ -27,6 +27,7 @@ import { initializeSystemSettings } from "./utils/initializeSystemSettings.js";
 
 const PORT = process.env.PORT || 3001;
 const USE_HTTPS = String(process.env.USE_HTTPS).toLowerCase() === "true";
+const sessionMaxAgeMs = Number(process.env.SESSION_MAX_AGE_MS || 30 * 24 * 60 * 60 * 1000);
 
 await connectDB();
 
@@ -51,6 +52,7 @@ app.use(
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
+      maxAge: sessionMaxAgeMs,
     },
   })
 );

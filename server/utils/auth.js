@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 
 const secret = process.env.JWT_SECRET || 'supersecretkey';
-const expiration = '2h';
+const expiration = process.env.JWT_EXPIRATION || '7d';
 
 export function signToken({ username, email, _id }) {
   const payload = { username, email, _id };
