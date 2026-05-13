@@ -46,7 +46,9 @@ router.get(
     }
 );
 
-router.post("logout", (req, res) => {
+router.post("/refresh", refreshAuthMiddleware, refreshToken);
+
+router.post("/logout", (req, res) => {
     req.logout(() => {
         res.clearCookie("sid");
         res.sendStatus(204);

@@ -1,4 +1,5 @@
 import decode from "jwt-decode";
+import { URLS } from "../config/urls";
 
 class AuthService {
   getProfile() {
@@ -33,6 +34,50 @@ class AuthService {
   getToken() {
     // Retrieves the user token from localStorage
     return localStorage.getItem("id_token");
+  }
+
+  shouldRefreshToken() {
+    const token = this.getToken();
+    if (!token) return false;
+
+    try {
+      const decoded = decode(token);
+      const now = Date.now() / 1000;
+      // Refresh if expired or within 5 minutes of expiry
+      return !decoded.exp || decoded.exp <= now + 300;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  async refreshToken() {
+    const token = this.getToken();
+    if (!token) return null;
+
+    try {
+      const response = await fetch(`${URLS.apiBase}/auth/refresh`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      if (data?.token) {
+        localStorage.setItem("id_token", data.token);
+        return data.token;
+      }
+
+      return null;
+    } catch (err) {
+      console.error("Token refresh request failed", err);
+      return null;
+    }
   }
 
   login(idToken) {

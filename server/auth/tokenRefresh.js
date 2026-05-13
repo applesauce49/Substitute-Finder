@@ -1,6 +1,9 @@
 import jwt from 'jsonwebtoken';
 import { getUserFromReq } from './middleware.js';
 
+const refreshExpiration = process.env.JWT_REFRESH_EXPIRATION || '7d';
+const refreshMaxAgeSeconds = Number(process.env.JWT_REFRESH_MAX_AGE_SECONDS || 30 * 24 * 60 * 60);
+
 /**
  * Generate a new JWT token for a user
  * @param {Object} user - User object
@@ -38,8 +41,8 @@ export async function refreshToken(req, res) {
             });
         }
         
-        // Generate new token with extended expiration
-        const newToken = generateToken(user, '24h');
+        // Generate new token with configurable extended expiration
+        const newToken = generateToken(user, refreshExpiration);
         
         res.json({ 
             token: newToken,
@@ -88,9 +91,9 @@ export async function refreshAuthMiddleware(req, res, next) {
         
         const payload = decoded.payload?.data || decoded.payload;
         
-        // Check if token is too old (more than 7 days expired)
+        // Check if token is too old to refresh
         const now = Math.floor(Date.now() / 1000);
-        const maxAge = 7 * 24 * 60 * 60; // 7 days
+        const maxAge = refreshMaxAgeSeconds;
         
         if (decoded.payload.exp && (now - decoded.payload.exp) > maxAge) {
             return res.status(401).json({ error: 'Token too old to refresh' });
