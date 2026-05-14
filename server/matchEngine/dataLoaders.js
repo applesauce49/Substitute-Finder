@@ -9,6 +9,17 @@ import Constraint from "./Schemas/Constraint.js";
 import UserAttributeDefinition from "./Schemas/UserAttributeDefinition.js";
 import { SYSTEM_ATTRIBUTES } from "../config/systemAttributes.js";
 
+/**
+ * Normalize a recurring instance ID to its base event ID by stripping the _R marker.
+ * e.g. "abc123_R20250514T140000" -> "abc123"
+ * Non-instance IDs are returned as-is.
+ */
+export function toRecurringBaseId(eventId) {
+    if (!eventId) return null;
+    const marker = eventId.indexOf("_R");
+    return marker !== -1 ? eventId.substring(0, marker) : eventId;
+}
+
 export function buildMeetingLookupQuery(eventIds) {
     const filteredEventIds = (eventIds || []).filter(Boolean);
 
@@ -16,11 +27,16 @@ export function buildMeetingLookupQuery(eventIds) {
         return null;
     }
 
+    // Also include base IDs derived from any recurring instance IDs so that
+    // a job with an instance gcalEventId can still resolve to the base Meeting.
+    const baseIds = filteredEventIds.map(toRecurringBaseId).filter(Boolean);
+    const allIds = Array.from(new Set([...filteredEventIds, ...baseIds]));
+
     return {
         $or: [
-            { eventId: { $in: filteredEventIds } },
-            { gcalEventId: { $in: filteredEventIds } },
-            { gcalRecurringEventId: { $in: filteredEventIds } },
+            { eventId: { $in: allIds } },
+            { gcalEventId: { $in: allIds } },
+            { gcalRecurringEventId: { $in: allIds } },
         ],
     };
 }

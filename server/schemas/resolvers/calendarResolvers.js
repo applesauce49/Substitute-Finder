@@ -102,15 +102,10 @@ export default {
                         return items.map((ev) => mapCalendarEvent(calendarId, ev));
                     } catch (error) {
                         console.error(`[googleEventsForCalendars] Failed to load calendar ${calendarId}:`, error?.message || error);
-                        // Re-throw auth errors with clear message
+                        // Log auth errors but don't throw - return empty array to continue with other calendars
                         if (error?.message?.includes("authentication") || error?.message?.includes("credential") || error?.message?.includes("OAuth")) {
-                            throw new GraphQLError(
-                                `Google Calendar authentication failed for calendar ${calendarId}. Please re-authenticate your Google Calendar access.`,
-                                { originalError: error }
-                            );
+                            console.error(`[googleEventsForCalendars] Auth issue for calendar ${calendarId} - returning empty list for this calendar`);
                         }
-                        // For other errors, log and return empty array
-                        console.warn(`[googleEventsForCalendars] Continuing despite error for calendar ${calendarId}`);
                         return [];
                     }
                 })

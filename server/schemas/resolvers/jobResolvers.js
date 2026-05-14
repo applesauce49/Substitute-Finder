@@ -72,12 +72,18 @@ export default {
 
                 console.log('Job meetingSnapshot:', JSON.stringify(job.meetingSnapshot, null, 2));
 
-                // Find the original Meeting document using event IDs from meetingSnapshot
-                const eventIds = [
+                // Find the original Meeting document using event IDs from meetingSnapshot.
+                // Also include normalized base IDs in case the job snapshot has a recurring instance ID.
+                const rawEventIds = [
                     job.meetingSnapshot?.eventId,
                     job.meetingSnapshot?.gcalEventId,
                     job.meetingSnapshot?.gcalRecurringEventId
                 ].filter(Boolean);
+                const baseEventIds = rawEventIds.map(id => {
+                    const marker = id.indexOf('_R');
+                    return marker !== -1 ? id.substring(0, marker) : id;
+                });
+                const eventIds = Array.from(new Set([...rawEventIds, ...baseEventIds]));
 
                 console.log('Extracted eventIds:', eventIds);
 
@@ -104,7 +110,7 @@ export default {
                         { gcalEventId: { $in: eventIds } },
                         { gcalRecurringEventId: { $in: eventIds } }
                     ]
-                });
+                }).lean();
 
                 console.log('Found meeting:', meeting ? {
                     _id: meeting._id,
