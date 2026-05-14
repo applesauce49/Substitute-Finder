@@ -4,6 +4,10 @@ export const UPDATE_MEETING = gql`
   mutation UpdateMeeting($id: ID!, $input: MeetingInput!) {
     updateMeeting(id: $id, input: $input) {
       _id
+      source
+      calendarId
+      gcalEventId
+      gcalRecurringEventId
       summary
       description
       constraintGroupIds
@@ -33,6 +37,10 @@ export const CREATE_MEETING = gql`
   mutation CreateMeeting($input: MeetingInput!) {
     createMeeting(input: $input) {
       _id
+      source
+      calendarId
+      gcalEventId
+      gcalRecurringEventId
       summary
       description
       constraintGroupIds

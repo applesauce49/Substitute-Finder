@@ -4,7 +4,8 @@ export const gcalTypeDefs = gql`
 
 extend type Query {
   googleCalendars: [CalendarListEntry!]!
-  googleEvents(calendarId: String!): [CalendarEvent!]!
+  googleEvents(calendarId: String!, parentOnly: Boolean): [CalendarEvent!]!
+  googleEventsForCalendars(calendarIds: [String!]!): [CalendarEvent!]!
   calendars: [Calendar!]!   # optional, if you want grouping
 
 }
@@ -48,6 +49,7 @@ type CalendarAtendee {
 
 type CalendarEvent {
   id: String!
+  recurringEventId: String
   summary: String
   description: String
   start: String

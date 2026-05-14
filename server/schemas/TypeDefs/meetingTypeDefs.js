@@ -32,6 +32,9 @@ type Meeting {
 
 input MeetingInput {
   source: String
+  calendarId: String
+  gcalEventId: String
+  gcalRecurringEventId: String
   summary: String
   description: String
   start: DateTime

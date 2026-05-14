@@ -47,6 +47,7 @@ export const QUERY_MEETINGS = gql`
         email
       }
       workloadBalanceWindowDays
+      linkedJobIds
     }
   }
 `;

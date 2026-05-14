@@ -25,9 +25,10 @@ export const IMPORT_GOOGLE_MEETINGS = gql`
 `;
 
 export const QUERY_EVENTS = gql`
-  query ($calendarId: String!) {
-    googleEvents(calendarId: $calendarId) {
+  query ($calendarId: String!, $parentOnly: Boolean) {
+    googleEvents(calendarId: $calendarId, parentOnly: $parentOnly) {
       id
+      recurringEventId
       summary
       start
       end
@@ -35,5 +36,19 @@ export const QUERY_EVENTS = gql`
       calendarId
       }
     }
+`;
+
+export const QUERY_EVENTS_FOR_CALENDARS = gql`
+  query ($calendarIds: [String!]!) {
+    googleEventsForCalendars(calendarIds: $calendarIds) {
+      id
+      recurringEventId
+      summary
+      start
+      end
+      description
+      calendarId
+    }
+  }
 `;
 
