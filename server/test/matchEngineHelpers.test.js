@@ -16,13 +16,22 @@ import Constraint from "../matchEngine/Schemas/Constraint.js";
 test("buildMeetingLookupQuery includes eventId, gcalEventId, and gcalRecurringEventId", () => {
     const query = buildMeetingLookupQuery(["event-1"]);
 
-    assert.deepEqual(query, {
-        $or: [
-            { eventId: { $in: ["event-1"] } },
-            { gcalEventId: { $in: ["event-1"] } },
-            { gcalRecurringEventId: { $in: ["event-1"] } },
-        ],
-    });
+    // Must include exact-match conditions on all three fields
+    assert.ok(query.$or.some(c => c.eventId?.$in?.includes("event-1")), "should match by eventId");
+    assert.ok(query.$or.some(c => c.gcalEventId?.$in?.includes("event-1")), "should match by gcalEventId");
+    assert.ok(query.$or.some(c => c.gcalRecurringEventId?.$in?.includes("event-1")), "should match by gcalRecurringEventId");
+});
+
+test("buildMeetingLookupQuery resolves recurring instance IDs to base ID", () => {
+    const query = buildMeetingLookupQuery(["abc123_R20260514T140000Z"]);
+
+    // Should include the base ID in exact-match sets
+    assert.ok(query.$or.some(c => c.gcalEventId?.$in?.includes("abc123")), "should include base ID in gcalEventId $in");
+    // Should include a regex prefix condition so meetings stored with ANY instance of the series are found
+    assert.ok(
+        query.$or.some(c => c.gcalEventId instanceof RegExp && c.gcalEventId.test("abc123_R20250101T000000")),
+        "should match gcalEventId stored as a different instance of the same series via regex"
+    );
 });
 
 test("resolveWorkloadBalanceWindow prefers constraint meeting, then meeting, then default", () => {

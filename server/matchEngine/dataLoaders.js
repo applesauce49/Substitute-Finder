@@ -27,16 +27,31 @@ export function buildMeetingLookupQuery(eventIds) {
         return null;
     }
 
-    // Also include base IDs derived from any recurring instance IDs so that
-    // a job with an instance gcalEventId can still resolve to the base Meeting.
-    const baseIds = filteredEventIds.map(toRecurringBaseId).filter(Boolean);
-    const allIds = Array.from(new Set([...filteredEventIds, ...baseIds]));
+    // Derive unique base IDs from all provided event IDs.
+    const baseIds = Array.from(
+        new Set(filteredEventIds.map(toRecurringBaseId).filter(Boolean))
+    );
+    const allExactIds = Array.from(new Set([...filteredEventIds, ...baseIds]));
+
+    // Also regex-prefix-match on gcalEventId/eventId so that a meeting stored
+    // with ANY instance ID of the same recurring series (e.g. stored as
+    // "baseId_R20250101T..." while the job has "baseId_R20260521T...") is found.
+    const prefixConditions = baseIds.flatMap(baseId => {
+        const escaped = baseId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const re = new RegExp(`^${escaped}`);
+        return [
+            { gcalEventId: re },
+            { gcalRecurringEventId: re },
+            { eventId: re },
+        ];
+    });
 
     return {
         $or: [
-            { eventId: { $in: allIds } },
-            { gcalEventId: { $in: allIds } },
-            { gcalRecurringEventId: { $in: allIds } },
+            { eventId: { $in: allExactIds } },
+            { gcalEventId: { $in: allExactIds } },
+            { gcalRecurringEventId: { $in: allExactIds } },
+            ...prefixConditions,
         ],
     };
 }

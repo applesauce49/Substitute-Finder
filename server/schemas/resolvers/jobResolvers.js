@@ -121,18 +121,14 @@ export default {
                 } : null);
 
                 if (!meeting) {
-                    // Additional debugging: try to find partial matches
-                    console.log('\n=== DEBUGGING: Attempting partial matches ===');
-                    for (const eventId of eventIds) {
-                        const partialMatches = await Meeting.find({
-                            $or: [
-                                { eventId: eventId },
-                                { gcalEventId: eventId },
-                                { gcalRecurringEventId: eventId }
-                            ]
-                        }).select('_id eventId gcalEventId gcalRecurringEventId summary').lean();
-                        console.log(`Matches for eventId '${eventId}':`, partialMatches);
-                    }
+                    // Additional debugging: show all meetings and their stored IDs to identify what's missing
+                    console.log('\n=== DEBUGGING: No meeting found. Showing all meetings with gcalEventId set ===');
+                    const linkedMeetings = await Meeting.find({ gcalEventId: { $exists: true, $ne: null } })
+                        .select('_id eventId gcalEventId gcalRecurringEventId summary')
+                        .lean();
+                    console.log(`Meetings with gcalEventId (${linkedMeetings.length} total):`,
+                        linkedMeetings.map(m => ({ summary: m.summary, gcalEventId: m.gcalEventId, gcalRecurringEventId: m.gcalRecurringEventId }))
+                    );
                     
                     console.log('\n=== FALLBACK: Job has no corresponding Meeting document ===');
                     console.log('This is normal for jobs created directly from Google Calendar events.');
