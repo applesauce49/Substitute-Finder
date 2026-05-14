@@ -32,6 +32,7 @@ type Subscription {
   jobUpdated: Job
   jobCreated: Job
   jobCanceled: ID
+  jobCancelled: ID @deprecated(reason: "Use jobCanceled")
   jobAssigned: Job
 }
 

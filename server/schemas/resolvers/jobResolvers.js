@@ -592,6 +592,14 @@ export default {
                 console.log("Subscription to jobCanceled initiated");
                 return pubsub.asyncIterableIterator(['JOB_CANCELED']);
             },
+            resolve: (payload) => payload?.jobCanceled ?? payload?.jobCancelled ?? null,
+        },
+        jobCancelled: {
+            subscribe: () => {
+                console.log("Subscription to legacy jobCancelled initiated");
+                return pubsub.asyncIterableIterator(['JOB_CANCELED']);
+            },
+            resolve: (payload) => payload?.jobCanceled ?? payload?.jobCancelled ?? null,
         },
         jobAssigned: {
             subscribe: () => {
