@@ -40,6 +40,7 @@ export const CREATE_CONSTRAINT = gql`
       _id
       name
       description
+      icon
       fieldSource
       fieldKey
       operator
@@ -62,6 +63,7 @@ export const UPDATE_CONSTRAINT = gql`
       _id
       name
       description
+      icon
       fieldSource
       fieldKey
       operator

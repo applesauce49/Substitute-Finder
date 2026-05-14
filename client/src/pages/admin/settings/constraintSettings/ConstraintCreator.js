@@ -3,6 +3,53 @@ import ModalForm from "../../../../components/Modal/ModalForm";
 import { AttributeTypes } from "../../../../utils/attributes/AttributeTypes";
 import { OperatorRegistry } from "../../../../utils/attributes/operatorRegistry";
 
+const ICON_OPTIONS = [
+    { value: "👥", label: "Group" },
+    { value: "🧠", label: "Clinical" },
+    { value: "🗣️", label: "Language" },
+    { value: "📍", label: "Location" },
+    { value: "🕒", label: "Time" },
+    { value: "📅", label: "Schedule" },
+    { value: "✅", label: "Required" },
+    { value: "⚖️", label: "Balance" },
+    { value: "🧩", label: "Specialty" },
+    { value: "🎯", label: "Priority" },
+    { value: "🏠", label: "Home" },
+    { value: "💬", label: "Communication" },
+];
+
+const ICON_ALIASES = {
+    woman: "👩",
+    female: "♀️",
+    man: "👨",
+    male: "♂️",
+    group: "👥",
+    people: "👥",
+    language: "🗣️",
+    location: "📍",
+    time: "🕒",
+    schedule: "📅",
+    required: "✅",
+    priority: "🎯",
+    balance: "⚖️",
+    specialty: "🧩",
+    home: "🏠",
+    communication: "💬",
+};
+
+function normalizeIconInput(rawValue) {
+    const value = (rawValue || "").trim();
+    if (!value) return "";
+
+    const aliasKey = value
+        .toLowerCase()
+        .replace(/^[:\[]+|[:\]]+$/g, "")
+        .replace(/\s+/g, "")
+        .replace(/_/g, "");
+
+    return ICON_ALIASES[aliasKey] || value;
+}
+
 export function ConstraintCreator({
     title,
     onClose,
@@ -90,6 +137,74 @@ export function ConstraintCreator({
                         }
                         placeholder="Descriptive name of rule"
                     />
+                </div>
+
+                <div className="col-12 mt-2">
+                    <label className="form-label">Icon (optional)</label>
+                    <div className="input-group mb-2">
+                        <span className="input-group-text" title="Preview">
+                            {newConstraint.icon || "∅"}
+                        </span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={newConstraint.icon || ""}
+                            onChange={(e) =>
+                                setNewConstraint(prev => ({
+                                    ...prev,
+                                    icon: e.target.value,
+                                }))
+                            }
+                            onBlur={(e) => {
+                                const normalized = normalizeIconInput(e.target.value);
+                                if (normalized !== (newConstraint.icon || "")) {
+                                    setNewConstraint(prev => ({
+                                        ...prev,
+                                        icon: normalized,
+                                    }));
+                                }
+                            }}
+                            maxLength={8}
+                            placeholder="Optional badge icon (e.g. woman -> 👩)"
+                        />
+                        <button
+                            type="button"
+                            className="btn btn-outline-secondary"
+                            onClick={() =>
+                                setNewConstraint(prev => ({
+                                    ...prev,
+                                    icon: "",
+                                }))
+                            }
+                        >
+                            Clear
+                        </button>
+                    </div>
+                    <div className="d-flex flex-wrap gap-2 mb-1">
+                        {ICON_OPTIONS.map((iconOption) => {
+                            const isSelected = (newConstraint.icon || "") === iconOption.value;
+                            return (
+                                <button
+                                    key={iconOption.value}
+                                    type="button"
+                                    className={`btn btn-sm ${isSelected ? "btn-primary" : "btn-outline-secondary"}`}
+                                    title={iconOption.label}
+                                    aria-label={`Use ${iconOption.label} icon`}
+                                    onClick={() =>
+                                        setNewConstraint(prev => ({
+                                            ...prev,
+                                            icon: iconOption.value,
+                                        }))
+                                    }
+                                >
+                                    {iconOption.value}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <div className="form-text">
+                        Pick an icon or type your own. Common words auto-convert (example: woman -> 👩).
+                    </div>
                 </div>
 
                 {/* REQUIRED TOGGLE */}

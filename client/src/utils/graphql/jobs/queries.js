@@ -22,6 +22,11 @@ export const JOB_BASE_FIELDS = gql`
       startDateTime
       endDateTime
     }
+    requirements
+    requirementBadges {
+      name
+      icon
+    }
     description
     applicationCount
   }

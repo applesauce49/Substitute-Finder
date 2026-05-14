@@ -3,6 +3,8 @@ import { Schema, model } from "mongoose";
 const constraintSchema = new Schema({
   name: { type: String, required: true },
   description: { type: String },
+  // Optional icon token (emoji or short label) used for compact UI badges.
+  icon: { type: String },
 
   // user | meeting (v1: user only)
   fieldSource: {

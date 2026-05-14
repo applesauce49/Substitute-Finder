@@ -3,11 +3,35 @@ import { Job, User, Meeting } from "../../models/index.js";
 import { pubsub } from '../../graphql/pubsub.js';
 import { getImpersonatedCalendarClient, getUserCalendarClient } from '../../services/googleClient.js';
 import { inviteUserToEvent, removeUserFromEvent } from '../../services/calendarServices.js';
-import { runMatchEngine, previewMatchEngineForMeeting, getEligibleJobsForMatchEngine, runMatchEngineConfigurable } from '../../matchEngine/matchEngine.js';
+import { runMatchEngine, previewMatchEngineForMeeting, getEligibleJobsForMatchEngine, runMatchEngineConfigurable, buildScoredApplicantsForJob } from '../../matchEngine/matchEngine.js';
 import { postJobToGoogleChat, postJobCancelledToGoogleChat, postJobAssignedToGoogleChat } from "../../utils/chatJobNotifier.js";
 import { getDefaultWorkloadBalanceWindowDays } from "../../services/systemSettingsService.js";
 import { acquireMatchEngineRunLock, releaseMatchEngineRunLock } from "../../services/systemSettingsService.js";
-import { findMeetingByEventIds } from '../../matchEngine/dataLoaders.js';
+import { buildAttributeDefinitionMap, findMeetingByEventIds, loadConstraintsByGroupIds } from '../../matchEngine/dataLoaders.js';
+
+async function resolveJobConstraintBadges(job) {
+    const snapshot = job?.meetingSnapshot;
+    if (!snapshot) return [];
+
+    const eventIds = [
+        snapshot?.eventId,
+        snapshot?.gcalEventId,
+        snapshot?.gcalRecurringEventId,
+    ].filter(Boolean);
+
+    if (!eventIds.length) return [];
+
+    const meeting = await findMeetingByEventIds(eventIds);
+    if (!meeting?.constraintGroupIds?.length) return [];
+
+    const constraints = await loadConstraintsByGroupIds(meeting.constraintGroupIds);
+    return constraints
+        .map((constraint) => ({
+            name: constraint?.name || constraint?.fieldKey,
+            icon: constraint?.icon || null,
+        }))
+        .filter((badge) => Boolean(badge.name));
+}
 
 export default {
     Query: {
@@ -319,9 +343,51 @@ export default {
             const job = await Job.findById(jobId);
             if (!job) throw new Error("Job not found");
 
+            const applicant = await User.findById(applicantId).lean();
+            if (!applicant) throw new Error("Applicant not found");
+
             // prevent duplicate applications
-            if (job.applications.includes(applicantId)) {
+            if ((job.applications || []).some((app) => String(app.user?._id || app.user) === String(applicantId))) {
                 throw new Error("Already applied");
+            }
+
+            // Enforce required constraints at apply-time so ineligible applicants
+            // are blocked before entering the application pool.
+            const attributeDefinitionMap = await buildAttributeDefinitionMap();
+            const previewJob = {
+                ...job.toObject(),
+                applications: [
+                    ...(job.applications || []).map((app) => ({
+                        _id: app._id,
+                        user: app.user,
+                        appliedAt: app.appliedAt,
+                    })),
+                    {
+                        _id: null,
+                        user: applicant._id,
+                        appliedAt: new Date(),
+                    },
+                ],
+            };
+
+            const { rankedApplications, hasConstraints } = await buildScoredApplicantsForJob(
+                previewJob,
+                [applicant],
+                attributeDefinitionMap,
+                "job"
+            );
+
+            const applicantResult = rankedApplications.find(
+                (r) => String(r?.application?.user?._id || r?.application?.user) === String(applicant._id)
+            );
+
+            if (hasConstraints && (!applicantResult || applicantResult.disqualified)) {
+                const matched = applicantResult?.matched ?? 0;
+                const total = applicantResult?.total ?? 0;
+                throw new GraphQLError(
+                    `Application blocked: this applicant does not satisfy required meeting constraints (${matched}/${total} constraints matched).`,
+                    { extensions: { code: 'CONSTRAINTS_NOT_MET' } }
+                );
             }
 
             // push properly shaped subdoc
@@ -606,5 +672,7 @@ export default {
     },
     Job: {
         applicationCount: (job) => job.applications?.length || 0,
+        requirements: async (job) => (await resolveJobConstraintBadges(job)).map((badge) => badge.name),
+        requirementBadges: async (job) => resolveJobConstraintBadges(job),
     }
 };

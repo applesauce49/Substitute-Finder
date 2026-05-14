@@ -52,6 +52,7 @@ export function ConstraintsView() {
             const payload = {
                 name: newConstraint.name.trim(),
                 description: newConstraint.description || null,
+                icon: (newConstraint.icon || "").trim() || null,
                 fieldSource: "user",
                 fieldKey: newConstraint.fieldKey,
                 operator: newConstraint.operator,
@@ -92,6 +93,7 @@ export function ConstraintsView() {
         setNewConstraint({
             name: "",
             description: "",
+            icon: "",
             fieldKey: "",
             operator: "",
             value: "",
@@ -104,6 +106,7 @@ export function ConstraintsView() {
         setNewConstraint({
             name: constraint.name ?? "",
             description: constraint.description ?? "",
+            icon: constraint.icon ?? "",
             fieldKey: constraint.fieldKey ?? "",
             operator: constraint.operator ?? "",
             value: constraint.value ?? "",
@@ -116,6 +119,10 @@ export function ConstraintsView() {
     const constraintColumns = React.useMemo(() => [
         columnHelper.accessor("name", {
             header: "Name",
+        }),
+        columnHelper.accessor("icon", {
+            header: "Icon",
+            cell: ({ getValue }) => getValue() || "-",
         }),
         columnHelper.accessor("fieldKey", {
             header: "Field",
@@ -166,6 +173,7 @@ export function ConstraintsView() {
     const [newConstraint, setNewConstraint] = React.useState({
         name: "",
         description: "",
+        icon: "",
         fieldKey: "",
         operator: "EQUALS",
         value: "",
@@ -202,6 +210,7 @@ export function ConstraintsView() {
                             setNewConstraint({
                                 name: "",
                                 description: "",
+                                icon: "",
                                 fieldKey: "",
                                 operator: "",
                                 value: "",

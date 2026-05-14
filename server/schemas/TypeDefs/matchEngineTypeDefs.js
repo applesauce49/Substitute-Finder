@@ -51,6 +51,7 @@ type Constraint {
   _id: ID!
   name: String!
   description: String
+  icon: String
   fieldSource: String!       # "user" | "meeting" (v1: "user")
   fieldKey: String!          # references UserAttributeDefinition.key
   operator: ConstraintOperator!
@@ -82,6 +83,7 @@ input UserAttributeDefinitionInput {
 input ConstraintInput {
   name: String!
   description: String
+  icon: String
   fieldSource: String!        # v1: "user"
   fieldKey: String!
   operator: ConstraintOperator!

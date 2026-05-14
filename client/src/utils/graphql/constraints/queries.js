@@ -24,6 +24,7 @@ export const QUERY_CONSTRAINTS = gql`
       _id
       name
       description
+      icon
       fieldSource
       fieldKey
       operator
@@ -43,6 +44,7 @@ export const QUERY_CONSTRAINTS_GROUPS = gql`
       constraints {
         _id
         name
+        icon
         fieldKey
         operator
         value

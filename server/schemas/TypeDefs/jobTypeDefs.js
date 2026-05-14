@@ -137,11 +137,18 @@ type MatchEngineConfigurableResult {
   totalEvaluated: Int!
 }
 
+type RequirementBadge {
+  name: String!
+  icon: String
+}
+
 type Job {
   _id: ID!
   active: Boolean
   description: String
   meetingSnapshot: MeetingSnapshotSchema!
+  requirements: [String!]!
+  requirementBadges: [RequirementBadge!]!
   createdAt: DateTime!
   createdBy: User!
   applicationCount: Int!
