@@ -7,6 +7,7 @@ import { runMatchEngine, previewMatchEngineForMeeting, getEligibleJobsForMatchEn
 import { postJobToGoogleChat, postJobCancelledToGoogleChat, postJobAssignedToGoogleChat } from "../../utils/chatJobNotifier.js";
 import { getDefaultWorkloadBalanceWindowDays } from "../../services/systemSettingsService.js";
 import { acquireMatchEngineRunLock, releaseMatchEngineRunLock } from "../../services/systemSettingsService.js";
+import { findMeetingByEventIds } from '../../matchEngine/dataLoaders.js';
 
 export default {
     Query: {
@@ -104,13 +105,7 @@ export default {
                     summary: m.summary
                 })));
                 
-                const meeting = await Meeting.findOne({
-                    $or: [
-                        { eventId: { $in: eventIds } },
-                        { gcalEventId: { $in: eventIds } },
-                        { gcalRecurringEventId: { $in: eventIds } }
-                    ]
-                }).lean();
+                const meeting = await findMeetingByEventIds(eventIds);
 
                 console.log('Found meeting:', meeting ? {
                     _id: meeting._id,
