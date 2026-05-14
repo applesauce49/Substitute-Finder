@@ -8,7 +8,7 @@ import { QUERY_JOBS } from '../utils/graphql/jobs/queries.js';
 import { 
   JOB_UPDATED_SUB, 
   JOB_CREATED_SUB, 
-  JOB_CANCELLED_SUB, 
+  JOB_CANCELED_SUB, 
   JOB_ASSIGNED_SUB } from '../utils/graphql/jobs/subscriptions.js';
 import { useSubscription } from '@apollo/client';
 
@@ -23,16 +23,16 @@ const Home = ({ me }) => {
 
   const { data: jobUpdated } = useSubscription(JOB_UPDATED_SUB);
   const { data: jobCreated } = useSubscription(JOB_CREATED_SUB);
-  const { data: jobCancelled } = useSubscription(JOB_CANCELLED_SUB);
+  const { data: jobCanceled } = useSubscription(JOB_CANCELED_SUB);
   const { data: jobAssigned } = useSubscription(JOB_ASSIGNED_SUB);
 
 
   useEffect(() => {
-    if (jobUpdated || jobCreated || jobCancelled || jobAssigned) {
-      console.log("Job updated via subscription:", jobUpdated, jobCreated, jobCancelled, jobAssigned);
+    if (jobUpdated || jobCreated || jobCanceled || jobAssigned) {
+      console.log("Job updated via subscription:", jobUpdated, jobCreated, jobCanceled, jobAssigned);
       refetch();
     }
-  }, [jobUpdated, jobCreated, jobCancelled, jobAssigned, refetch]);
+  }, [jobUpdated, jobCreated, jobCanceled, jobAssigned, refetch]);
 
   const userId = Auth.getProfile()?.data?._id;
 

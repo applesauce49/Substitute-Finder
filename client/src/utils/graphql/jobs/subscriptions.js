@@ -28,9 +28,9 @@ export const JOB_CREATED_SUB = gql`
   }
 `;
 
-export const JOB_CANCELLED_SUB = gql`
-  subscription JobCancelled {
-    jobCancelled
+export const JOB_CANCELED_SUB = gql`
+  subscription JobCanceled {
+    jobCanceled
   }
 `;
 
