@@ -4,7 +4,12 @@ import { QUERY_MEETINGS } from "../../../utils/graphql/meetings/queries.js";
 import { QUERY_EVENTS, QUERY_EVENTS_FOR_CALENDARS } from "../../../utils/graphql/gcal/queries.js";
 import { QUERY_CONSTRAINTS_GROUPS } from "../../../utils/graphql/constraints/queries.js";
 import { GET_USERS } from "../../../utils/graphql/users/queries.js";
-import { UPDATE_MEETING, CREATE_MEETING, DELETE_MEETING } from "../../../utils/graphql/meetings/mutations.js";
+import {
+  UPDATE_MEETING,
+  CREATE_MEETING,
+  DELETE_MEETING,
+  SYNC_MEETING_ASSIGNMENTS_FROM_CALENDAR,
+} from "../../../utils/graphql/meetings/mutations.js";
 import { GenericReportTable } from "../../../components/reporting/GenericReportTable/GenericReportTable.js";
 import { createColumnHelper } from "@tanstack/react-table";
 import ImportMeetingsButton from "./UserSettings/ImportMeetingsButton.js";
@@ -47,6 +52,9 @@ export default function MeetingsSettings() {
   const [updateMeeting] = useMutation(UPDATE_MEETING, { onCompleted: () => refetch() });
   const [createMeeting] = useMutation(CREATE_MEETING, { onCompleted: () => refetch() });
   const [deleteMeeting] = useMutation(DELETE_MEETING, { onCompleted: () => refetch() });
+  const [syncMeetingAssignments, { loading: syncMeetingAssignmentsLoading }] = useMutation(
+    SYNC_MEETING_ASSIGNMENTS_FROM_CALENDAR
+  );
 
   const [showForm, setShowForm] = React.useState(false);
   const [showLinkForm, setShowLinkForm] = React.useState(false);
@@ -365,6 +373,45 @@ export default function MeetingsSettings() {
     }
   }, [deleteMeeting]);
 
+  const handleSyncAssignments = React.useCallback(async (meeting) => {
+    if (!meeting?._id) return;
+
+    try {
+      const { data: syncData } = await syncMeetingAssignments({
+        variables: {
+          meetingId: meeting._id,
+          dryRun: false,
+        },
+      });
+
+      const result = syncData?.syncMeetingAssignmentsFromCalendar;
+      if (!result) {
+        window.alert("Sync completed, but no details were returned.");
+        await refetch();
+        return;
+      }
+
+      const warningSuffix = result.warnings?.length
+        ? `\n\nWarnings:\n- ${result.warnings.join("\n- ")}`
+        : "";
+
+      window.alert(
+        `Assignment sync complete for ${meeting.summary || "meeting"}.\n\n` +
+        `Reviewed: ${result.reviewedJobs}\n` +
+        `Updated: ${result.updatedJobs}\n` +
+        `Assigned: ${result.assignedJobs}\n` +
+        `Unassigned: ${result.unassignedJobs}\n` +
+        `Skipped (ambiguous): ${result.skippedAmbiguousJobs}` +
+        warningSuffix
+      );
+
+      await refetch();
+    } catch (err) {
+      console.error("Error syncing meeting assignments:", err);
+      window.alert(err?.message || "Failed to sync assignments from Google Calendar.");
+    }
+  }, [syncMeetingAssignments, refetch]);
+
   const columns = React.useMemo(() => [
     columnHelper.accessor("summary", {
       header: "Summary",
@@ -551,6 +598,14 @@ export default function MeetingsSettings() {
             Edit
           </button>
           <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={() => handleSyncAssignments(row.original)}
+            disabled={syncMeetingAssignmentsLoading || !row.original?.gcalEventId}
+            title={!row.original?.gcalEventId ? "Link this meeting to Google first" : "Sync local assignee from Google attendees"}
+          >
+            Sync Assignee
+          </button>
+          <button
             className="btn btn-sm btn-outline-danger"
             onClick={() => handleDelete(row.original._id)}
           >
@@ -561,7 +616,16 @@ export default function MeetingsSettings() {
       enableSorting: false,
       enableColumnFilter: false,
     },
-  ], [columnHelper, handleEditMeeting, openFixLinkDialog, handleDelete, validationEventsLoading, calendarEventLookup]);
+  ], [
+    columnHelper,
+    handleEditMeeting,
+    handleSyncAssignments,
+    openFixLinkDialog,
+    handleDelete,
+    validationEventsLoading,
+    calendarEventLookup,
+    syncMeetingAssignmentsLoading,
+  ]);
 
   if (loading) return <p>Loading meetings…</p>;
   if (error) return <p>Error loading meetings.</p>;

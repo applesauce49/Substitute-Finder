@@ -71,3 +71,17 @@ export const DELETE_MEETING = gql`
     deleteMeeting(id: $id)
   }
 `;
+
+export const SYNC_MEETING_ASSIGNMENTS_FROM_CALENDAR = gql`
+  mutation SyncMeetingAssignmentsFromCalendar($meetingId: ID!, $dryRun: Boolean) {
+    syncMeetingAssignmentsFromCalendar(meetingId: $meetingId, dryRun: $dryRun) {
+      meetingId
+      reviewedJobs
+      updatedJobs
+      assignedJobs
+      unassignedJobs
+      skippedAmbiguousJobs
+      warnings
+    }
+  }
+`;
