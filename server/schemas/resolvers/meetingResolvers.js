@@ -115,6 +115,17 @@ export default {
             return updatedMeeting;
         },
 
+        deleteMeeting: async (_, { id }, context) => {
+            if (!context.user?.admin) {
+                throw new GraphQLError('Unauthorized', { extensions: { code: 'UNAUTHORIZED' } });
+            }
+            const result = await Meeting.findByIdAndDelete(id);
+            if (!result) {
+                throw new GraphQLError('Meeting not found', { extensions: { code: 'NOT_FOUND' } });
+            }
+            return true;
+        },
+
         syncMeetingAssignmentsFromCalendar: async (_, { meetingId, dryRun = false }, context) => {
             if (!context.user?.admin) {
                 throw new GraphQLError('Unauthorized', { extensions: { code: 'UNAUTHORIZED' } });

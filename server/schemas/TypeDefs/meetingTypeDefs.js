@@ -79,6 +79,7 @@ type ConstraintAttribute {
 extend type Mutation {
   createMeeting(input: MeetingInput!): Meeting!
   updateMeeting(id: ID!, input: MeetingInput!): Meeting!
+  deleteMeeting(id: ID!): Boolean!
   syncMeetingAssignmentsFromCalendar(meetingId: ID!, dryRun: Boolean): MeetingAssignmentSyncResult!
 }
 
