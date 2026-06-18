@@ -159,6 +159,7 @@ export default function MeetingsSettings() {
   const [linkMeeting, setLinkMeeting] = React.useState(null);
   const [saveError, setSaveError] = React.useState("");
   const [linkSaveError, setLinkSaveError] = React.useState("");
+  const [showDebug, setShowDebug] = React.useState(false);
   const [formState, setFormState] = React.useState({
     summary: "",
     description: "",
@@ -538,6 +539,88 @@ export default function MeetingsSettings() {
     }
   }, [syncMeetingAssignments, refetch]);
 
+  const debugData = React.useMemo(() => {
+    const allMeetings = meetings.map((meeting) => ({
+      _id: meeting._id,
+      summary: meeting.summary,
+      calendarId: meeting.calendarId,
+      gcalEventId: meeting.gcalEventId,
+      gcalRecurringEventId: meeting.gcalRecurringEventId,
+      createdAt: meeting.createdAt,
+      updatedAt: meeting.updatedAt,
+    }));
+
+    // Find duplicates by summary
+    const summaryMap = {};
+    meetings.forEach((meeting) => {
+      const key = (meeting.summary || "").toLowerCase().trim();
+      if (!summaryMap[key]) summaryMap[key] = [];
+      summaryMap[key].push(meeting);
+    });
+
+    // Find duplicates by gcalEventId
+    const eventMap = {};
+    meetings.forEach((meeting) => {
+      const eventId = meeting.gcalEventId || "";
+      const recurringId = meeting.gcalRecurringEventId || "";
+      if (eventId) {
+        if (!eventMap[eventId]) eventMap[eventId] = [];
+        eventMap[eventId].push(meeting);
+      }
+      if (recurringId) {
+        if (!eventMap[recurringId]) eventMap[recurringId] = [];
+        eventMap[recurringId].push(meeting);
+      }
+    });
+
+    const duplicatesByEvent = Object.entries(eventMap)
+      .filter(([, items]) => items.length > 1)
+      .reduce((acc, [eventId, items]) => {
+        acc[eventId] = items.map((m) => ({
+          _id: m._id,
+          summary: m.summary,
+          calendarId: m.calendarId,
+        }));
+        return acc;
+      }, {});
+
+    const duplicatesByName = Object.entries(summaryMap)
+      .filter(([, items]) => items.length > 1)
+      .reduce((acc, [summary, items]) => {
+        acc[summary] = items.map((m) => ({
+          _id: m._id,
+          calendarId: m.calendarId,
+          gcalEventId: m.gcalEventId,
+        }));
+        return acc;
+      }, {});
+
+    return {
+      allMeetings,
+      duplicatesByEvent: Object.keys(duplicatesByEvent).length > 0 ? duplicatesByEvent : null,
+      duplicatesByName: Object.keys(duplicatesByName).length > 0 ? duplicatesByName : null,
+      totalMeetings: meetings.length,
+    };
+  }, [meetings]);
+
+  const handleCopyDebugData = () => {
+    const output = `=== MEETINGS DEBUG DATA ===\nGenerated: ${new Date().toISOString()}\n\n` +
+      `Total Meetings: ${debugData.totalMeetings}\n\n` +
+      `=== ALL MEETINGS ===\n${JSON.stringify(debugData.allMeetings, null, 2)}\n\n` +
+      (debugData.duplicatesByEvent ? 
+        `=== DUPLICATES BY GOOGLE EVENT ID ===\n${JSON.stringify(debugData.duplicatesByEvent, null, 2)}\n\n` : 
+        '') +
+      (debugData.duplicatesByName ? 
+        `=== DUPLICATES BY NAME ===\n${JSON.stringify(debugData.duplicatesByName, null, 2)}\n\n` : 
+        '');
+
+    navigator.clipboard.writeText(output).then(() => {
+      alert("Debug data copied to clipboard!");
+    }).catch(() => {
+      alert("Failed to copy to clipboard. You may need to use the manual copy button.");
+    });
+  };
+
   const columns = React.useMemo(() => [
     columnHelper.accessor("summary", {
       header: "Summary",
@@ -690,6 +773,13 @@ export default function MeetingsSettings() {
           <div className="d-flex gap-2">
             <ImportMeetingsButton />
             <button
+              className="btn btn-info btn-sm"
+              onClick={() => setShowDebug(!showDebug)}
+              title="Show debug information about meetings for troubleshooting duplicates"
+            >
+              {showDebug ? "Hide Debug" : "Show Debug"}
+            </button>
+            <button
               className="btn btn-success"
               onClick={() => {
                 resetForm();
@@ -702,6 +792,72 @@ export default function MeetingsSettings() {
           </div>
         }
       />
+
+      {showDebug && (
+        <div className="mt-4 border rounded p-3 bg-light">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h5 className="mb-0">Debug Information</h5>
+            <button
+              className="btn btn-sm btn-primary"
+              onClick={handleCopyDebugData}
+              title="Copy all debug data to clipboard"
+            >
+              Copy to Clipboard
+            </button>
+          </div>
+
+          <div className="mb-3">
+            <p className="text-muted mb-2">
+              <strong>Total Meetings:</strong> {debugData.totalMeetings}
+            </p>
+          </div>
+
+          {debugData.duplicatesByEvent && (
+            <div className="mb-3 alert alert-warning">
+              <h6 className="alert-heading">⚠️ Duplicates by Google Event ID</h6>
+              <pre className="mb-0" style={{ fontSize: "0.85rem", maxHeight: "200px", overflowY: "auto" }}>
+                {JSON.stringify(debugData.duplicatesByEvent, null, 2)}
+              </pre>
+            </div>
+          )}
+
+          {debugData.duplicatesByName && (
+            <div className="mb-3 alert alert-warning">
+              <h6 className="alert-heading">⚠️ Duplicates by Meeting Name</h6>
+              <pre className="mb-0" style={{ fontSize: "0.85rem", maxHeight: "200px", overflowY: "auto" }}>
+                {JSON.stringify(debugData.duplicatesByName, null, 2)}
+              </pre>
+            </div>
+          )}
+
+          {!debugData.duplicatesByEvent && !debugData.duplicatesByName && (
+            <div className="alert alert-success">
+              ✓ No obvious duplicates detected.
+            </div>
+          )}
+
+          <details className="mt-3">
+            <summary className="cursor-pointer text-muted" style={{ cursor: "pointer" }}>
+              <strong>Full Meeting List (JSON)</strong>
+            </summary>
+            <pre className="mt-2 p-2 bg-white border rounded" style={{ fontSize: "0.75rem", maxHeight: "300px", overflowY: "auto" }}>
+              {JSON.stringify(debugData.allMeetings, null, 2)}
+            </pre>
+          </details>
+
+          <div className="mt-3 text-muted small">
+            <p className="mb-1">
+              💡 <strong>How to identify duplicates:</strong>
+            </p>
+            <ul className="mb-0">
+              <li>Meetings with the same <code>gcalEventId</code> are linked to the same Google event</li>
+              <li>Meetings with identical <code>summary</code> may be duplicates (especially if same calendar)</li>
+              <li>Check the <code>_id</code> to safely delete the unwanted duplicate</li>
+              <li>Copy this data and share with the team lead for analysis</li>
+            </ul>
+          </div>
+        </div>
+      )}
 
       {showForm && (
         <ModalForm
