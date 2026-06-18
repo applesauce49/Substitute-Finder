@@ -608,10 +608,12 @@ export default function MeetingsSettings() {
           calendarId: meeting.calendarId,
           gcalEventId: meeting.gcalEventId,
           gcalRecurringEventId: meeting.gcalRecurringEventId,
+          createdAt: meeting.createdAt,
           conflictsWith: {
             _id: otherMeetingWithDuplicate._id,
             summary: otherMeetingWithDuplicate.summary,
             calendarId: otherMeetingWithDuplicate.calendarId,
+            createdAt: otherMeetingWithDuplicate.createdAt,
           },
         };
       }
