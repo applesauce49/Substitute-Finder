@@ -595,10 +595,33 @@ export default function MeetingsSettings() {
         return acc;
       }, {});
 
+    // Find meetings with conflicting Google links (same event linked to multiple meetings)
+    const conflictingLinks = {};
+    meetings.forEach((meeting) => {
+      if (!meeting.gcalEventId && !meeting.gcalRecurringEventId) return;
+      const otherMeetingWithDuplicate = findMeetingWithDuplicateGoogleLink(meeting, meetings);
+      if (otherMeetingWithDuplicate) {
+        const key = `${meeting._id}`;
+        conflictingLinks[key] = {
+          _id: meeting._id,
+          summary: meeting.summary,
+          calendarId: meeting.calendarId,
+          gcalEventId: meeting.gcalEventId,
+          gcalRecurringEventId: meeting.gcalRecurringEventId,
+          conflictsWith: {
+            _id: otherMeetingWithDuplicate._id,
+            summary: otherMeetingWithDuplicate.summary,
+            calendarId: otherMeetingWithDuplicate.calendarId,
+          },
+        };
+      }
+    });
+
     return {
       allMeetings,
       duplicatesByEvent: Object.keys(duplicatesByEvent).length > 0 ? duplicatesByEvent : null,
       duplicatesByName: Object.keys(duplicatesByName).length > 0 ? duplicatesByName : null,
+      conflictingLinks: Object.keys(conflictingLinks).length > 0 ? conflictingLinks : null,
       totalMeetings: meetings.length,
     };
   }, [meetings]);
@@ -607,6 +630,9 @@ export default function MeetingsSettings() {
     const output = `=== MEETINGS DEBUG DATA ===\nGenerated: ${new Date().toISOString()}\n\n` +
       `Total Meetings: ${debugData.totalMeetings}\n\n` +
       `=== ALL MEETINGS ===\n${JSON.stringify(debugData.allMeetings, null, 2)}\n\n` +
+      (debugData.conflictingLinks ? 
+        `=== MEETINGS WITH CONFLICTING GOOGLE LINKS (Linked to Another Meeting) ===\n${JSON.stringify(debugData.conflictingLinks, null, 2)}\n\n` : 
+        '') +
       (debugData.duplicatesByEvent ? 
         `=== DUPLICATES BY GOOGLE EVENT ID ===\n${JSON.stringify(debugData.duplicatesByEvent, null, 2)}\n\n` : 
         '') +
@@ -830,7 +856,17 @@ export default function MeetingsSettings() {
             </div>
           )}
 
-          {!debugData.duplicatesByEvent && !debugData.duplicatesByName && (
+          {debugData.conflictingLinks && (
+            <div className="mb-3 alert alert-danger">
+              <h6 className="alert-heading">🔗 Meetings with Conflicting Google Links</h6>
+              <p className="mb-2 small">These meetings are linked to the same Google event. One needs to be unlinked:</p>
+              <pre className="mb-0" style={{ fontSize: "0.85rem", maxHeight: "200px", overflowY: "auto" }}>
+                {JSON.stringify(debugData.conflictingLinks, null, 2)}
+              </pre>
+            </div>
+          )}
+
+          {!debugData.duplicatesByEvent && !debugData.duplicatesByName && !debugData.conflictingLinks && (
             <div className="alert alert-success">
               ✓ No obvious duplicates detected.
             </div>
@@ -847,13 +883,14 @@ export default function MeetingsSettings() {
 
           <div className="mt-3 text-muted small">
             <p className="mb-1">
-              💡 <strong>How to identify duplicates:</strong>
+              💡 <strong>How to identify and fix issues:</strong>
             </p>
             <ul className="mb-0">
-              <li>Meetings with the same <code>gcalEventId</code> are linked to the same Google event</li>
-              <li>Meetings with identical <code>summary</code> may be duplicates (especially if same calendar)</li>
-              <li>Check the <code>_id</code> to safely delete the unwanted duplicate</li>
-              <li>Copy this data and share with the team lead for analysis</li>
+              <li><strong>Conflicting Google Links:</strong> One meeting is linked to a Google event already linked to another meeting. Unlink one of them via the "Fix Google Link" button in the table.</li>
+              <li><strong>Duplicate Names:</strong> Meetings with identical <code>summary</code> may be accidental copies (especially if same calendar). Check if they should be merged or deleted.</li>
+              <li><strong>Same Event ID:</strong> Meetings with the same <code>gcalEventId</code> are linked to the same Google event and should be consolidated.</li>
+              <li>Check the <code>_id</code> to identify which meeting to keep and which to delete.</li>
+              <li>Copy this data and share with the team lead for guidance on safe deletions.</li>
             </ul>
           </div>
         </div>
