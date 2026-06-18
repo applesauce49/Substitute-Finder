@@ -5,6 +5,7 @@ import {
   InMemoryCache,
   ApolloProvider,
   createHttpLink,
+  fromPromise,
   split,
   from
 } from "@apollo/client";
@@ -35,57 +36,46 @@ const authLink = setContext((_, { headers }) => {
 // 2. ERROR LINK (Handle token expiration)
 // ----------------------------------
 const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
-  if (graphQLErrors) {
-    graphQLErrors.forEach(({ message, extensions }) => {
-      console.log(`GraphQL error: ${message}`);
-      
-      // Check for authentication errors
-      if (extensions?.code === 'UNAUTHENTICATED' || message.includes('Not logged in')) {
-        console.log('Token expired, attempting refresh...');
-        
-        // Try to refresh token
-        if (Auth.shouldRefreshToken()) {
-          return Auth.refreshToken().then((newToken) => {
-            if (newToken) {
-              console.log('Token refreshed successfully');
-              // Retry the original operation with new token
-              const oldHeaders = operation.getContext().headers;
-              operation.setContext({
-                headers: {
-                  ...oldHeaders,
-                  authorization: `Bearer ${newToken}`,
-                },
-              });
-              return forward(operation);
-            } else {
-              // Refresh failed, redirect to login
-              console.log('Token refresh failed, redirecting to login');
-              Auth.logout();
-            }
-          }).catch((error) => {
-            console.error('Token refresh error:', error);
-            Auth.logout();
-          });
-        } else {
-          // No refresh token available, redirect to login
-          Auth.logout();
-        }
-      }
-    });
-  }
-  
+  const hasGraphQLAuthError = graphQLErrors?.some(({ message, extensions }) => {
+    console.log(`GraphQL error: ${message}`);
+    return extensions?.code === "UNAUTHENTICATED" || message.includes("Not logged in");
+  });
+
   if (networkError) {
     console.log(`Network error: ${networkError}`);
-    // Handle network errors that might indicate auth issues
-    if (networkError.statusCode === 401) {
-      console.log('401 Unauthorized, checking token...');
-      if (Auth.shouldRefreshToken()) {
-        return Auth.refreshToken();
-      } else {
-        Auth.logout();
-      }
-    }
   }
+
+  const hasNetworkAuthError = networkError?.statusCode === 401;
+
+  if (!hasGraphQLAuthError && !hasNetworkAuthError) {
+    return undefined;
+  }
+
+  if (!Auth.shouldRefreshToken()) {
+    Auth.logout();
+    return undefined;
+  }
+
+  return fromPromise(
+    Auth.refreshToken().then((newToken) => {
+      if (!newToken) {
+        throw new Error("Token refresh failed");
+      }
+
+      return newToken;
+    })
+  ).flatMap((newToken) => {
+    const oldHeaders = operation.getContext().headers || {};
+
+    operation.setContext({
+      headers: {
+        ...oldHeaders,
+        authorization: `Bearer ${newToken}`,
+      },
+    });
+
+    return forward(operation);
+  });
 });
 
 // ----------------------------------

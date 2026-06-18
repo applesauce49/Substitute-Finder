@@ -1,8 +1,17 @@
 import jwt from 'jsonwebtoken';
-import { getUserFromReq } from './middleware.js';
+import User from '../models/User.js';
 
-const refreshExpiration = process.env.JWT_REFRESH_EXPIRATION || '7d';
-const refreshMaxAgeSeconds = Number(process.env.JWT_REFRESH_MAX_AGE_SECONDS || 30 * 24 * 60 * 60);
+function getRefreshExpiration() {
+    return process.env.JWT_REFRESH_EXPIRATION || '7d';
+}
+
+function getRefreshMaxAgeSeconds() {
+    return Number(process.env.JWT_REFRESH_MAX_AGE_SECONDS || 30 * 24 * 60 * 60);
+}
+
+function getJwtSecret() {
+    return process.env.JWT_SECRET || 'supersecretkey';
+}
 
 /**
  * Generate a new JWT token for a user
@@ -20,7 +29,7 @@ export function generateToken(user, expiresIn = '1h') {
     
     return jwt.sign(
         { data: payload },
-        process.env.JWT_SECRET || 'supersecretkey',
+        getJwtSecret(),
         { expiresIn }
     );
 }
@@ -32,8 +41,10 @@ export function generateToken(user, expiresIn = '1h') {
  */
 export async function refreshToken(req, res) {
     try {
-        // Get user from current token (even if expired)
-        const user = await getUserFromReq(req);
+        const refreshUser = req.user;
+        const user = refreshUser?._id
+            ? await User.findById(refreshUser._id).lean()
+            : null;
         
         if (!user) {
             return res.status(401).json({ 
@@ -42,7 +53,7 @@ export async function refreshToken(req, res) {
         }
         
         // Generate new token with configurable extended expiration
-        const newToken = generateToken(user, refreshExpiration);
+        const newToken = generateToken(user, getRefreshExpiration());
         
         res.json({ 
             token: newToken,
@@ -82,18 +93,25 @@ export async function refreshAuthMiddleware(req, res, next) {
     const token = parts[1];
     
     try {
-        // Try to decode even expired tokens for refresh
-        const decoded = jwt.decode(token, { complete: true });
+        // Verify signature but ignore expiry so refresh can recover recently expired tokens.
+        const decoded = jwt.verify(token, getJwtSecret(), {
+            ignoreExpiration: true,
+            complete: true,
+        });
         
         if (!decoded) {
             return res.status(401).json({ error: 'Invalid token format' });
         }
         
         const payload = decoded.payload?.data || decoded.payload;
+
+        if (!payload?._id) {
+            return res.status(401).json({ error: 'Invalid token payload' });
+        }
         
         // Check if token is too old to refresh
         const now = Math.floor(Date.now() / 1000);
-        const maxAge = refreshMaxAgeSeconds;
+        const maxAge = getRefreshMaxAgeSeconds();
         
         if (decoded.payload.exp && (now - decoded.payload.exp) > maxAge) {
             return res.status(401).json({ error: 'Token too old to refresh' });
