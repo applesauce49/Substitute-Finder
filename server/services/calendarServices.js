@@ -6,6 +6,7 @@ const { RRule } = RRuleLib;
 import Meeting  from "../models/Meeting.js";
 import { GOOGLE_TO_MEETING_FIELD_MAP } from "./meetingFieldMap.js";
 import { RECURRENCE_SCHEMA } from "../models/helpers/recurrenceSchema.js";
+import { normalizeMeetingGoogleLinkFields } from "../utils/googleEventIds.js";
 
 // Utility to resolve paths like "organizer.email"
 function getValueByPath(obj, path) {
@@ -296,10 +297,8 @@ export async function importGoogleMeetingParents(user) {
       continue;
     }
 
-    const exists = await Meeting.findOne({ gcalEventId: e.id });
-
-    // Produce the fields to update (from Google + context)
-    const mapped = mapGoogleEventToMeeting(e, { user });
+    const mapped = normalizeMeetingGoogleLinkFields(mapGoogleEventToMeeting(e, { user }));
+    const exists = await Meeting.findOne({ gcalEventId: mapped.gcalEventId });
 
     // Add recurrence attributes
     if (recurrence && Array.isArray(recurrence)) {
@@ -313,7 +312,7 @@ export async function importGoogleMeetingParents(user) {
 
     // Update or insert atomically
     await Meeting.findOneAndUpdate(
-      { gcalEventId: e.id },
+      { gcalEventId: mapped.gcalEventId },
       { $set: mapped },
       { upsert: true }
     );

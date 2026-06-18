@@ -4,12 +4,10 @@ import { updateMeetingSystemAttributes } from '../../services/userAttributeServi
 import { Job, User } from '../../models/index.js';
 import { getImpersonatedCalendarClient } from '../../services/googleClient.js';
 import { GraphQLError } from 'graphql';
-
-function toRecurringBaseId(eventId) {
-    if (!eventId || typeof eventId !== 'string') return '';
-    const markerIndex = eventId.indexOf('_R');
-    return markerIndex > -1 ? eventId.slice(0, markerIndex) : eventId;
-}
+import {
+    normalizeMeetingGoogleLinkFields,
+    toRecurringBaseId,
+} from '../../utils/googleEventIds.js';
 
 function escapeRegex(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -46,22 +44,23 @@ export default {
                 constraintGroupIds,
                 linkedJobIds,
             };
+            const normalizedMeetingData = normalizeMeetingGoogleLinkFields(meetingData);
 
             // Map user IDs to the correct field names
-            if (input.hostId) meetingData.host = input.hostId;
-            if (input.coHostId) meetingData.coHost = input.coHostId;
-            if (input.alternateHostId) meetingData.alternateHost = input.alternateHostId;
+            if (input.hostId) normalizedMeetingData.host = input.hostId;
+            if (input.coHostId) normalizedMeetingData.coHost = input.coHostId;
+            if (input.alternateHostId) normalizedMeetingData.alternateHost = input.alternateHostId;
 
             // Remove the input field names that don't match the schema
-            delete meetingData.hostId;
-            delete meetingData.coHostId;
-            delete meetingData.alternateHostId;
+            delete normalizedMeetingData.hostId;
+            delete normalizedMeetingData.coHostId;
+            delete normalizedMeetingData.alternateHostId;
 
-            const meeting = new Meeting(meetingData);
+            const meeting = new Meeting(normalizedMeetingData);
             const saved = await meeting.save();
 
             // Update system attributes for affected users
-            await updateMeetingSystemAttributes(meetingData);
+            await updateMeetingSystemAttributes(normalizedMeetingData);
 
             // Populate user references before returning
             return Meeting.findById(saved._id)
@@ -87,21 +86,22 @@ export default {
                 constraintGroupIds,
                 linkedJobIds,
             };
+            const normalizedUpdateData = normalizeMeetingGoogleLinkFields(updateData);
 
             // Map user IDs to the correct field names
-            if (input.hostId) updateData.host = input.hostId;
-            if (input.coHostId) updateData.coHost = input.coHostId;
-            if (input.alternateHostId) updateData.alternateHost = input.alternateHostId;
+            if (input.hostId) normalizedUpdateData.host = input.hostId;
+            if (input.coHostId) normalizedUpdateData.coHost = input.coHostId;
+            if (input.alternateHostId) normalizedUpdateData.alternateHost = input.alternateHostId;
 
             // Remove the input field names that don't match the schema
-            delete updateData.hostId;
-            delete updateData.coHostId;
-            delete updateData.alternateHostId;
+            delete normalizedUpdateData.hostId;
+            delete normalizedUpdateData.coHostId;
+            delete normalizedUpdateData.alternateHostId;
 
             const updatedMeeting = await Meeting.findByIdAndUpdate(
                 id,
                 {
-                    $set: updateData,
+                    $set: normalizedUpdateData,
                 },
                 { new: true }
             )
@@ -110,7 +110,7 @@ export default {
             .populate('alternateHost');
 
             // Update system attributes for affected users
-            await updateMeetingSystemAttributes(updateData, oldMeeting);
+            await updateMeetingSystemAttributes(normalizedUpdateData, oldMeeting);
 
             return updatedMeeting;
         },

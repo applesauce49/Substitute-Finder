@@ -8,17 +8,7 @@ import ConstraintGroup from "./Schemas/ConstraintGroup.js";
 import Constraint from "./Schemas/Constraint.js";
 import UserAttributeDefinition from "./Schemas/UserAttributeDefinition.js";
 import { SYSTEM_ATTRIBUTES } from "../config/systemAttributes.js";
-
-/**
- * Normalize a recurring instance ID to its base event ID by stripping the _R marker.
- * e.g. "abc123_R20250514T140000" -> "abc123"
- * Non-instance IDs are returned as-is.
- */
-export function toRecurringBaseId(eventId) {
-    if (!eventId) return null;
-    const marker = eventId.indexOf("_R");
-    return marker !== -1 ? eventId.substring(0, marker) : eventId;
-}
+import { toRecurringBaseId } from "../utils/googleEventIds.js";
 
 export function buildMeetingLookupQuery(eventIds) {
     const filteredEventIds = (eventIds || []).filter(Boolean);
