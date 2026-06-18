@@ -40,6 +40,103 @@ function formatEventStartLabel(start) {
   }).format(date);
 }
 
+function getMeetingLinkIds(meeting) {
+  const ids = [
+    meeting?.gcalEventId,
+    meeting?.gcalRecurringEventId,
+    toRecurringBaseId(meeting?.gcalEventId),
+    toRecurringBaseId(meeting?.gcalRecurringEventId),
+  ]
+    .map((value) => (typeof value === "string" ? value.trim() : ""))
+    .filter(Boolean);
+
+  return new Set(ids);
+}
+
+function findMeetingWithDuplicateGoogleLink(meeting, meetings) {
+  const meetingId = meeting?._id;
+  const meetingCalendarId = (meeting?.calendarId || "").trim();
+  const targetIds = getMeetingLinkIds(meeting);
+
+  if (!meetingCalendarId || targetIds.size === 0) {
+    return null;
+  }
+
+  return meetings.find((otherMeeting) => {
+    if (!otherMeeting || otherMeeting._id === meetingId) {
+      return false;
+    }
+
+    if ((otherMeeting.calendarId || "").trim() !== meetingCalendarId) {
+      return false;
+    }
+
+    const otherIds = getMeetingLinkIds(otherMeeting);
+    return Array.from(otherIds).some((id) => targetIds.has(id));
+  }) || null;
+}
+
+function getGoogleLinkStatus({ meeting, meetings, calendarEventLookup, validationEventsLoading }) {
+  const meetingName = meeting?.summary || "(Untitled)";
+  const meetingCalendarId = (meeting?.calendarId || "").trim();
+  const targetIds = getMeetingLinkIds(meeting);
+  const primaryEventId = (meeting?.gcalEventId || "").trim();
+
+  if (!primaryEventId) {
+    return {
+      label: "Not linked",
+      badgeClassName: "text-bg-secondary",
+      title: "Click to add or fix Google link",
+    };
+  }
+
+  if (validationEventsLoading) {
+    return {
+      label: "Checking...",
+      badgeClassName: "text-bg-secondary",
+      title: "Click to review or fix Google link",
+    };
+  }
+
+  const otherMeetingWithEvent = findMeetingWithDuplicateGoogleLink(meeting, meetings);
+  if (otherMeetingWithEvent) {
+    return {
+      label: "Linked to another",
+      badgeClassName: "text-bg-info",
+      title: `This Google event is already linked to another meeting: "${otherMeetingWithEvent.summary || "(Untitled)"}" (${otherMeetingWithEvent.calendarId}). Click to change the link.`,
+    };
+  }
+
+  const knownIdsForCalendar = meetingCalendarId
+    ? calendarEventLookup.get(meetingCalendarId)
+    : null;
+  const isVerified = knownIdsForCalendar
+    ? Array.from(targetIds).some((id) => knownIdsForCalendar.has(id))
+    : false;
+
+  if (isVerified) {
+    return {
+      label: "Linked",
+      badgeClassName: "text-bg-success",
+      title: `Linked meeting: ${meetingName}. Click to update link.`,
+    };
+  }
+
+  if (!meetingCalendarId) {
+    return {
+      label: "Unverified",
+      badgeClassName: "text-bg-warning",
+      title: "Linked event exists, but calendar ID is missing so link cannot be validated. Click to fix.",
+    };
+  }
+
+  return {
+    label: "Broken link",
+    badgeClassName: "text-bg-danger",
+    title: "Linked event was not found in Google for this calendar. Click to fix.",
+  };
+}
+
 export default function MeetingsSettings() {
   const { loading, error, data, refetch } = useQuery(QUERY_MEETINGS);
   const {
@@ -132,6 +229,35 @@ export default function MeetingsSettings() {
     [googleEvents, linkFormState.gcalEventId]
   );
   const hasMissingLinkedEvent = !!linkFormState.gcalEventId && !selectedLinkGoogleEvent;
+  const activeLinkMeetingStatus = React.useMemo(() => {
+    if (!linkMeeting) {
+      return {
+        label: "Not linked",
+        badgeClassName: "text-bg-secondary",
+        title: "No meeting selected.",
+      };
+    }
+
+    return getGoogleLinkStatus({
+      meeting: {
+        ...linkMeeting,
+        calendarId: linkFormState.calendarId,
+        gcalEventId: linkFormState.gcalEventId,
+        gcalRecurringEventId: linkFormState.gcalRecurringEventId,
+      },
+      meetings,
+      calendarEventLookup,
+      validationEventsLoading,
+    });
+  }, [
+    linkMeeting,
+    linkFormState.calendarId,
+    linkFormState.gcalEventId,
+    linkFormState.gcalRecurringEventId,
+    meetings,
+    calendarEventLookup,
+    validationEventsLoading,
+  ]);
 
   React.useEffect(() => {
     if (!showLinkForm) return;
@@ -261,8 +387,8 @@ export default function MeetingsSettings() {
     setLinkSaveError("");
     setLinkFormState({
       calendarId: meeting.calendarId ?? DEFAULT_ADMIN_CALENDAR_ID,
-      gcalEventId: "",
-      gcalRecurringEventId: "",
+      gcalEventId: meeting.gcalEventId ?? "",
+      gcalRecurringEventId: meeting.gcalRecurringEventId ?? "",
     });
     setShowLinkForm(true);
   }, []);
@@ -296,12 +422,12 @@ export default function MeetingsSettings() {
     }
 
     // Check if the selected event is already linked to a different meeting
-    const targetEventId = linkFormState.gcalEventId;
-    const otherMeetingWithEvent = meetings.find(
-      (m) => m._id !== linkMeeting._id
-        && m.calendarId === calendarId
-        && (m.gcalEventId === targetEventId || m.gcalRecurringEventId === targetEventId)
-    );
+    const otherMeetingWithEvent = findMeetingWithDuplicateGoogleLink({
+      ...linkMeeting,
+      calendarId,
+      gcalEventId: linkFormState.gcalEventId,
+      gcalRecurringEventId: linkFormState.gcalRecurringEventId || null,
+    }, meetings);
     if (otherMeetingWithEvent) {
       setLinkSaveError(
         `This Google event is already linked to another meeting: "${otherMeetingWithEvent.summary || "(Untitled)"}". ` +
@@ -486,102 +612,22 @@ export default function MeetingsSettings() {
       id: "googleLinkStatus",
       header: "Google Link",
       cell: (info) => {
-        const gcalEventId = info.getValue();
-        const meetingName = info.row.original?.summary || "(Untitled)";
-        const meetingCalendarId = (info.row.original?.calendarId || "").trim();
-        const meetingRecurringEventId = info.row.original?.gcalRecurringEventId;
-        const normalizedMeetingEventId = toRecurringBaseId(gcalEventId);
         const meetingRow = info.row.original;
-
-        if (!gcalEventId) {
-          return (
-            <button
-              type="button"
-              className="badge text-bg-secondary border-0"
-              onClick={() => openFixLinkDialog(meetingRow)}
-              title="Click to add or fix Google link"
-            >
-              Not linked
-            </button>
-          );
-        }
-
-        if (validationEventsLoading) {
-          return (
-            <button
-              type="button"
-              className="badge text-bg-secondary border-0"
-              onClick={() => openFixLinkDialog(meetingRow)}
-              title="Click to review or fix Google link"
-            >
-              Checking...
-            </button>
-          );
-        }
-
-        const knownIdsForCalendar = meetingCalendarId
-          ? calendarEventLookup.get(meetingCalendarId)
-          : null;
-        const isVerified = knownIdsForCalendar
-          ? knownIdsForCalendar.has(gcalEventId)
-            || knownIdsForCalendar.has(normalizedMeetingEventId)
-            || (meetingRecurringEventId ? knownIdsForCalendar.has(meetingRecurringEventId) : false)
-          : false;
-
-        // Check if this event is linked to another meeting (duplicate link)
-        const otherMeetingWithEvent = meetings?.find(
-          (m) => m._id !== meetingRow._id
-            && m.calendarId === meetingCalendarId
-            && (m.gcalEventId === gcalEventId || m.gcalRecurringEventId === gcalEventId)
-        );
-
-        if (otherMeetingWithEvent) {
-          return (
-            <button
-              type="button"
-              className="badge text-bg-info border-0"
-              onClick={() => openFixLinkDialog(meetingRow)}
-              title={`This Google event is already linked to another meeting: "${otherMeetingWithEvent.summary || '(Untitled)'}" (${otherMeetingWithEvent.calendarId}). Click to change the link.`}
-            >
-              Linked to another
-            </button>
-          );
-        }
-
-        if (isVerified) {
-          return (
-            <button
-              type="button"
-              className="badge text-bg-success border-0"
-              onClick={() => openFixLinkDialog(meetingRow)}
-              title={`Linked meeting: ${meetingName}. Click to update link.`}
-            >
-              Linked
-            </button>
-          );
-        }
-
-        if (!meetingCalendarId) {
-          return (
-            <button
-              type="button"
-              className="badge text-bg-warning border-0"
-              onClick={() => openFixLinkDialog(meetingRow)}
-              title="Linked event exists, but calendar ID is missing so link cannot be validated. Click to fix."
-            >
-              Unverified
-            </button>
-          );
-        }
+        const status = getGoogleLinkStatus({
+          meeting: meetingRow,
+          meetings,
+          calendarEventLookup,
+          validationEventsLoading,
+        });
 
         return (
           <button
             type="button"
-            className="badge text-bg-danger border-0"
+            className={`badge ${status.badgeClassName} border-0`}
             onClick={() => openFixLinkDialog(meetingRow)}
-            title="Linked event was not found in Google for this calendar. Click to fix."
+            title={status.title}
           >
-            Broken link
+            {status.label}
           </button>
         );
       },
@@ -624,6 +670,7 @@ export default function MeetingsSettings() {
     handleDelete,
     validationEventsLoading,
     calendarEventLookup,
+    meetings,
     syncMeetingAssignmentsLoading,
   ]);
 
@@ -831,9 +878,10 @@ export default function MeetingsSettings() {
             <div className="d-flex justify-content-between align-items-center mb-2">
               <label className="form-label fw-semibold mb-0">Google Calendar Link</label>
               <span
-                className={`badge ${linkFormState.gcalEventId ? "text-bg-success" : "text-bg-secondary"}`}
+                className={`badge ${activeLinkMeetingStatus.badgeClassName}`}
+                title={activeLinkMeetingStatus.title}
               >
-                {linkFormState.gcalEventId ? "Linked" : "Not linked"}
+                {activeLinkMeetingStatus.label}
               </span>
             </div>
 
